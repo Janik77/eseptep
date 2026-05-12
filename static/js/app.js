@@ -24,6 +24,13 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
+    dots.forEach((dot, index) => {
+        dot.addEventListener('click', () => {
+            const slideWidth = track.scrollWidth / dots.length;
+            track.scrollTo({ left: slideWidth * index, behavior: 'smooth' });
+        });
+    });
+
     track.addEventListener('scroll', () => window.requestAnimationFrame(setActiveDot), { passive: true });
     window.addEventListener('resize', setActiveDot);
     setActiveDot();

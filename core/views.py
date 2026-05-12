@@ -5,28 +5,31 @@ from django.urls import reverse
 def home(request):
     feature_cards = [
         {
-            'eyebrow': 'Калькуляторы',
+            'eyebrow': 'Материалы',
             'title': 'Расчёт материалов',
-            'description': 'Быстрый старт для смет по стенам, полу, плитке и черновым материалам.',
+            'description': 'Смета по категориям, объёмам и запасу — без Excel и ручных формул.',
             'cta': 'Открыть расчёт',
             'url': reverse('calculators:home'),
             'accent': 'mint',
+            'icon': 'ruler',
         },
         {
-            'eyebrow': 'Маркетплейс',
+            'eyebrow': 'Мастера',
             'title': 'Ремонт под ключ',
-            'description': 'Подготовленная структура для подбора бригад, услуг и готовых пакетов ремонта.',
+            'description': 'Пакеты работ, проверенные специалисты и быстрый переход к заявке.',
             'cta': 'Смотреть услуги',
             'url': reverse('marketplace:home'),
             'accent': 'amber',
+            'icon': 'helmet',
         },
         {
-            'eyebrow': 'Проекты',
+            'eyebrow': 'Планы',
             'title': 'Загрузить проект',
-            'description': 'Основа для загрузки планов, файлов и будущего расчёта по проектной документации.',
+            'description': 'Файлы, планировки и данные объекта в одной карточке проекта.',
             'cta': 'Загрузить',
             'url': reverse('projects:home'),
             'accent': 'violet',
+            'icon': 'plan',
         },
     ]
     return render(request, 'core/home.html', {'feature_cards': feature_cards})
