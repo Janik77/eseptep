@@ -1,3 +1,5 @@
 from django.shortcuts import render
 
-# Create your views here.
+
+def calculators_home(request):
+    return render(request, 'calculators/home.html')
