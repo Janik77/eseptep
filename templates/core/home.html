@@ -2,7 +2,7 @@
 
 {% block content %}
 <section class="hero hero--renovation" aria-labelledby="hero-title">
-    <div class="hero__photo" aria-hidden="true"></div>
+    <div class="hero__photo" data-parallax-bg aria-hidden="true"></div>
     <div class="hero__overlay" aria-hidden="true"></div>
     <div class="hero__content">
         <span class="hero__badge">MVP для ремонта</span>
@@ -17,7 +17,7 @@
     <aside class="hero-estimate" aria-label="Пример сметы ремонта">
         <div class="hero-estimate__top">
             <span>Смета</span>
-            <strong>₸ 1 284 000</strong>
+            <strong class="count-up" data-count-up="1284000" data-count-prefix="₸ ">₸ 1 284 000</strong>
         </div>
         <div class="estimate-row">
             <span class="estimate-icon">▦</span>
@@ -35,9 +35,9 @@
 </section>
 
 <section class="repair-visuals" aria-label="Визуальные элементы ремонта">
-    <div class="repair-chip"><span>58 м²</span><b>Квартира</b></div>
-    <div class="repair-chip"><span>10</span><b>Калькуляторов</b></div>
-    <div class="repair-chip"><span>24 ч</span><b>Смета и заявка</b></div>
+    <div class="repair-chip"><span class="count-up" data-count-up="58" data-count-suffix=" м²">58 м²</span><b>Квартира</b></div>
+    <div class="repair-chip"><span class="count-up" data-count-up="10">10</span><b>Калькуляторов</b></div>
+    <div class="repair-chip"><span class="count-up" data-count-up="24" data-count-suffix=" ч">24 ч</span><b>Смета и заявка</b></div>
 </section>
 
 <section id="mvp-cards" class="feature-section" aria-labelledby="feature-title">
@@ -66,6 +66,18 @@
                 <button class="slider-dot{% if forloop.first %} is-active{% endif %}" type="button" data-slide-dot="{{ forloop.counter0 }}"></button>
             {% endfor %}
         </div>
+    </div>
+</section>
+
+<section class="skeleton-section" aria-label="Будущие API-разделы">
+    <div class="skeleton-section__head">
+        <span class="skeleton-title">Скоро: цены поставщиков</span>
+        <span class="skeleton-status">API подключается</span>
+    </div>
+    <div class="skeleton-grid">
+        <div class="skeleton-card"></div>
+        <div class="skeleton-card"></div>
+        <div class="skeleton-card"></div>
     </div>
 </section>
 {% endblock %}

@@ -11,7 +11,7 @@
 </section>
 
 <section class="calculator-workspace">
-    <form class="calc-form" method="post">
+    <form class="calc-form" method="post" data-calc-form>
         {% csrf_token %}
         <label>
             <span>Площадь</span>
@@ -36,7 +36,7 @@
         <button class="btn btn--primary" type="submit">Рассчитать</button>
     </form>
 
-    <div class="result-card">
+    <div class="result-card{% if result %} has-result{% endif %}">
         {% if result %}
             <div class="result-card__head">
                 <span>{{ result.summary }}</span>
@@ -46,15 +46,15 @@
                 {% for material in result.materials %}
                     <div class="materials-table__row">
                         <div><b>{{ material.title }}</b><small>{{ material.quantity }} ед. × ₸ {{ material.price }}</small></div>
-                        <strong>₸ {{ material.total }}</strong>
+                        <strong class="count-up" data-count-up="{{ material.total }}" data-count-prefix="₸ ">₸ {{ material.total }}</strong>
                     </div>
                 {% endfor %}
                 <div class="materials-table__row materials-table__row--muted">
                     <div><b>Работы мастера</b><small>Ориентир по выбранному сегменту</small></div>
-                    <strong>₸ {{ result.labor_total }}</strong>
+                    <strong class="count-up" data-count-up="{{ result.labor_total }}" data-count-prefix="₸ ">₸ {{ result.labor_total }}</strong>
                 </div>
             </div>
-            <div class="grand-total"><span>Итого</span><strong>₸ {{ result.grand_total }}</strong></div>
+            <div class="grand-total"><span>Итого</span><strong class="count-up" data-count-up="{{ result.grand_total }}" data-count-prefix="₸ ">₸ {{ result.grand_total }}</strong></div>
         {% else %}
             <div class="empty-result">
                 <b>Заполните параметры</b>
