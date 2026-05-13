@@ -30,6 +30,24 @@
             {% block content %}{% endblock %}
         </main>
     </div>
+
+    <a class="floating-whatsapp" href="https://wa.me/?text=ESEPTEP%20-%20нужна%20консультация%20по%20ремонту" aria-label="Написать в WhatsApp">WA</a>
+
+    <nav class="mobile-bottom-cta" aria-label="Быстрые действия">
+        <a class="mobile-bottom-cta__item" href="{% url 'core:home' %}">
+            <span>⌂</span>
+            <b>Главная</b>
+        </a>
+        <a class="mobile-bottom-cta__item mobile-bottom-cta__item--primary" href="{% url 'calculators:home' %}">
+            <span>+</span>
+            <b>Расчёт</b>
+        </a>
+        <a class="mobile-bottom-cta__item" href="{% url 'projects:home' %}">
+            <span>⇧</span>
+            <b>Проект</b>
+        </a>
+    </nav>
+
     <script src="{% static 'js/app.js' %}" defer></script>
 </body>
 </html>

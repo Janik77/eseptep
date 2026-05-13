@@ -1383,3 +1383,466 @@ button, input, select, textarea { font: inherit; }
         grid-template-columns: 1fr 1fr;
     }
 }
+
+/* Mobile-first app polish */
+.mobile-bottom-cta,
+.floating-whatsapp {
+    display: none;
+}
+
+@media (max-width: 719px) {
+    html { scroll-padding-bottom: 96px; }
+
+    body {
+        padding-bottom: calc(86px + env(safe-area-inset-bottom));
+        -webkit-tap-highlight-color: rgba(249, 115, 22, 0.14);
+    }
+
+    .app-shell {
+        padding: 10px 12px 28px;
+    }
+
+    .site-header {
+        top: 8px;
+        gap: 8px;
+        padding: 7px;
+        border-radius: 18px;
+    }
+
+    .brand__mark {
+        width: 34px;
+        height: 34px;
+        border-radius: 11px;
+    }
+
+    .brand__text { font-size: 0.88rem; }
+
+    .header-action {
+        min-height: 36px;
+        padding: 0 12px;
+        font-size: 0.86rem;
+    }
+
+    .hero--renovation {
+        min-height: auto;
+        gap: 12px;
+        margin-top: 12px;
+        border-radius: 26px;
+    }
+
+    .hero__photo {
+        background-position: 62% center;
+        opacity: 0.7;
+    }
+
+    .hero__overlay {
+        background:
+            linear-gradient(180deg, rgba(250, 247, 242, 0.98) 0%, rgba(250, 247, 242, 0.9) 54%, rgba(250, 247, 242, 0.76) 100%),
+            linear-gradient(180deg, rgba(255, 255, 255, 0.2), rgba(255, 243, 230, 0.55));
+    }
+
+    .hero__content {
+        align-self: start;
+        padding: 22px 16px 6px;
+    }
+
+    .hero h1 {
+        max-width: 330px;
+        margin-top: 12px;
+        font-size: clamp(2rem, 8.6vw, 2.55rem);
+        line-height: 1.06;
+        letter-spacing: -0.045em;
+    }
+
+    .hero__lead {
+        margin-top: 10px;
+        font-size: 0.98rem;
+        line-height: 1.5;
+    }
+
+    .hero__badge,
+    .section-heading__eyebrow {
+        padding: 7px 10px;
+        font-size: 0.68rem;
+    }
+
+    .hero__actions {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 9px;
+        margin-top: 16px;
+    }
+
+    .btn,
+    .card-button,
+    .feature-card__link,
+    .mini-whatsapp {
+        min-height: 48px;
+        border-radius: 16px;
+        font-size: 0.94rem;
+        touch-action: manipulation;
+    }
+
+    .hero-estimate {
+        margin: 4px 12px 12px;
+        padding: 14px;
+        border-radius: 22px;
+    }
+
+    .estimate-row {
+        gap: 9px;
+        padding: 9px 0;
+    }
+
+    .repair-visuals {
+        display: grid;
+        grid-auto-columns: minmax(132px, 1fr);
+        grid-auto-flow: column;
+        grid-template-columns: none;
+        gap: 10px;
+        overflow-x: auto;
+        margin: 12px -12px 18px;
+        padding: 0 12px 4px;
+        scroll-snap-type: x mandatory;
+        scrollbar-width: none;
+    }
+
+    .repair-visuals::-webkit-scrollbar { display: none; }
+    .repair-chip { scroll-snap-align: start; }
+
+    .section-heading {
+        gap: 7px;
+        margin-bottom: 12px;
+    }
+
+    .section-heading h2,
+    .page-hero h1,
+    .placeholder-page h1 {
+        font-size: clamp(1.55rem, 7vw, 2.1rem);
+        line-height: 1.1;
+        letter-spacing: -0.04em;
+    }
+
+    .page-hero {
+        margin: 14px 0 12px;
+    }
+
+    .page-hero--compact {
+        padding: 16px 0 2px;
+    }
+
+    .page-hero p {
+        margin-top: 9px;
+        font-size: 0.96rem;
+        line-height: 1.52;
+    }
+
+    .cards-slider,
+    .calculator-grid {
+        margin-inline: -12px;
+    }
+
+    .cards-track,
+    .calculator-grid {
+        display: grid;
+        grid-auto-flow: column;
+        grid-auto-columns: minmax(282px, 84%);
+        grid-template-columns: none;
+        gap: 12px;
+        overflow-x: auto;
+        padding: 4px 12px 18px;
+        scroll-padding-inline: 12px;
+        scroll-snap-type: x mandatory;
+        scrollbar-width: none;
+    }
+
+    .cards-track::-webkit-scrollbar,
+    .calculator-grid::-webkit-scrollbar { display: none; }
+
+    .feature-card,
+    .calculator-card {
+        min-height: auto;
+        padding: 16px;
+        border-radius: 22px;
+        scroll-snap-align: start;
+    }
+
+    .feature-card h3,
+    .calculator-card h2,
+    .service-card h2 {
+        margin: 14px 0 8px;
+        font-size: 1.18rem;
+    }
+
+    .feature-card__icon,
+    .calculator-card__icon,
+    .service-card__icon {
+        width: 46px;
+        height: 46px;
+        margin-bottom: 12px;
+        border-radius: 15px;
+    }
+
+    .flow-panel,
+    .success-state,
+    .recommendation-panel,
+    .calc-form,
+    .result-card,
+    .master-template,
+    .project-upload-card,
+    .skeleton-section {
+        border-radius: 22px;
+    }
+
+    .flow-panel,
+    .calc-form,
+    .result-card,
+    .recommendation-panel,
+    .master-template,
+    .skeleton-section {
+        padding: 14px;
+    }
+
+    .flow-panel__top {
+        display: grid;
+        gap: 6px;
+    }
+
+    .flow-panel__top strong {
+        text-align: left;
+        font-size: 0.95rem;
+    }
+
+    .flow-step {
+        padding: 10px;
+        border-radius: 16px;
+    }
+
+    .calc-form {
+        gap: 12px;
+    }
+
+    .calc-form input,
+    .calc-form select,
+    .master-template input,
+    .master-template select,
+    .master-template__text,
+    .material-row select,
+    .quantity-stepper__control input {
+        min-height: 48px;
+        font-size: 16px;
+    }
+
+    .calculator-workspace {
+        gap: 12px;
+    }
+
+    .summary-card {
+        padding: 14px;
+        border-radius: 18px;
+    }
+
+    .materials-table__row,
+    .grand-total,
+    .result-card__head {
+        gap: 10px;
+    }
+
+    .materials-table__row {
+        display: grid;
+    }
+
+    .materials-table__row > strong {
+        justify-self: start;
+    }
+
+    .post-flow-grid {
+        gap: 12px;
+    }
+
+    .section-heading--inline {
+        display: grid;
+    }
+
+    .trust-badge {
+        width: fit-content;
+    }
+
+    .recommendation-list--masters,
+    .store-list {
+        grid-auto-columns: minmax(278px, 84%);
+        grid-auto-flow: column;
+        grid-template-columns: none;
+        overflow-x: auto;
+        margin-inline: -14px;
+        padding: 2px 14px 14px;
+        scroll-padding-inline: 14px;
+        scroll-snap-type: x mandatory;
+        scrollbar-width: none;
+    }
+
+    .recommendation-list--masters::-webkit-scrollbar,
+    .store-list::-webkit-scrollbar { display: none; }
+
+    .master-card-v2,
+    .store-card {
+        scroll-snap-align: start;
+    }
+
+    .master-card-v2__photo-wrap {
+        height: 150px;
+    }
+
+    .store-card__top,
+    .master-card-v2__head {
+        gap: 8px;
+    }
+
+    .store-price,
+    .master-rating {
+        font-size: 0.78rem;
+    }
+
+    .store-actions {
+        grid-template-columns: 1fr;
+    }
+
+    .estimate-builder {
+        margin-bottom: 8px;
+        padding: 0;
+    }
+
+    .estimate-builder__header {
+        gap: 12px;
+        padding: 15px;
+    }
+
+    .estimate-builder__header h2 {
+        font-size: 1.42rem;
+        line-height: 1.12;
+    }
+
+    .estimate-builder__body {
+        gap: 12px;
+        padding: 12px;
+    }
+
+    .estimate-editor__topline,
+    .whatsapp-preview__top {
+        padding: 12px;
+    }
+
+    .estimate-editor__topline {
+        display: grid;
+        align-items: start;
+    }
+
+    .add-material-button {
+        min-height: 44px;
+    }
+
+    .material-row-list {
+        padding: 10px;
+    }
+
+    .material-row {
+        padding: 10px;
+        border-radius: 16px;
+    }
+
+    .remove-material-button {
+        width: 100%;
+        height: 44px;
+    }
+
+    .whatsapp-preview pre {
+        min-height: 180px;
+        max-height: 260px;
+        font-size: 0.82rem;
+    }
+
+    .estimate-builder__actions {
+        padding: 12px;
+    }
+
+    .floating-whatsapp {
+        position: fixed;
+        right: 16px;
+        bottom: calc(88px + env(safe-area-inset-bottom));
+        z-index: 35;
+        display: grid;
+        width: 54px;
+        height: 54px;
+        place-items: center;
+        border-radius: 50%;
+        color: #075e35;
+        background: #dcfce7;
+        box-shadow: 0 18px 44px rgba(22, 101, 52, 0.2);
+        font-size: 0.8rem;
+        font-weight: 900;
+    }
+
+    .mobile-bottom-cta {
+        position: fixed;
+        right: 10px;
+        bottom: max(10px, env(safe-area-inset-bottom));
+        left: 10px;
+        z-index: 34;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+        padding: 8px;
+        border: 1px solid rgba(229, 231, 235, 0.9);
+        border-radius: 24px;
+        background: rgba(255, 255, 255, 0.94);
+        box-shadow: 0 18px 52px rgba(31, 41, 51, 0.18);
+        backdrop-filter: blur(18px);
+    }
+
+    .mobile-bottom-cta__item {
+        display: grid;
+        min-height: 52px;
+        place-items: center;
+        gap: 2px;
+        border-radius: 18px;
+        color: var(--muted);
+        font-size: 0.72rem;
+        font-weight: 900;
+    }
+
+    .mobile-bottom-cta__item span {
+        font-size: 1.05rem;
+        line-height: 1;
+    }
+
+    .mobile-bottom-cta__item--primary {
+        color: #fff;
+        background: var(--orange);
+        box-shadow: 0 12px 26px rgba(249, 115, 22, 0.25);
+    }
+}
+
+@media (max-width: 430px) {
+    .app-shell { padding-inline: 10px; }
+    .hero h1 { font-size: clamp(1.9rem, 8.2vw, 2.25rem); }
+    .hero__content { padding-inline: 14px; }
+    .cards-slider,
+    .calculator-grid { margin-inline: -10px; }
+    .cards-track,
+    .calculator-grid { grid-auto-columns: minmax(274px, 86%); padding-inline: 10px; }
+    .recommendation-list--masters,
+    .store-list { grid-auto-columns: minmax(270px, 86%); }
+}
+
+@media (max-width: 374px) {
+    .brand__text { display: none; }
+    .hero h1 { font-size: 1.86rem; }
+    .hero__lead { font-size: 0.94rem; }
+    .header-action { padding-inline: 10px; }
+    .cards-track,
+    .calculator-grid { grid-auto-columns: minmax(260px, 88%); }
+    .recommendation-list--masters,
+    .store-list { grid-auto-columns: minmax(258px, 88%); }
+    .mobile-bottom-cta { gap: 6px; padding: 7px; }
+    .mobile-bottom-cta__item { min-height: 50px; }
+}
