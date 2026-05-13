@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ calculator.title }} — калькулятор ESEPTEP{% endblock %}
+
+{% block content %}
+<section class="page-hero page-hero--compact">
+    <a class="back-link" href="{% url 'calculators:home' %}">← Все калькуляторы</a>
+    <span class="hero__badge">{{ calculator.title }}</span>
+    <h1>Калькулятор: {{ calculator.title }}</h1>
+    <p>{{ calculator.description }}</p>
+</section>
+
+<section class="calculator-workspace">
+    <form class="calc-form" method="post">
+        {% csrf_token %}
+        <label>
+            <span>Площадь</span>
+            <input type="number" name="area" min="1" step="0.1" value="{{ form_data.area }}" required>
+        </label>
+        <label>
+            <span>Толщина</span>
+            <input type="number" name="thickness" min="1" step="0.1" value="{{ form_data.thickness }}" required>
+        </label>
+        <label>
+            <span>Количество комнат</span>
+            <input type="number" name="rooms" min="1" step="1" value="{{ form_data.rooms }}" required>
+        </label>
+        <label>
+            <span>Сегмент</span>
+            <select name="segment">
+                {% for key, segment in segments.items %}
+                    <option value="{{ key }}" {% if form_data.segment == key %}selected{% endif %}>{{ segment.label }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <button class="btn btn--primary" type="submit">Рассчитать</button>
+    </form>
+
+    <div class="result-card">
+        {% if result %}
+            <div class="result-card__head">
+                <span>{{ result.summary }}</span>
+                <strong>{{ result.segment_label }}</strong>
+            </div>
+            <div class="materials-table">
+                {% for material in result.materials %}
+                    <div class="materials-table__row">
+                        <div><b>{{ material.title }}</b><small>{{ material.quantity }} ед. × ₸ {{ material.price }}</small></div>
+                        <strong>₸ {{ material.total }}</strong>
+                    </div>
+                {% endfor %}
+                <div class="materials-table__row materials-table__row--muted">
+                    <div><b>Работы мастера</b><small>Ориентир по выбранному сегменту</small></div>
+                    <strong>₸ {{ result.labor_total }}</strong>
+                </div>
+            </div>
+            <div class="grand-total"><span>Итого</span><strong>₸ {{ result.grand_total }}</strong></div>
+        {% else %}
+            <div class="empty-result">
+                <b>Заполните параметры</b>
+                <p>После расчёта здесь появятся материалы, количество, цены и общий итог.</p>
+            </div>
+        {% endif %}
+    </div>
+</section>
+
+<section class="master-template" aria-labelledby="master-template-title">
+    <div class="section-heading">
+        <p class="section-heading__eyebrow">Шаблон мастера</p>
+        <h2 id="master-template-title">Список материалов для отправки</h2>
+    </div>
+    <div class="master-template__grid">
+        <label>
+            <span>Материал</span>
+            <select data-master-material>
+                {% for title, qty, price in calculator.base_materials %}
+                    <option>{{ title }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <label>
+            <span>Количество</span>
+            <input type="number" min="1" step="0.1" value="10" data-master-qty>
+        </label>
+        <button class="btn btn--secondary" type="button" data-copy-template>Копировать список</button>
+        <a class="btn btn--whatsapp" href="https://wa.me/?text={{ calculator.title|urlencode }}%20-%20список%20материалов">WhatsApp</a>
+    </div>
+    <textarea class="master-template__text" rows="5" data-master-output>Материал: {{ calculator.base_materials.0.0 }}
+Количество: 10
+Объект: квартира
+Комментарий: подготовьте цену и сроки.</textarea>
+</section>
+{% endblock %}

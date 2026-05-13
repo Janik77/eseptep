@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<section class="hero hero--renovation" aria-labelledby="hero-title">
+    <div class="hero__photo" aria-hidden="true"></div>
+    <div class="hero__overlay" aria-hidden="true"></div>
+    <div class="hero__content">
+        <span class="hero__badge">MVP для ремонта</span>
+        <h1 id="hero-title">Рассчитайте ремонт квартиры за 1 минуту</h1>
+        <p class="hero__lead">Материалы, мастера и ремонт под ключ в одном сервисе</p>
+        <div class="hero__actions" aria-label="Основные действия">
+            <a class="btn btn--primary" href="{% url 'calculators:home' %}">Начать расчёт</a>
+            <a class="btn btn--secondary" href="{% url 'projects:home' %}">Загрузить проект</a>
+        </div>
+    </div>
+
+    <aside class="hero-estimate" aria-label="Пример сметы ремонта">
+        <div class="hero-estimate__top">
+            <span>Смета</span>
+            <strong>₸ 1 284 000</strong>
+        </div>
+        <div class="estimate-row">
+            <span class="estimate-icon">▦</span>
+            <div><b>Плитка и клей</b><small>Санузел · 21 м²</small></div>
+            <strong>₸ 312k</strong>
+        </div>
+        <div class="estimate-row">
+            <span class="estimate-icon">⌂</span>
+            <div><b>Наливной пол</b><small>Кухня + коридор</small></div>
+            <strong>₸ 248k</strong>
+        </div>
+        <div class="estimate-progress"><span style="width: 72%"></span></div>
+        <a class="mini-whatsapp" href="https://wa.me/">Отправить мастеру</a>
+    </aside>
+</section>
+
+<section class="repair-visuals" aria-label="Визуальные элементы ремонта">
+    <div class="repair-chip"><span>58 м²</span><b>Квартира</b></div>
+    <div class="repair-chip"><span>10</span><b>Калькуляторов</b></div>
+    <div class="repair-chip"><span>24 ч</span><b>Смета и заявка</b></div>
+</section>
+
+<section id="mvp-cards" class="feature-section" aria-labelledby="feature-title">
+    <div class="section-heading">
+        <p class="section-heading__eyebrow">Главные возможности</p>
+        <h2 id="feature-title">Всё для старта ремонта</h2>
+    </div>
+
+    <div class="cards-slider" data-slider>
+        <div class="cards-track" data-slider-track tabindex="0" aria-label="Сценарии ESEPTEP">
+            {% for card in feature_cards %}
+                <article class="feature-card">
+                    <div class="feature-card__icon feature-card__icon--{{ card.icon }}" aria-hidden="true"></div>
+                    <div class="feature-card__topline">
+                        <span>{{ forloop.counter|stringformat:'02d' }}</span>
+                        <small>{{ card.eyebrow }}</small>
+                    </div>
+                    <h3>{{ card.title }}</h3>
+                    <p>{{ card.description }}</p>
+                    <a class="feature-card__link" href="{{ card.url }}">{{ card.cta }}</a>
+                </article>
+            {% endfor %}
+        </div>
+        <div class="slider-dots" aria-hidden="true">
+            {% for card in feature_cards %}
+                <button class="slider-dot{% if forloop.first %} is-active{% endif %}" type="button" data-slide-dot="{{ forloop.counter0 }}"></button>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endblock %}

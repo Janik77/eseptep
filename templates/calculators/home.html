@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+
+{% block title %}Калькуляторы ремонта — ESEPTEP{% endblock %}
+
+{% block content %}
+<section class="page-hero page-hero--compact">
+    <span class="hero__badge">Калькуляторы</span>
+    <h1>Выберите расчёт для вашего ремонта</h1>
+    <p>Материалы, количество, ориентировочная цена и шаблон списка для мастера.</p>
+</section>
+
+<section class="calculator-grid" aria-label="Список калькуляторов">
+    {% for item in calculators %}
+        <article class="calculator-card">
+            <div class="calculator-card__icon feature-card__icon--{{ item.icon }}" aria-hidden="true"></div>
+            <h2>{{ item.title }}</h2>
+            <p>{{ item.description }}</p>
+            <a class="card-button" href="{% url 'calculators:detail' item.slug %}">Открыть</a>
+        </article>
+    {% endfor %}
+</section>
+{% endblock %}
