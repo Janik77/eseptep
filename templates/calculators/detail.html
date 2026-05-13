@@ -172,30 +172,69 @@
 </section>
 {% endif %}
 
-<section class="master-template" aria-labelledby="master-template-title">
-    <div class="section-heading">
-        <p class="section-heading__eyebrow">Шаблон мастера</p>
-        <h2 id="master-template-title">Список материалов для отправки</h2>
+<section class="master-template estimate-builder" aria-labelledby="master-template-title" data-estimate-builder>
+    <div class="estimate-builder__header">
+        <div>
+            <p class="section-heading__eyebrow">Шаблон мастера</p>
+            <h2 id="master-template-title">WhatsApp-ready смета для мастера</h2>
+            <p>Соберите материалы, поправьте количество и отправьте список в профессиональном формате.</p>
+        </div>
+        <div class="estimate-builder__total">
+            <span>Auto total</span>
+            <strong data-builder-total>₸ 0</strong>
+        </div>
     </div>
-    <div class="master-template__grid">
-        <label>
-            <span>Материал</span>
-            <select data-master-material>
+
+    <div class="estimate-builder__body">
+        <div class="estimate-editor">
+            <div class="estimate-editor__topline">
+                <span>Material rows</span>
+                <button class="add-material-button" type="button" data-add-material>+ Добавить материал</button>
+            </div>
+
+            <div class="material-row-list" data-material-rows>
                 {% for title, qty, price in calculator.base_materials %}
-                    <option>{{ title }}</option>
+                    <div class="material-row" data-material-row>
+                        <label>
+                            <span>Материал</span>
+                            <select data-row-material>
+                                {% for option_title, option_qty, option_price in calculator.base_materials %}
+                                    <option value="{{ option_title }}" data-price="{{ option_price }}" {% if option_title == title %}selected{% endif %}>{{ option_title }}</option>
+                                {% endfor %}
+                            </select>
+                        </label>
+                        <label class="quantity-stepper">
+                            <span>Кол-во</span>
+                            <div class="quantity-stepper__control">
+                                <button type="button" data-step-decrease aria-label="Уменьшить количество">−</button>
+                                <input type="number" min="0.1" step="0.1" value="{{ qty|floatformat:1 }}" data-row-qty>
+                                <button type="button" data-step-increase aria-label="Увеличить количество">+</button>
+                            </div>
+                        </label>
+                        <div class="row-price">
+                            <span>Сумма</span>
+                            <strong data-row-total>₸ 0</strong>
+                        </div>
+                        <button class="remove-material-button" type="button" data-remove-row aria-label="Удалить материал">×</button>
+                    </div>
                 {% endfor %}
-            </select>
-        </label>
-        <label>
-            <span>Количество</span>
-            <input type="number" min="1" step="0.1" value="10" data-master-qty>
-        </label>
-        <button class="btn btn--secondary" type="button" data-copy-template>Копировать список</button>
-        <a class="btn btn--whatsapp" href="https://wa.me/?text={{ calculator.title|urlencode }}%20-%20список%20материалов">WhatsApp</a>
+            </div>
+        </div>
+
+        <aside class="whatsapp-preview" aria-label="Предпросмотр WhatsApp сообщения">
+            <div class="whatsapp-preview__top">
+                <span>WhatsApp preview</span>
+                <b>Готово к отправке</b>
+            </div>
+            <pre data-whatsapp-preview></pre>
+            <div class="estimate-builder__actions">
+                <button class="btn btn--secondary" type="button" data-copy-template>Копировать список</button>
+                <a class="btn btn--whatsapp" href="https://wa.me/" data-whatsapp-link>WhatsApp</a>
+            </div>
+        </aside>
     </div>
-    <textarea class="master-template__text" rows="5" data-master-output>Материал: {{ calculator.base_materials.0.0 }}
-Количество: 10
-Объект: квартира
-Комментарий: подготовьте цену и сроки.</textarea>
+
+    <textarea class="master-template__text" rows="7" data-master-output aria-label="Текст сметы для копирования"></textarea>
+    <div class="copy-toast" role="status" aria-live="polite" data-copy-toast>Список скопирован</div>
 </section>
 {% endblock %}
