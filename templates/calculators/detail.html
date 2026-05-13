@@ -138,20 +138,33 @@
         </div>
     </div>
 
-    <div class="recommendation-panel">
-        <div class="section-heading">
-            <p class="section-heading__eyebrow">Шаг 5</p>
-            <h2>Продавцы материалов</h2>
+    <div class="recommendation-panel recommendation-panel--stores">
+        <div class="section-heading section-heading--inline">
+            <div>
+                <p class="section-heading__eyebrow">Шаг 5</p>
+                <h2>Где купить материалы</h2>
+            </div>
+            <span class="trust-badge trust-badge--orange">Астана</span>
         </div>
-        <div class="recommendation-list">
+        <div class="store-list" aria-label="Магазины материалов в Астане">
             {% for seller in material_sellers %}
-                <article class="seller-card">
-                    <div>
-                        <span>{{ seller.badge }}</span>
-                        <h3>{{ seller.name }}</h3>
-                        <p>{{ seller.meta }}</p>
+                <article class="store-card">
+                    <div class="store-card__top">
+                        <div>
+                            <span class="store-label">Магазин</span>
+                            <h3>{{ seller.name }}</h3>
+                        </div>
+                        <strong class="store-price">{{ seller.price }}</strong>
                     </div>
-                    <button class="card-button" type="button" data-save-estimate data-estimate-text="{{ result.saved_list|default:'Список материалов ESEPTEP'|escape }}">Запросить счёт</button>
+                    <div class="store-info-grid">
+                        <div><span>Доставка</span><b>{{ seller.delivery }}</b></div>
+                        <div><span>Адрес</span><b>{{ seller.address }}</b></div>
+                        <div><span>Наличие</span><b>{{ seller.availability }}</b></div>
+                    </div>
+                    <div class="store-actions">
+                        <a class="btn btn--whatsapp" href="{{ seller.whatsapp }}">WhatsApp</a>
+                        <a class="card-button" href="{{ seller.whatsapp }}">Заказать</a>
+                    </div>
                 </article>
             {% endfor %}
         </div>

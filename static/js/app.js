@@ -26,6 +26,7 @@ function initReveal(prefersReducedMotion) {
         '.post-flow-grid',
         '.recommendation-card',
         '.seller-card',
+        '.store-card',
         '.master-template',
         '.skeleton-section',
     ].join(','));

@@ -999,3 +999,112 @@ button, input, select, textarea { font: inherit; }
         grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 }
+
+/* Material stores after estimate */
+.trust-badge--orange {
+    border-color: rgba(249, 115, 22, 0.18);
+    color: var(--orange-dark);
+    background: var(--orange-soft);
+}
+
+.recommendation-panel--stores {
+    background: linear-gradient(180deg, #fff, #fffaf5);
+}
+
+.store-list {
+    display: grid;
+    gap: 12px;
+}
+
+.store-card {
+    display: grid;
+    gap: 14px;
+    padding: 14px;
+    border: 1px solid rgba(229, 231, 235, 0.92);
+    border-radius: 22px;
+    background: #fff;
+    box-shadow: var(--shadow-soft);
+    transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+}
+
+.store-card:hover {
+    border-color: rgba(249, 115, 22, 0.3);
+    box-shadow: 0 22px 54px rgba(31, 41, 51, 0.12);
+    transform: translateY(-4px);
+}
+
+.store-card__top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.store-label {
+    display: inline-flex;
+    margin-bottom: 5px;
+    color: var(--muted);
+    font-size: 0.74rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.store-card h3 {
+    margin: 0;
+    letter-spacing: -0.03em;
+    line-height: 1.12;
+}
+
+.store-price {
+    flex: 0 0 auto;
+    padding: 8px 10px;
+    border-radius: 14px;
+    color: var(--orange-dark);
+    background: var(--orange-soft);
+    font-size: 0.92rem;
+    white-space: nowrap;
+}
+
+.store-info-grid {
+    display: grid;
+    gap: 8px;
+}
+
+.store-info-grid div {
+    padding: 10px;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: var(--bg);
+}
+
+.store-info-grid span {
+    display: block;
+    margin-bottom: 4px;
+    color: var(--muted);
+    font-size: 0.74rem;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.store-info-grid b {
+    color: var(--text);
+    font-size: 0.9rem;
+}
+
+.store-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.store-actions .card-button,
+.store-actions .btn {
+    width: 100%;
+}
+
+@media (min-width: 1040px) {
+    .store-info-grid {
+        grid-template-columns: 1fr;
+    }
+}

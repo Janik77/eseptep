@@ -62,22 +62,38 @@ RECOMMENDED_MASTERS = [
 
 MATERIAL_SELLERS = [
     {
-        'name': 'BuildMarket',
-        'meta': 'Доставка сегодня · чек и гарантия',
-        'badge': '−7% на смеси',
+        'name': 'СтройМарт Astana',
+        'price': 'от ₸ 3 200',
+        'delivery': 'Доставка 2–3 часа',
+        'address': 'пр. Кабанбай Батыра, 48',
+        'availability': 'В наличии: 142 позиции',
+        'whatsapp': 'https://wa.me/?text=ESEPTEP%20-%20хочу%20заказать%20материалы%20в%20СтройМарт%20Astana',
     },
     {
-        'name': 'Kerama Hub',
-        'meta': 'Плитка, СВП, клей · самовывоз',
-        'badge': 'Есть остатки',
+        'name': 'Keruen Build Market',
+        'price': 'от ₸ 4 100',
+        'delivery': 'Доставка сегодня',
+        'address': 'ул. Сыганак, 16/5',
+        'availability': 'В наличии: плитка, клей, СВП',
+        'whatsapp': 'https://wa.me/?text=ESEPTEP%20-%20нужен%20счёт%20Keruen%20Build%20Market',
     },
     {
-        'name': 'DomStroy склад',
-        'meta': 'ГКЛ, профиль, электрика · опт',
-        'badge': 'Счёт за 15 мин',
+        'name': 'ДомСтрой склад',
+        'price': 'от ₸ 2 850',
+        'delivery': 'Самовывоз + доставка',
+        'address': 'ул. Алаш, 29',
+        'availability': 'В наличии: ГКЛ, профиль, смеси',
+        'whatsapp': 'https://wa.me/?text=ESEPTEP%20-%20заказ%20материалов%20ДомСтрой%20склад',
+    },
+    {
+        'name': 'MegaPlitka Astana',
+        'price': 'от ₸ 6 900 / м²',
+        'delivery': 'Доставка завтра',
+        'address': 'пр. Туран, 55',
+        'availability': 'В наличии: 38 коллекций',
+        'whatsapp': 'https://wa.me/?text=ESEPTEP%20-%20подберите%20плитку%20MegaPlitka%20Astana',
     },
 ]
-
 
 def calculators_home(request):
     return render(request, 'calculators/home.html', {'calculators': CALCULATORS})
