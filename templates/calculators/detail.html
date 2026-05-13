@@ -10,9 +10,36 @@
     <p>{{ calculator.description }}</p>
 </section>
 
+<section class="flow-panel" aria-label="Сценарий расчёта ремонта">
+    <div class="flow-panel__top">
+        <span>{% if result %}Шаг 3 из 3{% else %}Шаг 2 из 3{% endif %}</span>
+        <strong>{% if result %}Смета готова — сохраните и отправьте мастеру{% else %}Введите параметры для расчёта{% endif %}</strong>
+    </div>
+    <div class="flow-progress" aria-hidden="true">
+        <span style="width: {% if result %}100{% else %}66{% endif %}%"></span>
+    </div>
+    <div class="flow-steps">
+        <div class="flow-step is-complete"><span>1</span><b>Выбор</b><small>Калькулятор выбран</small></div>
+        <div class="flow-step {% if result %}is-complete{% else %}is-active{% endif %}"><span>2</span><b>Параметры</b><small>Площадь и сегмент</small></div>
+        <div class="flow-step {% if result %}is-active is-complete{% endif %}"><span>3</span><b>Смета</b><small>Сохранить и отправить</small></div>
+    </div>
+</section>
+
+{% if result %}
+<section class="success-state" data-result-ready>
+    <div class="success-state__icon">✓</div>
+    <div>
+        <span>Расчёт завершён</span>
+        <h2>{{ result.summary }}</h2>
+        <p>Список материалов готов. Ниже можно сохранить смету, отправить мастеру и посмотреть рекомендованных исполнителей и продавцов.</p>
+    </div>
+</section>
+{% endif %}
+
 <section class="calculator-workspace">
     <form class="calc-form" method="post" data-calc-form>
         {% csrf_token %}
+        <div class="form-step-label">Шаг 2 из 3 · параметры</div>
         <label>
             <span>Площадь</span>
             <input type="number" name="area" min="1" step="0.1" value="{{ form_data.area }}" required>
@@ -36,8 +63,16 @@
         <button class="btn btn--primary" type="submit">Рассчитать</button>
     </form>
 
-    <div class="result-card{% if result %} has-result{% endif %}">
+    <div id="estimate-result" class="result-card{% if result %} has-result{% endif %}">
         {% if result %}
+            <div class="summary-card">
+                <div>
+                    <span>Summary card</span>
+                    <h2>{{ result.summary }}</h2>
+                    <p>{{ result.segment_label }} · материалы + работы</p>
+                </div>
+                <strong class="count-up" data-count-up="{{ result.grand_total }}" data-count-prefix="₸ ">₸ {{ result.grand_total }}</strong>
+            </div>
             <div class="result-card__head">
                 <span>{{ result.summary }}</span>
                 <strong>{{ result.segment_label }}</strong>
@@ -55,6 +90,11 @@
                 </div>
             </div>
             <div class="grand-total"><span>Итого</span><strong class="count-up" data-count-up="{{ result.grand_total }}" data-count-prefix="₸ ">₸ {{ result.grand_total }}</strong></div>
+            <div class="result-actions">
+                <button class="btn btn--secondary" type="button" data-save-estimate data-estimate-text="{{ result.saved_list|escape }}">Сохранить список</button>
+                <a class="btn btn--whatsapp" href="https://wa.me/?text={{ result.whatsapp_text|urlencode }}">Отправить мастеру</a>
+            </div>
+            <p class="save-feedback" data-save-feedback aria-live="polite"></p>
         {% else %}
             <div class="empty-result">
                 <b>Заполните параметры</b>
@@ -63,6 +103,61 @@
         {% endif %}
     </div>
 </section>
+
+{% if result %}
+<section class="post-flow-grid" aria-label="Следующие действия после расчёта">
+    <div class="recommendation-panel recommendation-panel--masters">
+        <div class="section-heading section-heading--inline">
+            <div>
+                <p class="section-heading__eyebrow">Шаг 4</p>
+                <h2>Рекомендуемые мастера</h2>
+            </div>
+            <span class="trust-badge">Проверенные профили</span>
+        </div>
+        <div class="recommendation-list recommendation-list--masters" aria-label="Рекомендуемые мастера">
+            {% for master in recommended_masters %}
+                <article class="master-card-v2">
+                    <div class="master-card-v2__photo-wrap">
+                        <img src="{{ master.photo }}" alt="{{ master.name }}" class="master-card-v2__photo" loading="lazy">
+                        <span class="master-status">{{ master.status }}</span>
+                    </div>
+                    <div class="master-card-v2__body">
+                        <div class="master-card-v2__head">
+                            <h3>{{ master.name }}</h3>
+                            <span class="master-rating">★ {{ master.rating }}</span>
+                        </div>
+                        <p>{{ master.specialization }}</p>
+                        <div class="master-meta-grid">
+                            <span>{{ master.experience }}</span>
+                            <span>{{ master.city }}</span>
+                        </div>
+                        <a class="mini-whatsapp" href="https://wa.me/?text={{ calculator.title|urlencode }}%20-%20нужна%20смета%20от%20{{ master.name|urlencode }}">WhatsApp</a>
+                    </div>
+                </article>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="recommendation-panel">
+        <div class="section-heading">
+            <p class="section-heading__eyebrow">Шаг 5</p>
+            <h2>Продавцы материалов</h2>
+        </div>
+        <div class="recommendation-list">
+            {% for seller in material_sellers %}
+                <article class="seller-card">
+                    <div>
+                        <span>{{ seller.badge }}</span>
+                        <h3>{{ seller.name }}</h3>
+                        <p>{{ seller.meta }}</p>
+                    </div>
+                    <button class="card-button" type="button" data-save-estimate data-estimate-text="{{ result.saved_list|default:'Список материалов ESEPTEP'|escape }}">Запросить счёт</button>
+                </article>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
 
 <section class="master-template" aria-labelledby="master-template-title">
     <div class="section-heading">

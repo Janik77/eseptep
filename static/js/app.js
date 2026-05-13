@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initSlider();
     initParallax(prefersReducedMotion);
     initCalculatorForm();
+    initResultFlow();
     initCountUp(prefersReducedMotion);
     initMasterTemplate();
 });
@@ -19,7 +20,12 @@ function initReveal(prefersReducedMotion) {
         '.calculator-card',
         '.service-card',
         '.project-upload-card',
+        '.flow-panel',
+        '.success-state',
         '.calculator-workspace',
+        '.post-flow-grid',
+        '.recommendation-card',
+        '.seller-card',
         '.master-template',
         '.skeleton-section',
     ].join(','));
@@ -117,6 +123,53 @@ function initCalculatorForm() {
             button.dataset.originalText = button.textContent;
             button.textContent = 'Считаем';
         }
+    });
+}
+
+
+function initResultFlow() {
+    const readyState = document.querySelector('[data-result-ready]');
+    const resultCard = document.querySelector('#estimate-result');
+    const saveButtons = [...document.querySelectorAll('[data-save-estimate]')];
+    const feedback = document.querySelector('[data-save-feedback]');
+
+    if (readyState && resultCard) {
+        window.setTimeout(() => {
+            resultCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 260);
+    }
+
+    saveButtons.forEach((button) => {
+        button.addEventListener('click', async () => {
+            const estimateText = button.dataset.estimateText || 'Список материалов ESEPTEP';
+            const storagePayload = {
+                text: estimateText,
+                savedAt: new Date().toISOString(),
+            };
+
+            try {
+                window.localStorage.setItem('eseptep:last-estimate', JSON.stringify(storagePayload));
+            } catch (error) {
+                // Local storage may be unavailable in private mode; copying still works.
+            }
+
+            try {
+                await navigator.clipboard.writeText(estimateText);
+                button.textContent = button.dataset.savedText || 'Список сохранён';
+            } catch (error) {
+                button.textContent = 'Список сохранён';
+            }
+
+            if (feedback) {
+                feedback.textContent = 'Список сохранён в браузере и скопирован. Можно отправить мастеру или продавцу.';
+            }
+
+            window.setTimeout(() => {
+                button.textContent = button.dataset.originalText || 'Сохранить список';
+            }, 1800);
+        });
+
+        button.dataset.originalText = button.textContent;
     });
 }
 
