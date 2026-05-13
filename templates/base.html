@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <meta name="theme-color" content="#0c111d">
+    <meta name="theme-color" content="#FAF7F2">
     <title>{% block title %}ESEPTEP — расчёт ремонта и материалов{% endblock %}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -18,7 +18,12 @@
                 <span class="brand__mark">E</span>
                 <span class="brand__text">ESEPTEP</span>
             </a>
-            <a class="header-action" href="{% url 'projects:home' %}">Начать</a>
+            <nav class="site-nav" aria-label="Разделы">
+                <a href="{% url 'calculators:home' %}">Калькуляторы</a>
+                <a href="{% url 'marketplace:home' %}">Мастера</a>
+                <a href="{% url 'projects:home' %}">Проекты</a>
+            </nav>
+            <a class="header-action" href="{% url 'calculators:home' %}">Начать</a>
         </header>
 
         <main>

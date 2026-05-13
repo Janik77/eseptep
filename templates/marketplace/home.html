@@ -3,9 +3,30 @@
 {% block title %}Ремонт под ключ — ESEPTEP{% endblock %}
 
 {% block content %}
-<section class="placeholder-page">
-    <p class="section-heading__eyebrow">Маркетплейс</p>
-    <h1>Раздел ремонта под ключ подготовлен</h1>
-    <p>Архитектура готова для пакетов услуг, подрядчиков и премиальных предложений.</p>
+<section class="page-hero page-hero--compact">
+    <span class="hero__badge">Мастера и услуги</span>
+    <h1>Ремонт под ключ без лишних звонков</h1>
+    <p>Подберите пакет работ, отправьте смету мастеру и получите понятную заявку в WhatsApp.</p>
+</section>
+
+<section class="service-grid">
+    <article class="service-card">
+        <span class="service-card__icon">🏠</span>
+        <h2>Косметический ремонт</h2>
+        <p>Покраска, обои, полы и аккуратное обновление квартиры.</p>
+        <a class="card-button" href="{% url 'calculators:home' %}">Посчитать материалы</a>
+    </article>
+    <article class="service-card">
+        <span class="service-card__icon">🧱</span>
+        <h2>Черновые работы</h2>
+        <p>Штукатурка, стяжка, гипсокартон, демонтаж и подготовка.</p>
+        <a class="card-button" href="{% url 'calculators:detail' 'shtukaturka' %}">Открыть расчёт</a>
+    </article>
+    <article class="service-card">
+        <span class="service-card__icon">🔧</span>
+        <h2>Инженерия</h2>
+        <p>Электрика, сантехника, тёплый пол и монтажные работы.</p>
+        <a class="card-button" href="{% url 'calculators:detail' 'elektrika' %}">Открыть расчёт</a>
+    </article>
 </section>
 {% endblock %}

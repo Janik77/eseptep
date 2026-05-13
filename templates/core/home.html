@@ -1,113 +1,55 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<section class="hero hero--product" aria-labelledby="hero-title">
-    <div class="hero__background-grid" aria-hidden="true"></div>
-
+<section class="hero hero--renovation" aria-labelledby="hero-title">
+    <div class="hero__photo" aria-hidden="true"></div>
+    <div class="hero__overlay" aria-hidden="true"></div>
     <div class="hero__content">
-        <a class="hero-logo" href="{% url 'core:home' %}" aria-label="ESEPTEP на главную">
-            <span class="hero-logo__mark">E</span>
-            <span class="hero-logo__text">ESEPTEP</span>
-        </a>
         <span class="hero__badge">MVP для ремонта</span>
         <h1 id="hero-title">Рассчитайте ремонт квартиры за 1 минуту</h1>
         <p class="hero__lead">Материалы, мастера и ремонт под ключ в одном сервисе</p>
         <div class="hero__actions" aria-label="Основные действия">
             <a class="btn btn--primary" href="{% url 'calculators:home' %}">Начать расчёт</a>
-            <a class="btn btn--secondary" href="#product-demo">Смотреть demo</a>
-        </div>
-        <div class="hero__trust" aria-label="Преимущества сервиса">
-            <span>Смета по комнатам</span>
-            <span>Материалы + работы</span>
-            <span>WhatsApp заявка</span>
+            <a class="btn btn--secondary" href="{% url 'projects:home' %}">Загрузить проект</a>
         </div>
     </div>
 
-    <div id="product-demo" class="product-mockup" aria-label="Пример интерфейса расчёта ремонта">
-        <div class="mockup-window">
-            <div class="mockup-toolbar">
-                <div>
-                    <span class="mockup-label">Проект</span>
-                    <strong>2-комн. квартира</strong>
-                </div>
-                <span class="status-pill">Расчёт 72%</span>
-            </div>
-
-            <div class="mockup-progress" aria-hidden="true">
-                <span style="width: 72%"></span>
-            </div>
-
-            <div class="mockup-grid">
-                <section class="estimate-card">
-                    <div class="card-heading">
-                        <span>Материалы</span>
-                        <strong>₸ 1 284 000</strong>
-                    </div>
-                    <ul class="material-list">
-                        <li>
-                            <span class="material-dot material-dot--mint"></span>
-                            <div>
-                                <strong>Краска и грунт</strong>
-                                <small>48 м² · запас 8%</small>
-                            </div>
-                            <b>₸ 186k</b>
-                        </li>
-                        <li>
-                            <span class="material-dot material-dot--amber"></span>
-                            <div>
-                                <strong>Плитка санузел</strong>
-                                <small>21 м² · 4 коробки</small>
-                            </div>
-                            <b>₸ 312k</b>
-                        </li>
-                        <li>
-                            <span class="material-dot material-dot--blue"></span>
-                            <div>
-                                <strong>Ламинат AC5</strong>
-                                <small>36 м² · подложка</small>
-                            </div>
-                            <b>₸ 248k</b>
-                        </li>
-                    </ul>
-                </section>
-
-                <aside class="floor-card">
-                    <div class="floor-card__title">
-                        <span>План</span>
-                        <small>58 м²</small>
-                    </div>
-                    <div class="floor-plan" aria-hidden="true">
-                        <span class="room room--living">Гостиная</span>
-                        <span class="room room--kitchen">Кухня</span>
-                        <span class="room room--bath">С/у</span>
-                        <span class="room room--hall">Холл</span>
-                    </div>
-                </aside>
-            </div>
-
-            <div class="master-card">
-                <div class="master-card__avatar" aria-hidden="true">АР</div>
-                <div>
-                    <span class="mockup-label">Мастер</span>
-                    <strong>Азамат Р.</strong>
-                    <small>Рейтинг 4.9 · свободен завтра</small>
-                </div>
-                <a class="whatsapp-button" href="https://wa.me/" aria-label="Написать мастеру в WhatsApp">WhatsApp</a>
-            </div>
+    <aside class="hero-estimate" aria-label="Пример сметы ремонта">
+        <div class="hero-estimate__top">
+            <span>Смета</span>
+            <strong>₸ 1 284 000</strong>
         </div>
-    </div>
+        <div class="estimate-row">
+            <span class="estimate-icon">▦</span>
+            <div><b>Плитка и клей</b><small>Санузел · 21 м²</small></div>
+            <strong>₸ 312k</strong>
+        </div>
+        <div class="estimate-row">
+            <span class="estimate-icon">⌂</span>
+            <div><b>Наливной пол</b><small>Кухня + коридор</small></div>
+            <strong>₸ 248k</strong>
+        </div>
+        <div class="estimate-progress"><span style="width: 72%"></span></div>
+        <a class="mini-whatsapp" href="https://wa.me/">Отправить мастеру</a>
+    </aside>
+</section>
+
+<section class="repair-visuals" aria-label="Визуальные элементы ремонта">
+    <div class="repair-chip"><span>58 м²</span><b>Квартира</b></div>
+    <div class="repair-chip"><span>10</span><b>Калькуляторов</b></div>
+    <div class="repair-chip"><span>24 ч</span><b>Смета и заявка</b></div>
 </section>
 
 <section id="mvp-cards" class="feature-section" aria-labelledby="feature-title">
     <div class="section-heading">
-        <p class="section-heading__eyebrow">Что уже заложено в MVP</p>
-        <h2 id="feature-title">Практичные сценарии для ремонта</h2>
+        <p class="section-heading__eyebrow">Главные возможности</p>
+        <h2 id="feature-title">Всё для старта ремонта</h2>
     </div>
 
     <div class="cards-slider" data-slider>
         <div class="cards-track" data-slider-track tabindex="0" aria-label="Сценарии ESEPTEP">
             {% for card in feature_cards %}
-                <article class="feature-card feature-card--{{ card.accent }}">
+                <article class="feature-card">
                     <div class="feature-card__icon feature-card__icon--{{ card.icon }}" aria-hidden="true"></div>
                     <div class="feature-card__topline">
                         <span>{{ forloop.counter|stringformat:'02d' }}</span>
