@@ -1858,3 +1858,15 @@ button, input, select, textarea { font: inherit; }
 .auth-form .btn { margin-top: 6px; }
 .auth-alt { margin-top: 12px; font-size: .92rem; }
 .auth-alt a { color: var(--orange-dark); font-weight: 700; }
+
+.dashboard { display: grid; gap: 14px; margin-top: 20px; padding-bottom: 110px; }
+.dashboard-card { border: 1px solid var(--line); border-radius: 20px; background: #fff; padding: 16px; box-shadow: var(--shadow-soft); }
+.dashboard-card h1 { margin: 0 0 8px; font-size: clamp(1.4rem, 5vw, 1.9rem); }
+.dashboard-card h2 { margin: 0 0 12px; font-size: 1.1rem; }
+.dashboard-card p { margin: 0; color: var(--muted); }
+.dashboard-actions { display: grid; grid-template-columns: 1fr; gap: 10px; }
+.dashboard-list { display: grid; gap: 10px; }
+.dashboard-item { border: 1px solid var(--line); border-radius: 14px; padding: 12px; background: var(--bg); }
+.dashboard-item b { display: block; margin-bottom: 4px; }
+.dashboard-item strong { color: var(--orange-dark); }
+@media (min-width: 760px) { .dashboard-actions { grid-template-columns: repeat(2, 1fr); } }

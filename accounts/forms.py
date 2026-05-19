@@ -2,7 +2,7 @@ from django import forms
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.contrib.auth.models import User
 
-from .models import UserProfile
+from .models import ClientProject, UserProfile
 
 
 class RegisterForm(UserCreationForm):
@@ -45,3 +45,16 @@ class RegisterForm(UserCreationForm):
 
 class EseptepAuthenticationForm(AuthenticationForm):
     username = forms.EmailField(label='Email')
+
+
+class ClientProjectCreateForm(forms.ModelForm):
+    class Meta:
+        model = ClientProject
+        fields = ('title', 'city', 'area_m2', 'rooms', 'repair_segment')
+        labels = {
+            'title': 'Название проекта',
+            'city': 'Город',
+            'area_m2': 'Площадь, м²',
+            'rooms': 'Комнаты',
+            'repair_segment': 'Сегмент ремонта',
+        }
