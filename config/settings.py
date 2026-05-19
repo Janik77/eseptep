@@ -24,6 +24,7 @@ INSTALLED_APPS = [
     'calculators.apps.CalculatorsConfig',
     'marketplace.apps.MarketplaceConfig',
     'projects.apps.ProjectsConfig',
+    'accounts.apps.AccountsConfig',
 ]
 
 MIDDLEWARE = [
