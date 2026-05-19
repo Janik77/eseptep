@@ -94,6 +94,44 @@
                 <button class="btn btn--secondary" type="button" data-save-estimate data-estimate-text="{{ result.saved_list|escape }}">Сохранить список</button>
                 <a class="btn btn--whatsapp" href="https://wa.me/?text={{ result.whatsapp_text|urlencode }}">Отправить мастеру</a>
             </div>
+
+            {% if request.user.is_authenticated %}
+            <div class="result-actions result-actions--backend">
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="area" value="{{ form_data.area }}">
+                    <input type="hidden" name="thickness" value="{{ form_data.thickness }}">
+                    <input type="hidden" name="rooms" value="{{ form_data.rooms }}">
+                    <input type="hidden" name="segment" value="{{ form_data.segment }}">
+                    <button class="btn btn--secondary" type="submit" name="action" value="save_estimate">Сохранить смету в мой кабинет</button>
+                </form>
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="area" value="{{ form_data.area }}">
+                    <input type="hidden" name="thickness" value="{{ form_data.thickness }}">
+                    <input type="hidden" name="rooms" value="{{ form_data.rooms }}">
+                    <input type="hidden" name="segment" value="{{ form_data.segment }}">
+                    <button class="btn btn--primary" type="submit" name="action" value="request_master">Отправить заявку мастерам</button>
+                </form>
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="area" value="{{ form_data.area }}">
+                    <input type="hidden" name="thickness" value="{{ form_data.thickness }}">
+                    <input type="hidden" name="rooms" value="{{ form_data.rooms }}">
+                    <input type="hidden" name="segment" value="{{ form_data.segment }}">
+                    <button class="btn btn--secondary" type="submit" name="action" value="request_supplier">Отправить запрос поставщикам</button>
+                </form>
+            </div>
+            {% else %}
+            <div class="auth-soft-cta">
+                <p>Войдите, чтобы сохранить смету и получить ответы мастеров.</p>
+                <div class="result-actions">
+                    <a class="btn btn--primary" href="{% url 'accounts:login' %}?next={{ request.path|urlencode }}">Войти</a>
+                    <a class="btn btn--secondary" href="{% url 'accounts:register' %}">Регистрация</a>
+                </div>
+            </div>
+            {% endif %}
+
             <p class="save-feedback" data-save-feedback aria-live="polite"></p>
         {% else %}
             <div class="empty-result">
