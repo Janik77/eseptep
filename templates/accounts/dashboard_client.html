@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% block title %}Кабинет клиента — ESEPTEP{% endblock %}
+{% block content %}
+<section class="dashboard">
+  <div class="dashboard-card">
+    <h1>Здравствуйте, {{ request.user.first_name|default:request.user.username }}!</h1>
+    <p>Город: <b>{{ profile.city|default:'—' }}</b> · Роль: <b>{{ profile.get_role_display }}</b></p>
+  </div>
+
+  <div class="dashboard-actions dashboard-card">
+    <a class="btn btn--primary" href="{% url 'calculators:home' %}">Новый расчёт</a>
+    <a class="btn btn--secondary" href="{% url 'projects:home' %}">Загрузить проект</a>
+    <a class="btn btn--secondary" href="{% url 'marketplace:home' %}">Найти мастера</a>
+    <a class="btn btn--secondary" href="{% url 'accounts:client_project_create' %}">Создать проект</a>
+  </div>
+
+  <div class="dashboard-card">
+    <h2>Мои проекты</h2>
+    <div class="dashboard-list">
+      {% for project in projects %}
+      <article class="dashboard-item">
+        <b>{{ project.title }}</b>
+        <p>{{ project.area_m2 }} м² · {{ project.rooms }} комн. · {{ project.get_status_display }}</p>
+        <small>{{ project.created_at|date:'d.m.Y' }}</small>
+      </article>
+      {% empty %}<p>Проектов пока нет.</p>{% endfor %}
+    </div>
+  </div>
+
+  <div class="dashboard-card">
+    <h2>Мои сметы</h2>
+    <div class="dashboard-list">
+      {% for calc in calculations %}
+      <article class="dashboard-item">
+        <b>{{ calc.calculator_slug }}</b>
+        <p>Материалы: {{ calc.materials_total }} ₸ · Работы: {{ calc.works_total }} ₸</p>
+        <strong>Итог: {{ calc.grand_total }} ₸</strong>
+      </article>
+      {% empty %}<p>Смет пока нет.</p>{% endfor %}
+    </div>
+  </div>
+
+  <div class="dashboard-card">
+    <h2>Мои заявки</h2>
+    <div class="dashboard-list">
+      {% for req in service_requests %}
+      <article class="dashboard-item">
+        <b>{{ req.get_request_type_display }}</b>
+        <p>Статус: {{ req.get_status_display }} · {{ req.created_at|date:'d.m.Y' }}</p>
+        <small>Ответов мастеров: {{ req.master_responses_count }} · поставщиков: {{ req.supplier_responses_count }}</small>
+      </article>
+      {% empty %}<p>Заявок пока нет.</p>{% endfor %}
+    </div>
+  </div>
+</section>
+{% endblock %}
