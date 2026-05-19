@@ -44,6 +44,7 @@ class AccountLoginView(LoginView):
 
 class AccountLogoutView(LogoutView):
     next_page = reverse_lazy('core:home')
+    http_method_names = ['get', 'post', 'options']
 
 
 def register_view(request):

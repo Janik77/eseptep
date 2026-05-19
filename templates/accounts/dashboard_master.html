@@ -1,5 +1,7 @@
 {% extends 'base.html' %}
 {% block title %}Кабинет мастера — ESEPTEP{% endblock %}
+{% block breadcrumbs %}<nav class="breadcrumbs"><a href="{% url 'core:home' %}">Главная</a><span>›</span><b>Кабинет мастера</b></nav>{% endblock %}
+
 {% block content %}
 <section class="dashboard">
   <div class="dashboard-card master-profile-card">
@@ -42,7 +44,7 @@
           <button type="submit" class="btn btn--primary">Отправить отклик</button>
         </form>
       </article>
-      {% empty %}<p>Пока нет новых заявок.</p>{% endfor %}
+      {% empty %}<div class="empty-state">Пока нет новых заявок.</div>{% endfor %}
     </div>
   </div>
 
@@ -55,7 +57,7 @@
         <p>Цена: ₸ {{ response.price_from }} · Статус: {{ response.get_status_display }}</p>
         <small>{{ response.created_at|date:'d.m.Y' }}</small>
       </article>
-      {% empty %}<p>Вы еще не отправляли отклики.</p>{% endfor %}
+      {% empty %}<div class="empty-state">Вы еще не отправляли отклики.</div>{% endfor %}
     </div>
   </div>
 </section>

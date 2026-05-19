@@ -1,5 +1,7 @@
 {% extends 'base.html' %}
 {% block title %}Кабинет клиента — ESEPTEP{% endblock %}
+{% block breadcrumbs %}<nav class="breadcrumbs"><a href="{% url 'core:home' %}">Главная</a><span>›</span><b>Кабинет клиента</b></nav>{% endblock %}
+
 {% block content %}
 <section class="dashboard">
   <div class="dashboard-card">
@@ -23,7 +25,7 @@
         <p>{{ project.area_m2 }} м² · {{ project.rooms }} комн. · {{ project.get_status_display }}</p>
         <small>{{ project.created_at|date:'d.m.Y' }}</small>
       </article>
-      {% empty %}<p>Проектов пока нет.</p>{% endfor %}
+      {% empty %}<div class="empty-state">Проектов пока нет.</div>{% endfor %}
     </div>
   </div>
 
@@ -36,7 +38,7 @@
         <p>Материалы: {{ calc.materials_total }} ₸ · Работы: {{ calc.works_total }} ₸</p>
         <strong>Итог: {{ calc.grand_total }} ₸</strong>
       </article>
-      {% empty %}<p>Смет пока нет.</p>{% endfor %}
+      {% empty %}<div class="empty-state">Смет пока нет.</div>{% endfor %}
     </div>
   </div>
 
@@ -52,7 +54,7 @@
         </p>
         <small>Ответов мастеров: {{ req.master_responses_count }} · поставщиков: {{ req.supplier_responses_count }}</small>
       </article>
-      {% empty %}<p>Заявок пока нет.</p>{% endfor %}
+      {% empty %}<div class="empty-state">Заявок пока нет.</div>{% endfor %}
     </div>
   </div>
 
@@ -73,7 +75,7 @@
           <form method="post">{% csrf_token %}<input type="hidden" name="response_type" value="master"><input type="hidden" name="response_id" value="{{ response.id }}"><button class="btn btn--secondary" name="response_action" value="reject" type="submit">Отклонить</button></form>
         </div>
       </article>
-      {% empty %}<p>Ответов мастеров пока нет.</p>{% endfor %}
+      {% empty %}<div class="empty-state">Ответов мастеров пока нет.</div>{% endfor %}
     </div>
 
     <h3>Ответы поставщиков</h3>
@@ -90,7 +92,7 @@
           <form method="post">{% csrf_token %}<input type="hidden" name="response_type" value="supplier"><input type="hidden" name="response_id" value="{{ response.id }}"><button class="btn btn--secondary" name="response_action" value="reject" type="submit">Отклонить</button></form>
         </div>
       </article>
-      {% empty %}<p>Ответов поставщиков пока нет.</p>{% endfor %}
+      {% empty %}<div class="empty-state">Ответов поставщиков пока нет.</div>{% endfor %}
     </div>
   </div>
 </section>
