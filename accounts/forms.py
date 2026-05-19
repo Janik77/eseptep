@@ -2,7 +2,15 @@ from django import forms
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.contrib.auth.models import User
 
-from .models import ClientProject, MasterProfile, MasterResponse, UserProfile
+from .models import (
+    ClientProject,
+    MasterProfile,
+    MasterResponse,
+    SupplierMaterial,
+    SupplierProfile,
+    SupplierResponse,
+    UserProfile,
+)
 
 
 class RegisterForm(UserCreationForm):
@@ -64,17 +72,6 @@ class MasterProfileForm(forms.ModelForm):
     class Meta:
         model = MasterProfile
         fields = ('full_name', 'photo', 'city', 'specialization', 'experience_years', 'rating', 'is_available', 'whatsapp', 'description')
-        labels = {
-            'full_name': 'Имя',
-            'photo': 'Фото',
-            'city': 'Город',
-            'specialization': 'Специализация',
-            'experience_years': 'Опыт, лет',
-            'rating': 'Рейтинг',
-            'is_available': 'Свободен',
-            'whatsapp': 'WhatsApp',
-            'description': 'Описание',
-        }
 
 
 class MasterResponseForm(forms.ModelForm):
@@ -82,3 +79,33 @@ class MasterResponseForm(forms.ModelForm):
         model = MasterResponse
         fields = ('price_from', 'message')
         labels = {'price_from': 'Цена от', 'message': 'Сообщение клиенту'}
+
+
+class SupplierProfileForm(forms.ModelForm):
+    class Meta:
+        model = SupplierProfile
+        fields = ('company_name', 'city', 'address', 'delivery_info', 'whatsapp', 'description', 'is_active')
+        labels = {
+            'company_name': 'Название компании',
+            'city': 'Город',
+            'address': 'Адрес',
+            'delivery_info': 'Доставка',
+            'whatsapp': 'WhatsApp',
+            'description': 'Описание',
+            'is_active': 'Активный профиль',
+        }
+
+
+class SupplierMaterialForm(forms.ModelForm):
+    class Meta:
+        model = SupplierMaterial
+        fields = ('name', 'category', 'unit', 'price', 'stock_status', 'delivery_time')
+
+
+class SupplierResponseForm(forms.ModelForm):
+    delivery_time = forms.CharField(label='Срок поставки', required=False)
+
+    class Meta:
+        model = SupplierResponse
+        fields = ('total_price', 'message')
+        labels = {'total_price': 'Итоговая цена', 'message': 'Сообщение'}

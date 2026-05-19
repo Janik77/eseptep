@@ -9,6 +9,8 @@ from .views import (
     master_profile_edit,
     register_view,
     supplier_dashboard,
+    supplier_material_create,
+    supplier_profile_edit,
 )
 
 app_name = 'accounts'
@@ -22,4 +24,6 @@ urlpatterns = [
     path('dashboard/master/', master_dashboard, name='dashboard_master'),
     path('dashboard/master/profile/', master_profile_edit, name='master_profile_edit'),
     path('dashboard/supplier/', supplier_dashboard, name='dashboard_supplier'),
+    path('dashboard/supplier/profile/', supplier_profile_edit, name='supplier_profile_edit'),
+    path('dashboard/supplier/materials/create/', supplier_material_create, name='supplier_material_create'),
 ]

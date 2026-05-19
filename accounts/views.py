@@ -15,8 +15,20 @@ from .forms import (
     MasterProfileForm,
     MasterResponseForm,
     RegisterForm,
+    SupplierMaterialForm,
+    SupplierProfileForm,
+    SupplierResponseForm,
 )
-from .models import Calculation, MasterProfile, MasterResponse, ServiceRequest, UserProfile
+from .models import (
+    Calculation,
+    MasterProfile,
+    MasterResponse,
+    ServiceRequest,
+    SupplierMaterial,
+    SupplierProfile,
+    SupplierResponse,
+    UserProfile,
+)
 
 
 class AccountLoginView(LoginView):
@@ -172,9 +184,90 @@ def master_profile_edit(request):
     return render(request, 'accounts/master_profile_edit.html', {'form': form})
 
 
-@login_required
+
+
+@role_required(UserProfile.Role.SUPPLIER)
 def supplier_dashboard(request):
-    return render(request, 'accounts/dashboard_supplier.html')
+    supplier_profile, _ = SupplierProfile.objects.get_or_create(
+        user=request.user,
+        defaults={
+            'company_name': request.user.first_name or request.user.username,
+            'city': request.user.profile.city or 'Не указан',
+            'address': 'Не указан',
+            'delivery_info': 'По согласованию',
+        },
+    )
+
+    if request.method == 'POST':
+        form = SupplierResponseForm(request.POST)
+        request_id = request.POST.get('request_id')
+        service_request = get_object_or_404(ServiceRequest.objects.select_related('project', 'calculation'), id=request_id)
+        if form.is_valid():
+            response = form.save(commit=False)
+            response.supplier = supplier_profile
+            response.request = service_request
+            delivery_time = form.cleaned_data.get('delivery_time')
+            msg = response.message or ''
+            if delivery_time:
+                msg = f"{msg}\nСрок поставки: {delivery_time}".strip()
+            response.message = msg
+            response.save()
+            messages.success(request, 'Ответ поставщика отправлен.')
+            return redirect('accounts:dashboard_supplier')
+    else:
+        form = SupplierResponseForm()
+
+    materials = SupplierMaterial.objects.filter(supplier=supplier_profile).order_by('-id')
+    requests = ServiceRequest.objects.filter(
+        Q(request_type=ServiceRequest.RequestType.SUPPLIER) | Q(request_type=ServiceRequest.RequestType.FULL_REPAIR)
+    ).select_related('project', 'calculation')[:12]
+    my_responses = SupplierResponse.objects.filter(supplier=supplier_profile).select_related('request', 'request__project').order_by('-created_at')[:12]
+
+    return render(request, 'accounts/dashboard_supplier.html', {
+        'supplier_profile': supplier_profile,
+        'materials': materials,
+        'supplier_requests': requests,
+        'response_form': form,
+        'my_responses': my_responses,
+    })
+
+
+@role_required(UserProfile.Role.SUPPLIER)
+def supplier_material_create(request):
+    supplier_profile = get_object_or_404(SupplierProfile, user=request.user)
+    if request.method == 'POST':
+        form = SupplierMaterialForm(request.POST)
+        if form.is_valid():
+            material = form.save(commit=False)
+            material.supplier = supplier_profile
+            material.save()
+            return redirect('accounts:dashboard_supplier')
+    else:
+        form = SupplierMaterialForm()
+    return render(request, 'accounts/supplier_material_create.html', {'form': form})
+
+
+@role_required(UserProfile.Role.SUPPLIER)
+def supplier_profile_edit(request):
+    supplier_profile, _ = SupplierProfile.objects.get_or_create(
+        user=request.user,
+        defaults={
+            'company_name': request.user.first_name or request.user.username,
+            'city': request.user.profile.city or 'Не указан',
+            'address': 'Не указан',
+            'delivery_info': 'По согласованию',
+        },
+    )
+
+    if request.method == 'POST':
+        form = SupplierProfileForm(request.POST, instance=supplier_profile)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Профиль поставщика обновлен.')
+            return redirect('accounts:dashboard_supplier')
+    else:
+        form = SupplierProfileForm(instance=supplier_profile)
+    return render(request, 'accounts/supplier_profile_edit.html', {'form': form})
 
 
 def _dashboard_url_by_role(role):
