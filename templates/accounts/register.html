@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block title %}Регистрация — ESEPTEP{% endblock %}
+{% block content %}
+<section class="auth-wrap">
+  <div class="auth-card">
+    <p class="section-heading__eyebrow">ESEPTEP аккаунт</p>
+    <h1>Регистрация</h1>
+    <p>Создайте аккаунт и начните расчёт ремонта.</p>
+    <form method="post" class="auth-form">
+      {% csrf_token %}
+      {% for field in form %}
+      <label class="auth-field">
+        <span>{{ field.label }}</span>
+        {{ field }}
+        {% if field.errors %}<small>{{ field.errors|striptags }}</small>{% endif %}
+      </label>
+      {% endfor %}
+      <button type="submit" class="btn btn--primary">Создать аккаунт</button>
+    </form>
+    <p class="auth-alt">Уже есть аккаунт? <a href="{% url 'accounts:login' %}">Войти</a></p>
+  </div>
+</section>
+{% endblock %}
