@@ -1,5 +1,7 @@
 {% extends 'base.html' %}
 {% block title %}Кабинет поставщика — ESEPTEP{% endblock %}
+{% block breadcrumbs %}<nav class="breadcrumbs"><a href="{% url 'core:home' %}">Главная</a><span>›</span><b>Кабинет поставщика</b></nav>{% endblock %}
+
 {% block content %}
 <section class="dashboard">
   <div class="dashboard-card">
@@ -21,7 +23,7 @@
         <p>{{ material.category }} · {{ material.unit }} · ₸ {{ material.price }}</p>
         <small>Наличие: {{ material.stock_status }} · Срок доставки: {{ material.delivery_time|default:'—' }}</small>
       </article>
-      {% empty %}<p>Материалов пока нет.</p>{% endfor %}
+      {% empty %}<div class="empty-state">Материалов пока нет.</div>{% endfor %}
     </div>
   </div>
 
@@ -44,7 +46,7 @@
           <button class="btn btn--primary" type="submit">Отправить ответ</button>
         </form>
       </article>
-      {% empty %}<p>Новых запросов пока нет.</p>{% endfor %}
+      {% empty %}<div class="empty-state">Новых запросов пока нет.</div>{% endfor %}
     </div>
   </div>
 
@@ -57,7 +59,7 @@
         <p>Цена: ₸ {{ response.total_price }} · Статус: {{ response.get_status_display }}</p>
         <small>{{ response.created_at|date:'d.m.Y' }}</small>
       </article>
-      {% empty %}<p>Ответов пока нет.</p>{% endfor %}
+      {% empty %}<div class="empty-state">Ответов пока нет.</div>{% endfor %}
     </div>
   </div>
 </section>

@@ -30,6 +30,17 @@
             {% endif %}
         </header>
 
+
+        {% if messages %}
+        <div class="toast-stack" aria-live="polite">
+            {% for message in messages %}
+            <div class="toast toast--{{ message.tags|default:'info' }}">{{ message }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% block breadcrumbs %}{% endblock %}
+
         <main>
             {% block content %}{% endblock %}
         </main>

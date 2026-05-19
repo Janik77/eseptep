@@ -2,6 +2,8 @@
 
 {% block title %}{{ calculator.title }} — калькулятор ESEPTEP{% endblock %}
 
+{% block breadcrumbs %}<nav class="breadcrumbs"><a href="{% url 'core:home' %}">Главная</a><span>›</span><a href="{% url 'calculators:home' %}">Калькуляторы</a><span>›</span><b>{{ calculator.title }}</b></nav>{% endblock %}
+
 {% block content %}
 <section class="page-hero page-hero--compact">
     <a class="back-link" href="{% url 'calculators:home' %}">← Все калькуляторы</a>
