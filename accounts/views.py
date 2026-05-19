@@ -81,6 +81,31 @@ def role_required(role):
 
 @role_required(UserProfile.Role.CLIENT)
 def client_dashboard(request):
+    if request.method == 'POST':
+        action = request.POST.get('response_action')
+        response_type = request.POST.get('response_type')
+        response_id = request.POST.get('response_id')
+
+        if response_type == 'master':
+            response = get_object_or_404(MasterResponse.objects.select_related('request'), id=response_id, request__client=request.user)
+            if action == 'accept':
+                response.status = MasterResponse.Status.ACCEPTED
+                response.request.status = ServiceRequest.Status.ACCEPTED
+                response.request.save(update_fields=['status'])
+            elif action == 'reject':
+                response.status = MasterResponse.Status.REJECTED
+            response.save(update_fields=['status'])
+        elif response_type == 'supplier':
+            response = get_object_or_404(SupplierResponse.objects.select_related('request'), id=response_id, request__client=request.user)
+            if action == 'accept':
+                response.status = SupplierResponse.Status.ACCEPTED
+                response.request.status = ServiceRequest.Status.ACCEPTED
+                response.request.save(update_fields=['status'])
+            elif action == 'reject':
+                response.status = SupplierResponse.Status.REJECTED
+            response.save(update_fields=['status'])
+        return redirect('accounts:dashboard_client')
+
     profile = request.user.profile
     projects = request.user.client_projects.all()[:10]
     calculations = Calculation.objects.filter(project__user=request.user).select_related('project')[:10]
@@ -89,11 +114,20 @@ def client_dashboard(request):
         .select_related('project')
         .annotate(master_responses_count=Count('master_responses', distinct=True), supplier_responses_count=Count('supplier_responses', distinct=True))[:10]
     )
+    master_responses = MasterResponse.objects.filter(request__client=request.user).select_related('master', 'request').order_by('-created_at')[:20]
+    supplier_responses = SupplierResponse.objects.filter(request__client=request.user).select_related('supplier', 'request').order_by('-created_at')[:20]
+    for supplier_response in supplier_responses:
+        msg = supplier_response.message or ''
+        supplier_response.delivery_time_label = '—'
+        if 'Срок поставки:' in msg:
+            supplier_response.delivery_time_label = msg.split('Срок поставки:', 1)[1].strip() or '—'
     context = {
         'profile': profile,
         'projects': projects,
         'calculations': calculations,
         'service_requests': requests,
+        'master_responses': master_responses,
+        'supplier_responses': supplier_responses,
     }
     return render(request, 'accounts/dashboard_client.html', context)
 

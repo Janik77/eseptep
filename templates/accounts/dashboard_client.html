@@ -46,10 +46,51 @@
       {% for req in service_requests %}
       <article class="dashboard-item">
         <b>{{ req.get_request_type_display }}</b>
-        <p>Статус: {{ req.get_status_display }} · {{ req.created_at|date:'d.m.Y' }}</p>
+        <p>
+          <span class="status-badge status-badge--{{ req.status }}">{{ req.get_status_display }}</span>
+          · {{ req.created_at|date:'d.m.Y' }}
+        </p>
         <small>Ответов мастеров: {{ req.master_responses_count }} · поставщиков: {{ req.supplier_responses_count }}</small>
       </article>
       {% empty %}<p>Заявок пока нет.</p>{% endfor %}
+    </div>
+  </div>
+
+  <div class="dashboard-card">
+    <h2>Ответы по моим заявкам</h2>
+
+    <h3>Ответы мастеров</h3>
+    <div class="dashboard-list">
+      {% for response in master_responses %}
+      <article class="dashboard-item">
+        <b>{{ response.master.full_name }}</b>
+        <p>{{ response.master.specialization }} · ⭐ {{ response.master.rating }}</p>
+        <p>Цена от: ₸ {{ response.price_from }}</p>
+        <small>{{ response.message|default:'Без сообщения' }}</small>
+        <p><span class="status-badge status-badge--{{ response.request.status }}">{{ response.get_status_display }}</span></p>
+        <div class="response-actions">
+          <form method="post">{% csrf_token %}<input type="hidden" name="response_type" value="master"><input type="hidden" name="response_id" value="{{ response.id }}"><button class="btn btn--primary" name="response_action" value="accept" type="submit">Принять</button></form>
+          <form method="post">{% csrf_token %}<input type="hidden" name="response_type" value="master"><input type="hidden" name="response_id" value="{{ response.id }}"><button class="btn btn--secondary" name="response_action" value="reject" type="submit">Отклонить</button></form>
+        </div>
+      </article>
+      {% empty %}<p>Ответов мастеров пока нет.</p>{% endfor %}
+    </div>
+
+    <h3>Ответы поставщиков</h3>
+    <div class="dashboard-list">
+      {% for response in supplier_responses %}
+      <article class="dashboard-item">
+        <b>{{ response.supplier.company_name }}</b>
+        <p>Итоговая цена: ₸ {{ response.total_price }}</p>
+        <small>{{ response.message|default:'Без сообщения' }}</small>
+        <p>Срок доставки: {{ response.delivery_time_label }}</p>
+        <p><span class="status-badge status-badge--{{ response.request.status }}">{{ response.get_status_display }}</span></p>
+        <div class="response-actions">
+          <form method="post">{% csrf_token %}<input type="hidden" name="response_type" value="supplier"><input type="hidden" name="response_id" value="{{ response.id }}"><button class="btn btn--primary" name="response_action" value="accept" type="submit">Принять</button></form>
+          <form method="post">{% csrf_token %}<input type="hidden" name="response_type" value="supplier"><input type="hidden" name="response_id" value="{{ response.id }}"><button class="btn btn--secondary" name="response_action" value="reject" type="submit">Отклонить</button></form>
+        </div>
+      </article>
+      {% empty %}<p>Ответов поставщиков пока нет.</p>{% endfor %}
     </div>
   </div>
 </section>
