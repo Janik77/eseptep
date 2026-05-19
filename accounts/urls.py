@@ -6,6 +6,7 @@ from .views import (
     client_dashboard,
     client_project_create,
     master_dashboard,
+    master_profile_edit,
     register_view,
     supplier_dashboard,
 )
@@ -19,5 +20,6 @@ urlpatterns = [
     path('dashboard/client/', client_dashboard, name='dashboard_client'),
     path('dashboard/client/projects/create/', client_project_create, name='client_project_create'),
     path('dashboard/master/', master_dashboard, name='dashboard_master'),
+    path('dashboard/master/profile/', master_profile_edit, name='master_profile_edit'),
     path('dashboard/supplier/', supplier_dashboard, name='dashboard_supplier'),
 ]

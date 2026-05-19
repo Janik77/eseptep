@@ -3,7 +3,7 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
 
-from accounts.views import client_dashboard, client_project_create
+from accounts.views import client_dashboard, client_project_create, master_dashboard, master_profile_edit
 
 urlpatterns = [
     path('', include('core.urls')),
@@ -13,6 +13,8 @@ urlpatterns = [
     path('accounts/', include('accounts.urls')),
     path('dashboard/client/', client_dashboard, name='dashboard_client_root'),
     path('dashboard/client/projects/create/', client_project_create, name='dashboard_client_project_create_root'),
+    path('dashboard/master/', master_dashboard, name='dashboard_master_root'),
+    path('dashboard/master/profile/', master_profile_edit, name='dashboard_master_profile_root'),
     path('admin/', admin.site.urls),
 ]
 

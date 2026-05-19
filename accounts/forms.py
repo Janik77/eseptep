@@ -2,7 +2,7 @@ from django import forms
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.contrib.auth.models import User
 
-from .models import ClientProject, UserProfile
+from .models import ClientProject, MasterProfile, MasterResponse, UserProfile
 
 
 class RegisterForm(UserCreationForm):
@@ -58,3 +58,27 @@ class ClientProjectCreateForm(forms.ModelForm):
             'rooms': 'Комнаты',
             'repair_segment': 'Сегмент ремонта',
         }
+
+
+class MasterProfileForm(forms.ModelForm):
+    class Meta:
+        model = MasterProfile
+        fields = ('full_name', 'photo', 'city', 'specialization', 'experience_years', 'rating', 'is_available', 'whatsapp', 'description')
+        labels = {
+            'full_name': 'Имя',
+            'photo': 'Фото',
+            'city': 'Город',
+            'specialization': 'Специализация',
+            'experience_years': 'Опыт, лет',
+            'rating': 'Рейтинг',
+            'is_available': 'Свободен',
+            'whatsapp': 'WhatsApp',
+            'description': 'Описание',
+        }
+
+
+class MasterResponseForm(forms.ModelForm):
+    class Meta:
+        model = MasterResponse
+        fields = ('price_from', 'message')
+        labels = {'price_from': 'Цена от', 'message': 'Сообщение клиенту'}

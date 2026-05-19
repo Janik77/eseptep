@@ -1,15 +1,22 @@
 from functools import wraps
 
+from django.contrib import messages
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import LoginView, LogoutView
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.http import HttpResponseForbidden
-from django.shortcuts import redirect, render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
 
-from .forms import ClientProjectCreateForm, EseptepAuthenticationForm, RegisterForm
-from .models import Calculation, ClientProject, ServiceRequest, UserProfile
+from .forms import (
+    ClientProjectCreateForm,
+    EseptepAuthenticationForm,
+    MasterProfileForm,
+    MasterResponseForm,
+    RegisterForm,
+)
+from .models import Calculation, MasterProfile, MasterResponse, ServiceRequest, UserProfile
 
 
 class AccountLoginView(LoginView):
@@ -45,19 +52,22 @@ def register_view(request):
     return render(request, 'accounts/register.html', {'form': form})
 
 
-def client_role_required(view_func):
-    @login_required
-    @wraps(view_func)
-    def _wrapped(request, *args, **kwargs):
-        profile = getattr(request.user, 'profile', None)
-        if not profile or profile.role != UserProfile.Role.CLIENT:
-            return HttpResponseForbidden('Доступ только для клиентов.')
-        return view_func(request, *args, **kwargs)
+def role_required(role):
+    def decorator(view_func):
+        @login_required
+        @wraps(view_func)
+        def _wrapped(request, *args, **kwargs):
+            profile = getattr(request.user, 'profile', None)
+            if not profile or profile.role != role:
+                return HttpResponseForbidden('Недостаточно прав доступа.')
+            return view_func(request, *args, **kwargs)
 
-    return _wrapped
+        return _wrapped
+
+    return decorator
 
 
-@client_role_required
+@role_required(UserProfile.Role.CLIENT)
 def client_dashboard(request):
     profile = request.user.profile
     projects = request.user.client_projects.all()[:10]
@@ -76,7 +86,7 @@ def client_dashboard(request):
     return render(request, 'accounts/dashboard_client.html', context)
 
 
-@client_role_required
+@role_required(UserProfile.Role.CLIENT)
 def client_project_create(request):
     if request.method == 'POST':
         form = ClientProjectCreateForm(request.POST)
@@ -90,9 +100,76 @@ def client_project_create(request):
     return render(request, 'accounts/client_project_create.html', {'form': form})
 
 
-@login_required
+@role_required(UserProfile.Role.MASTER)
 def master_dashboard(request):
-    return render(request, 'accounts/dashboard_master.html')
+    master_profile, _ = MasterProfile.objects.get_or_create(
+        user=request.user,
+        defaults={
+            'full_name': request.user.first_name or request.user.username,
+            'city': request.user.profile.city or 'Не указан',
+            'specialization': 'Общестроительные работы',
+            'experience_years': 1,
+            'rating': 5,
+        },
+    )
+
+    if request.method == 'POST':
+        form = MasterResponseForm(request.POST)
+        request_id = request.POST.get('request_id')
+        service_request = get_object_or_404(
+            ServiceRequest.objects.select_related('project', 'calculation'),
+            id=request_id,
+        )
+        if form.is_valid():
+            response = form.save(commit=False)
+            response.request = service_request
+            response.master = master_profile
+            response.save()
+            messages.success(request, 'Отклик отправлен клиенту.')
+            return redirect('accounts:dashboard_master')
+    else:
+        form = MasterResponseForm()
+
+    new_requests = ServiceRequest.objects.filter(
+        Q(request_type=ServiceRequest.RequestType.MASTER) | Q(request_type=ServiceRequest.RequestType.FULL_REPAIR)
+    ).select_related('project', 'calculation')[:12]
+
+    my_responses = MasterResponse.objects.filter(master=master_profile).select_related('request', 'request__project').order_by('-created_at')[:12]
+
+    return render(
+        request,
+        'accounts/dashboard_master.html',
+        {
+            'master_profile': master_profile,
+            'new_requests': new_requests,
+            'response_form': form,
+            'my_responses': my_responses,
+        },
+    )
+
+
+@role_required(UserProfile.Role.MASTER)
+def master_profile_edit(request):
+    master_profile, _ = MasterProfile.objects.get_or_create(
+        user=request.user,
+        defaults={
+            'full_name': request.user.first_name or request.user.username,
+            'city': request.user.profile.city or 'Не указан',
+            'specialization': 'Общестроительные работы',
+            'experience_years': 1,
+            'rating': 5,
+        },
+    )
+
+    if request.method == 'POST':
+        form = MasterProfileForm(request.POST, request.FILES, instance=master_profile)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Профиль мастера обновлен.')
+            return redirect('accounts:dashboard_master')
+    else:
+        form = MasterProfileForm(instance=master_profile)
+    return render(request, 'accounts/master_profile_edit.html', {'form': form})
 
 
 @login_required
