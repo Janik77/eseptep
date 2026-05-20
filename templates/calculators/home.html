@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+
+{% block title %}Калькуляторы ремонта — ESEPTEP{% endblock %}
+
+{% block breadcrumbs %}<nav class="breadcrumbs"><a href="{% url 'core:home' %}">Главная</a><span>›</span><b>Калькуляторы</b></nav>{% endblock %}
+
+{% block content %}
+<section class="page-hero page-hero--compact">
+    <span class="hero__badge">Калькуляторы</span>
+    <h1>Выберите расчёт для вашего ремонта</h1>
+    <p>Материалы, количество, ориентировочная цена и шаблон списка для мастера.</p>
+</section>
+
+<section class="calculator-grid" aria-label="Список калькуляторов">
+    {% for item in calculators %}
+        <article class="calculator-card">
+            <div class="calculator-card__icon feature-card__icon--{{ item.icon }}" aria-hidden="true"></div>
+            <h2>{{ item.title }}</h2>
+            <p>{{ item.description }}</p>
+            <a class="card-button" href="{% url 'calculators:detail' item.slug %}">Открыть</a>
+        </article>
+    {% endfor %}
+</section>
+
+<section class="skeleton-section" aria-label="Будущие API-интеграции калькуляторов">
+    <div class="skeleton-section__head">
+        <span class="skeleton-title">Скоро: онлайн-цены магазинов</span>
+        <span class="skeleton-status">Загрузка API</span>
+    </div>
+    <div class="skeleton-grid">
+        <div>
+            <div class="skeleton-line"></div>
+            <div class="skeleton-line skeleton-line--short" style="margin-top: 10px"></div>
+        </div>
+        <div>
+            <div class="skeleton-line"></div>
+            <div class="skeleton-line skeleton-line--short" style="margin-top: 10px"></div>
+        </div>
+        <div>
+            <div class="skeleton-line"></div>
+            <div class="skeleton-line skeleton-line--short" style="margin-top: 10px"></div>
+        </div>
+    </div>
+</section>
+{% endblock %}
