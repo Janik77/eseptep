@@ -1,7 +1,7 @@
 from functools import wraps
 
 from django.contrib import messages
-from django.contrib.auth import login
+from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import LoginView, LogoutView
 from django.db.models import Count, Q
@@ -42,9 +42,11 @@ class AccountLoginView(LoginView):
         return _dashboard_url_by_role(profile.role)
 
 
-class AccountLogoutView(LogoutView):
-    next_page = reverse_lazy('core:home')
-    http_method_names = ['get', 'post', 'options']
+def logout_view(request):
+    if request.user.is_authenticated:
+        logout(request)
+        messages.success(request, 'Вы вышли из аккаунта')
+    return redirect('core:home')
 
 
 def register_view(request):
