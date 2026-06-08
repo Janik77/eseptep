@@ -5,19 +5,24 @@
 {% block breadcrumbs %}<nav class="breadcrumbs"><a href="{% url 'core:home' %}">Главная</a><span>›</span><b>Калькуляторы</b></nav>{% endblock %}
 
 {% block content %}
-<section class="page-hero page-hero--compact">
+<section class="page-hero page-hero--compact calculators-hero">
     <span class="hero__badge">Калькуляторы</span>
     <h1>Выберите расчёт для вашего ремонта</h1>
     <p>Материалы, количество, запас и шаблон списка для мастера.</p>
 </section>
 
-<section class="calculator-grid" aria-label="Список калькуляторов">
+<section class="calculator-grid calculator-grid--premium" aria-label="Список калькуляторов">
     {% for item in calculators %}
-        <article class="calculator-card">
+        <article class="calculator-card calculator-card--premium">
             <div class="calculator-card__icon feature-card__icon--{{ item.icon }}" aria-hidden="true"></div>
-            <h2>{{ item.title }}</h2>
-            <p>{{ item.description }}</p>
-            <a class="card-button" href="{% url 'calculators:detail' item.slug %}">Открыть</a>
+            <div class="calculator-card__content">
+                <h2>{{ item.title }}</h2>
+                <p>{{ item.description }}</p>
+            </div>
+            <a class="card-button calculator-card__button" href="{% url 'calculators:detail' item.slug %}">
+                <span>Открыть</span>
+                <span aria-hidden="true">→</span>
+            </a>
         </article>
     {% endfor %}
 </section>
