@@ -8,7 +8,7 @@
 <section class="page-hero page-hero--compact">
     <span class="hero__badge">Калькуляторы</span>
     <h1>Выберите расчёт для вашего ремонта</h1>
-    <p>Материалы, количество, запас и шаблон списка для мастера.</p>
+    <p>Материалы, количество, ориентировочная цена и шаблон списка для мастера.</p>
 </section>
 
 <section class="calculator-grid" aria-label="Список калькуляторов">
@@ -17,7 +17,7 @@
             <div class="calculator-card__icon feature-card__icon--{{ item.icon }}" aria-hidden="true"></div>
             <h2>{{ item.title }}</h2>
             <p>{{ item.description }}</p>
-            <a class="card-button calculator-card__arrow" href="{% url 'calculators:detail' item.slug %}" aria-label="Открыть {{ item.title }}">→</a>
+            <a class="card-button" href="{% url 'calculators:detail' item.slug %}">Открыть</a>
         </article>
     {% endfor %}
 </section>

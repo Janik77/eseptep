@@ -1,8 +1,6 @@
 from django.shortcuts import render
 from django.urls import reverse
 
-from calculators.catalog import CALCULATORS
-
 
 def home(request):
     feature_cards = [
@@ -34,4 +32,4 @@ def home(request):
             'icon': 'plan',
         },
     ]
-    return render(request, 'core/home.html', {'feature_cards': feature_cards, 'calculators': CALCULATORS})
+    return render(request, 'core/home.html', {'feature_cards': feature_cards})
