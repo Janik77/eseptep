@@ -1,11 +1,10 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<section class="hero hero--renovation" aria-labelledby="hero-title">
+<section class="hero hero--renovation hero--compact-home" aria-labelledby="hero-title">
     <div class="hero__photo" data-parallax-bg aria-hidden="true"></div>
     <div class="hero__overlay" aria-hidden="true"></div>
     <div class="hero__content">
-        <span class="hero__badge">MVP для ремонта</span>
         <h1 id="hero-title">Рассчитайте ремонт квартиры за 1 минуту</h1>
         <p class="hero__lead">Материалы, мастера и ремонт под ключ в одном сервисе</p>
         <div class="hero__actions" aria-label="Основные действия">
@@ -13,34 +12,29 @@
             <a class="btn btn--secondary" href="{% url 'projects:home' %}">Загрузить проект</a>
         </div>
     </div>
-
-    <aside class="hero-estimate" aria-label="Пример сметы ремонта">
-        <div class="hero-estimate__top">
-            <span>Смета</span>
-            <strong class="count-up" data-count-up="1284000" data-count-prefix="₸ ">₸ 1 284 000</strong>
-        </div>
-        <div class="estimate-row">
-            <span class="estimate-icon">▦</span>
-            <div><b>Плитка и клей</b><small>Санузел · 21 м²</small></div>
-            <strong>₸ 312k</strong>
-        </div>
-        <div class="estimate-row">
-            <span class="estimate-icon">⌂</span>
-            <div><b>Наливной пол</b><small>Кухня + коридор</small></div>
-            <strong>₸ 248k</strong>
-        </div>
-        <div class="estimate-progress"><span style="width: 72%"></span></div>
-        <a class="mini-whatsapp" href="https://wa.me/">Отправить мастеру</a>
-    </aside>
 </section>
 
-<section class="repair-visuals" aria-label="Визуальные элементы ремонта">
-    <div class="repair-chip"><span class="count-up" data-count-up="58" data-count-suffix=" м²">58 м²</span><b>Квартира</b></div>
-    <div class="repair-chip"><span class="count-up" data-count-up="10">10</span><b>Калькуляторов</b></div>
-    <div class="repair-chip"><span class="count-up" data-count-up="24" data-count-suffix=" ч">24 ч</span><b>Смета и заявка</b></div>
+<section class="home-calculators feature-section" aria-labelledby="home-calculators-title">
+    <div class="section-heading">
+        <p class="section-heading__eyebrow">Калькуляторы</p>
+        <h2 id="home-calculators-title">Выберите раздел ремонта</h2>
+    </div>
+
+    <div class="calculator-grid calculator-grid--tilda" aria-label="Калькуляторы ремонта">
+        {% for item in calculators %}
+            <article class="calculator-card calculator-card--quick">
+                <div class="calculator-card__icon feature-card__icon--{{ item.icon }}" aria-hidden="true"></div>
+                <div class="calculator-card__body">
+                    <h2>{{ item.title }}</h2>
+                    <p>{{ item.description }}</p>
+                </div>
+                <a class="card-button calculator-card__arrow" href="{% url 'calculators:detail' item.slug %}" aria-label="Открыть {{ item.title }}">→</a>
+            </article>
+        {% endfor %}
+    </div>
 </section>
 
-<section id="mvp-cards" class="feature-section" aria-labelledby="feature-title">
+<section id="mvp-cards" class="feature-section feature-section--secondary" aria-labelledby="feature-title">
     <div class="section-heading">
         <p class="section-heading__eyebrow">Главные возможности</p>
         <h2 id="feature-title">Всё для старта ремонта</h2>
@@ -66,18 +60,6 @@
                 <button class="slider-dot{% if forloop.first %} is-active{% endif %}" type="button" data-slide-dot="{{ forloop.counter0 }}"></button>
             {% endfor %}
         </div>
-    </div>
-</section>
-
-<section class="skeleton-section" aria-label="Будущие API-разделы">
-    <div class="skeleton-section__head">
-        <span class="skeleton-title">Скоро: цены поставщиков</span>
-        <span class="skeleton-status">API подключается</span>
-    </div>
-    <div class="skeleton-grid">
-        <div class="skeleton-card"></div>
-        <div class="skeleton-card"></div>
-        <div class="skeleton-card"></div>
     </div>
 </section>
 {% endblock %}
