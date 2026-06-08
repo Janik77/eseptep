@@ -42,26 +42,20 @@
     <form class="calc-form" method="post" data-calc-form>
         {% csrf_token %}
         <div class="form-step-label">Шаг 2 из 3 · параметры</div>
-        <label>
-            <span>Площадь</span>
-            <input type="number" name="area" min="1" step="0.1" value="{{ form_data.area }}" required>
-        </label>
-        <label>
-            <span>Толщина</span>
-            <input type="number" name="thickness" min="1" step="0.1" value="{{ form_data.thickness }}" required>
-        </label>
-        <label>
-            <span>Количество комнат</span>
-            <input type="number" name="rooms" min="1" step="1" value="{{ form_data.rooms }}" required>
-        </label>
-        <label>
-            <span>Сегмент</span>
-            <select name="segment">
-                {% for key, segment in segments.items %}
-                    <option value="{{ key }}" {% if form_data.segment == key %}selected{% endif %}>{{ segment.label }}</option>
-                {% endfor %}
-            </select>
-        </label>
+        {% for field in form_fields %}
+            <label>
+                <span>{{ field.label }}{% if field.unit %} <small>{{ field.unit }}</small>{% endif %}</span>
+                {% if field.type == 'select' %}
+                    <select name="{{ field.name }}">
+                        {% for option in field.options %}
+                            <option value="{{ option.value }}" {% if field.value == option.value %}selected{% endif %}>{{ option.label }}</option>
+                        {% endfor %}
+                    </select>
+                {% else %}
+                    <input type="{{ field.type }}" name="{{ field.name }}" min="{{ field.min }}" step="{{ field.step }}" value="{{ field.value }}" required>
+                {% endif %}
+            </label>
+        {% endfor %}
         <button class="btn btn--primary" type="submit">Рассчитать</button>
     </form>
 
@@ -102,26 +96,23 @@
             <div class="result-actions result-actions--backend">
                 <form method="post">
                     {% csrf_token %}
-                    <input type="hidden" name="area" value="{{ form_data.area }}">
-                    <input type="hidden" name="thickness" value="{{ form_data.thickness }}">
-                    <input type="hidden" name="rooms" value="{{ form_data.rooms }}">
-                    <input type="hidden" name="segment" value="{{ form_data.segment }}">
+                    {% for field in form_fields %}
+                        <input type="hidden" name="{{ field.name }}" value="{{ field.value }}">
+                    {% endfor %}
                     <button class="btn btn--secondary" type="submit" name="action" value="save_estimate">Сохранить смету в мой кабинет</button>
                 </form>
                 <form method="post">
                     {% csrf_token %}
-                    <input type="hidden" name="area" value="{{ form_data.area }}">
-                    <input type="hidden" name="thickness" value="{{ form_data.thickness }}">
-                    <input type="hidden" name="rooms" value="{{ form_data.rooms }}">
-                    <input type="hidden" name="segment" value="{{ form_data.segment }}">
+                    {% for field in form_fields %}
+                        <input type="hidden" name="{{ field.name }}" value="{{ field.value }}">
+                    {% endfor %}
                     <button class="btn btn--primary" type="submit" name="action" value="request_master">Отправить заявку мастерам</button>
                 </form>
                 <form method="post">
                     {% csrf_token %}
-                    <input type="hidden" name="area" value="{{ form_data.area }}">
-                    <input type="hidden" name="thickness" value="{{ form_data.thickness }}">
-                    <input type="hidden" name="rooms" value="{{ form_data.rooms }}">
-                    <input type="hidden" name="segment" value="{{ form_data.segment }}">
+                    {% for field in form_fields %}
+                        <input type="hidden" name="{{ field.name }}" value="{{ field.value }}">
+                    {% endfor %}
                     <button class="btn btn--secondary" type="submit" name="action" value="request_supplier">Отправить запрос поставщикам</button>
                 </form>
             </div>

@@ -108,12 +108,8 @@ def calculator_detail(request, slug):
     if calculator is None:
         raise Http404('Калькулятор не найден')
 
-    form_data = {
-        'area': request.POST.get('area', '42'),
-        'thickness': request.POST.get('thickness', '3'),
-        'rooms': request.POST.get('rooms', '2'),
-        'segment': request.POST.get('segment', 'comfort'),
-    }
+    form_data = _get_form_data(calculator, request.POST if request.method == 'POST' else None)
+    form_fields = _get_form_fields(calculator, form_data)
     result = None
 
     if request.method == 'POST':
@@ -151,6 +147,7 @@ def calculator_detail(request, slug):
         {
             'calculator': calculator,
             'form_data': form_data,
+            'form_fields': form_fields,
             'segments': SEGMENT_MULTIPLIERS,
             'result': result,
             'calculators': CALCULATORS,
@@ -160,3 +157,17 @@ def calculator_detail(request, slug):
         },
     )
 
+def _get_form_data(calculator, post_data=None):
+    form_data = {}
+    for field in calculator.get('fields', []):
+        default = field.get('default', '')
+        form_data[field['name']] = (post_data or {}).get(field['name'], str(default))
+    return form_data
+
+
+def _get_form_fields(calculator, form_data):
+    fields = []
+    for field in calculator.get('fields', []):
+        prepared = {**field, 'value': form_data.get(field['name'], field.get('default', ''))}
+        fields.append(prepared)
+    return fields

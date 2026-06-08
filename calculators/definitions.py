@@ -1,52 +1,63 @@
 """Central calculator definitions for ESEPTEP.
 
-The dictionaries in this module describe calculator inputs, materials,
-units, reference prices and master template defaults. Calculation formulas
-belong in ``calculators.services`` so templates and JavaScript only render
-server-prepared results.
+Definitions describe inputs, materials, units, reference prices and master
+sheet defaults. Runtime formulas live in ``calculators.services`` so Django
+renders server-prepared results instead of calculating in HTML or JavaScript.
 """
 
-DEFAULT_FIELDS = [
-    {
-        'name': 'area',
-        'label': 'Площадь',
-        'type': 'number',
-        'unit': 'м²',
-        'min': 1,
-        'step': 0.1,
-        'default': 42,
-    },
-    {
-        'name': 'thickness',
-        'label': 'Толщина',
-        'type': 'number',
-        'unit': 'см',
-        'min': 1,
-        'step': 0.1,
-        'default': 3,
-    },
-    {
-        'name': 'rooms',
-        'label': 'Количество комнат',
-        'type': 'number',
-        'unit': 'комн.',
-        'min': 1,
-        'step': 1,
-        'default': 2,
-    },
-    {
-        'name': 'segment',
-        'label': 'Сегмент',
-        'type': 'select',
-        'default': 'comfort',
-    },
-]
-
 SEGMENTS = {
-    'econom': {'label': 'Эконом', 'material': 0.9, 'labor': 5500},
+    'economy': {'label': 'Эконом', 'material': 0.9, 'labor': 5500},
     'comfort': {'label': 'Комфорт', 'material': 1.0, 'labor': 7500},
     'business': {'label': 'Бизнес', 'material': 1.22, 'labor': 10500},
 }
+
+SEGMENT_OPTIONS = [
+    {'value': key, 'label': segment['label']}
+    for key, segment in SEGMENTS.items()
+]
+
+DEFAULT_FIELDS = [
+    {'name': 'area', 'label': 'Площадь', 'type': 'number', 'unit': 'м²', 'min': 1, 'step': 0.1, 'default': 42},
+    {'name': 'thickness', 'label': 'Толщина', 'type': 'number', 'unit': 'см', 'min': 1, 'step': 0.1, 'default': 3},
+    {'name': 'rooms', 'label': 'Количество комнат', 'type': 'number', 'unit': 'комн.', 'min': 1, 'step': 1, 'default': 2},
+    {'name': 'segment', 'label': 'Сегмент', 'type': 'select', 'default': 'comfort', 'options': SEGMENT_OPTIONS},
+]
+
+DEMOLITION_FIELDS = [
+    {'name': 'area', 'label': 'Площадь демонтажа', 'type': 'number', 'unit': 'м²', 'min': 1, 'step': 0.1, 'default': 42},
+    {
+        'name': 'type',
+        'label': 'Тип демонтажа',
+        'type': 'select',
+        'default': 'partial',
+        'options': [
+            {'value': 'cosmetic', 'label': 'Косметический'},
+            {'value': 'partial', 'label': 'Частичный'},
+            {'value': 'full', 'label': 'Полный'},
+        ],
+    },
+]
+
+WARM_FLOOR_FIELDS = [
+    {'name': 'area', 'label': 'Площадь тёплого пола', 'type': 'number', 'unit': 'м²', 'min': 1, 'step': 0.1, 'default': 12},
+    {
+        'name': 'type',
+        'label': 'Тип системы',
+        'type': 'select',
+        'default': 'mat',
+        'options': [
+            {'value': 'mat', 'label': 'Нагревательный мат'},
+            {'value': 'cable', 'label': 'Кабель'},
+            {'value': 'water', 'label': 'Водяной'},
+        ],
+    },
+    {'name': 'segment', 'label': 'Сегмент', 'type': 'select', 'default': 'comfort', 'options': SEGMENT_OPTIONS},
+]
+
+DOORS_FIELDS = [
+    {'name': 'count', 'label': 'Количество дверей', 'type': 'number', 'unit': 'шт', 'min': 1, 'step': 1, 'default': 3},
+    {'name': 'segment', 'label': 'Сегмент', 'type': 'select', 'default': 'comfort', 'options': SEGMENT_OPTIONS},
+]
 
 DEFAULT_WARNING = (
     'Расчёт показывает ориентировочное количество материалов. '
@@ -63,14 +74,14 @@ def _material(title, ratio, unit, reference_price):
     }
 
 
-def _definition(slug, title, description, icon, unit, materials, legacy_slugs=None):
+def _definition(slug, title, description, icon, unit, materials, fields=None, legacy_slugs=None):
     return {
         'slug': slug,
         'legacy_slugs': legacy_slugs or [],
         'title': title,
         'description': description,
         'icon': icon,
-        'fields': DEFAULT_FIELDS,
+        'fields': fields or DEFAULT_FIELDS,
         'materials': materials,
         'units': {
             'input': unit,
@@ -92,7 +103,6 @@ def _definition(slug, title, description, icon, unit, materials, legacy_slugs=No
             }
             for material in materials
         ],
-        # Backward-compatible shape for older templates/admin demo code.
         'base_materials': [
             (material['title'], material['ratio'], material['reference_price'])
             for material in materials
@@ -104,14 +114,20 @@ CALCULATORS = [
     _definition(
         'demontazh',
         'Демонтаж',
-        'Мешки, защита, вынос и вывоз мусора перед стартом ремонта.',
+        'Мешки, защита, расходники и вывоз мусора по типу демонтажа.',
         'demolition',
         'м²',
         [
-            _material('Мешки строительные', 0.55, 'шт', 120),
-            _material('Защитная плёнка и скотч', 0.04, 'комплект', 7000),
-            _material('Вывоз мусора', 0.08, 'м³', 9000),
+            _material('Мешки строительные 50 кг', 1.2, 'шт', 120),
+            _material('Плёнка защитная', 1.05, 'м²', 280),
+            _material('Бумажный малярный скотч', 0.04, 'рулон', 900),
+            _material('Перчатки рабочие', 0.05, 'пара', 650),
+            _material('Респиратор / маска', 0.05, 'шт', 750),
+            _material('Алмазный диск / расходный диск', 0.04, 'шт', 3500),
+            _material('Вывоз мусора / машина', 0.03, 'машина', 18000),
+            _material('Контейнер для строительного мусора', 0.03, 'контейнер', 28000),
         ],
+        fields=DEMOLITION_FIELDS,
     ),
     _definition(
         'elektrika',
@@ -226,26 +242,43 @@ CALCULATORS = [
     _definition(
         'dveri',
         'Двери',
-        'Комплект полотна, коробки, наличников и фурнитуры.',
+        'Полотно, коробка, наличники и фурнитура по количеству дверей.',
         'door',
-        'проём',
+        'шт',
         [
-            _material('Межкомнатная дверь', 1.0, 'комплект', 52000),
-            _material('Доборы и наличники', 1.0, 'комплект', 12000),
-            _material('Фурнитура и пена', 1.0, 'комплект', 8500),
+            _material('Дверное полотно', 1.0, 'шт', 52000),
+            _material('Коробка дверная', 1.0, 'комплект', 12000),
+            _material('Наличники', 1.0, 'комплект', 8500),
+            _material('Ручки', 1.0, 'комплект', 6500),
+            _material('Замок', 1.0, 'шт', 4800),
+            _material('Петли', 1.0, 'комплект', 3500),
+            _material('Уплотнители / стопоры', 1.0, 'комплект', 2800),
         ],
+        fields=DOORS_FIELDS,
     ),
     _definition(
         'teplyy-pol',
         'Тёплый Пол',
-        'Мат, терморегулятор и комплект монтажа под плитку.',
+        'Мат, кабель или водяной контур с расходниками по сегменту.',
         'warmfloor',
         'м²',
         [
-            _material('Нагревательный мат', 1.0, 'м²', 14500),
-            _material('Терморегулятор', 0.12, 'шт', 18500),
-            _material('Датчик и монтажный комплект', 0.12, 'комплект', 6200),
+            _material('Нагревательный мат', 1.05, 'м²', 14500),
+            _material('Нагревательный кабель', 9.0, 'м', 1200),
+            _material('Монтажная лента', 1.5, 'м', 450),
+            _material('Терморегулятор', 1.0, 'шт', 18500),
+            _material('Датчик температуры пола', 1.0, 'шт', 4500),
+            _material('Гофра под датчик', 2.0, 'м', 350),
+            _material('Теплоизоляция', 1.05, 'м²', 1600),
+            _material('Труба PE-RT / PEX 16 мм', 6.0, 'м', 650),
+            _material('Демпферная лента', 0.8, 'м', 180),
+            _material('Скобы / крепёж трубы', 4.0, 'шт', 80),
+            _material('Коллектор', 1.0, 'шт', 42000),
+            _material('Коллекторный шкаф', 1.0, 'шт', 38000),
+            _material('Фитинги', 1.0, 'комплект', 18000),
+            _material('Смесительный узел', 1.0, 'шт', 95000),
         ],
+        fields=WARM_FLOOR_FIELDS,
     ),
 ]
 
@@ -254,5 +287,4 @@ for item in CALCULATORS:
     for legacy_slug in item.get('legacy_slugs', []):
         CALCULATORS_BY_SLUG[legacy_slug] = item
 
-# Backward-compatible public name used by existing templates/views.
 SEGMENT_MULTIPLIERS = SEGMENTS
