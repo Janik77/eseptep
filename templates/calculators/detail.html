@@ -69,11 +69,11 @@
         {% if result %}
             <div class="summary-card">
                 <div>
-                    <span>Summary card</span>
+                    <span>Материалы рассчитаны</span>
                     <h2>{{ result.summary }}</h2>
-                    <p>{{ result.segment_label }} · материалы + работы</p>
+                    <p>{{ result.segment_label }} · {{ result.materials_count }} позиций · цены справочно</p>
                 </div>
-                <strong class="count-up" data-count-up="{{ result.grand_total }}" data-count-prefix="₸ ">₸ {{ result.grand_total }}</strong>
+                <strong>{{ result.materials_count }} позиции</strong>
             </div>
             <div class="result-card__head">
                 <span>{{ result.summary }}</span>
@@ -82,16 +82,17 @@
             <div class="materials-table">
                 {% for material in result.materials %}
                     <div class="materials-table__row">
-                        <div><b>{{ material.title }}</b><small>{{ material.quantity }} ед. × ₸ {{ material.price }}</small></div>
-                        <strong class="count-up" data-count-up="{{ material.total }}" data-count-prefix="₸ ">₸ {{ material.total }}</strong>
+                        <div><b>{{ material.title }}</b><small>{{ material.quantity }} {{ material.unit }} · справочно ₸ {{ material.reference_price }}</small></div>
+                        <strong>{{ material.quantity }} {{ material.unit }}</strong>
                     </div>
                 {% endfor %}
                 <div class="materials-table__row materials-table__row--muted">
-                    <div><b>Работы мастера</b><small>Ориентир по выбранному сегменту</small></div>
-                    <strong class="count-up" data-count-up="{{ result.labor_total }}" data-count-prefix="₸ ">₸ {{ result.labor_total }}</strong>
+                    <div><b>Цены поставщиков</b><small>Отдельный этап после расчёта материалов</small></div>
+                    <strong>справочно</strong>
                 </div>
             </div>
-            <div class="grand-total"><span>Итого</span><strong class="count-up" data-count-up="{{ result.grand_total }}" data-count-prefix="₸ ">₸ {{ result.grand_total }}</strong></div>
+            <div class="grand-total"><span>Справочно по материалам</span><strong class="count-up" data-count-up="{{ result.reference_total }}" data-count-prefix="₸ ">₸ {{ result.reference_total }}</strong></div>
+            {% if result.warning %}<p class="result-warning">{{ result.warning }}</p>{% endif %}
             <div class="result-actions">
                 <button class="btn btn--secondary" type="button" data-save-estimate data-estimate-text="{{ result.saved_list|escape }}">Сохранить список</button>
                 <a class="btn btn--whatsapp" href="https://wa.me/?text={{ result.whatsapp_text|urlencode }}">Отправить мастеру</a>
@@ -138,7 +139,7 @@
         {% else %}
             <div class="empty-result">
                 <b>Заполните параметры</b>
-                <p>После расчёта здесь появятся материалы, количество, цены и общий итог.</p>
+                <p>После расчёта здесь появятся материалы, количество и единицы измерения. Цены — только справочно.</p>
             </div>
         {% endif %}
     </div>
@@ -217,11 +218,11 @@
         <div>
             <p class="section-heading__eyebrow">Шаблон мастера</p>
             <h2 id="master-template-title">WhatsApp-ready смета для мастера</h2>
-            <p>Соберите материалы, поправьте количество и отправьте список в профессиональном формате.</p>
+            <p>Соберите материалы, поправьте количество и отправьте список в профессиональном формате. Цены поставщики уточняют отдельно.</p>
         </div>
         <div class="estimate-builder__total">
-            <span>Auto total</span>
-            <strong data-builder-total>₸ 0</strong>
+            <span>Список</span>
+            <strong data-builder-total>0 позиций</strong>
         </div>
     </div>
 
@@ -233,13 +234,13 @@
             </div>
 
             <div class="material-row-list" data-material-rows>
-                {% for title, qty, price in calculator.base_materials %}
+                {% for item in calculator.master_template_items %}
                     <div class="material-row" data-material-row>
                         <label>
                             <span>Материал</span>
                             <select data-row-material>
-                                {% for option_title, option_qty, option_price in calculator.base_materials %}
-                                    <option value="{{ option_title }}" data-price="{{ option_price }}" {% if option_title == title %}selected{% endif %}>{{ option_title }}</option>
+                                {% for option in calculator.master_template_items %}
+                                    <option value="{{ option.title }}" data-unit="{{ option.unit }}" {% if option.title == item.title %}selected{% endif %}>{{ option.title }}</option>
                                 {% endfor %}
                             </select>
                         </label>
@@ -247,13 +248,13 @@
                             <span>Кол-во</span>
                             <div class="quantity-stepper__control">
                                 <button type="button" data-step-decrease aria-label="Уменьшить количество">−</button>
-                                <input type="number" min="0.1" step="0.1" value="{{ qty|floatformat:1 }}" data-row-qty>
+                                <input type="number" min="0.1" step="0.1" value="{{ item.default_quantity|floatformat:1 }}" data-row-qty>
                                 <button type="button" data-step-increase aria-label="Увеличить количество">+</button>
                             </div>
                         </label>
                         <div class="row-price">
-                            <span>Сумма</span>
-                            <strong data-row-total>₸ 0</strong>
+                            <span>Ед.</span>
+                            <strong data-row-total>{{ item.unit }}</strong>
                         </div>
                         <button class="remove-material-button" type="button" data-remove-row aria-label="Удалить материал">×</button>
                     </div>

@@ -243,42 +243,38 @@ function initMasterTemplate() {
     const toast = builder.querySelector('[data-copy-toast]');
     const whatsappLink = builder.querySelector('[data-whatsapp-link]');
 
-    const formatCurrency = (value) => `₸ ${Math.round(value).toLocaleString('ru-RU')}`;
-
     const getRows = () => [...builder.querySelectorAll('[data-material-row]')];
 
     const buildEstimate = () => {
+        const rows = getRows();
         const lines = ['ESEPTEP · список материалов для мастера', ''];
-        let total = 0;
 
-        getRows().forEach((row, index) => {
+        rows.forEach((row, index) => {
             const materialSelect = row.querySelector('[data-row-material]');
             const quantityInput = row.querySelector('[data-row-qty]');
-            const totalNode = row.querySelector('[data-row-total]');
+            const unitNode = row.querySelector('[data-row-total]');
             const selectedOption = materialSelect?.selectedOptions?.[0];
             const material = materialSelect?.value || 'Материал';
+            const unit = selectedOption?.dataset.unit || '';
             const quantity = Math.max(Number(quantityInput?.value || 0), 0);
-            const price = Number(selectedOption?.dataset.price || 0);
-            const rowTotal = quantity * price;
+            const quantityLabel = `${quantity.toLocaleString('ru-RU')} ${unit}`.trim();
 
-            total += rowTotal;
-
-            if (totalNode) {
-                totalNode.textContent = formatCurrency(rowTotal);
+            if (unitNode) {
+                unitNode.textContent = unit || '—';
             }
 
             lines.push(`${index + 1}. ${material}`);
-            lines.push(`   Кол-во: ${quantity.toLocaleString('ru-RU')} · Цена: ${formatCurrency(price)} · Сумма: ${formatCurrency(rowTotal)}`);
+            lines.push(`   Кол-во: ${quantityLabel}`);
         });
 
         lines.push('');
-        lines.push(`Итого по материалам: ${formatCurrency(total)}`);
+        lines.push('Цены и наличие уточняются у поставщиков отдельным этапом.');
         lines.push('Комментарий: подготовьте цену, сроки и наличие.');
 
         const text = lines.join('\n');
 
         if (totalElement) {
-            totalElement.textContent = formatCurrency(total);
+            totalElement.textContent = `${rows.length} позиций`;
         }
 
         if (output) {

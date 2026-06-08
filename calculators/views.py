@@ -2,9 +2,10 @@ from django.contrib import messages
 from django.http import Http404
 from django.shortcuts import redirect, render
 
-from accounts.models import Calculation, ClientProject, ServiceRequest
+from accounts.models import ServiceRequest
 
-from .catalog import CALCULATORS, CALCULATORS_BY_SLUG, SEGMENT_MULTIPLIERS
+from .definitions import CALCULATORS, CALCULATORS_BY_SLUG, SEGMENT_MULTIPLIERS
+from .services import calculate_materials, save_calculation_for_user
 
 RECOMMENDED_MASTERS = [
     {
@@ -116,11 +117,11 @@ def calculator_detail(request, slug):
     result = None
 
     if request.method == 'POST':
-        result = _build_result(calculator, form_data)
+        result = calculate_materials(calculator, form_data)
         action = request.POST.get('action')
 
         if request.user.is_authenticated and action in {'save_estimate', 'request_master', 'request_supplier'}:
-            project, calculation = _save_calculation_for_user(request.user, slug, result)
+            project, calculation = save_calculation_for_user(request.user, slug, result)
             if action == 'request_master':
                 ServiceRequest.objects.create(
                     client=request.user,
@@ -159,85 +160,3 @@ def calculator_detail(request, slug):
         },
     )
 
-
-def _to_float(value, default):
-    try:
-        return float(str(value).replace(',', '.'))
-    except (TypeError, ValueError):
-        return default
-
-
-def _build_result(calculator, form_data):
-    area = _to_float(form_data['area'], 0)
-    thickness = _to_float(form_data['thickness'], 1)
-    rooms = max(1, int(_to_float(form_data['rooms'], 1)))
-    segment = SEGMENT_MULTIPLIERS.get(form_data['segment'], SEGMENT_MULTIPLIERS['comfort'])
-    complexity = 1 + max(thickness - 1, 0) * 0.08 + max(rooms - 1, 0) * 0.035
-
-    materials = []
-    materials_total = 0
-    for title, qty_per_area, price in calculator['base_materials']:
-        quantity = round(area * qty_per_area * complexity, 1)
-        total = round(quantity * price * segment['material'])
-        materials_total += total
-        materials.append({
-            'title': title,
-            'quantity': quantity,
-            'price': round(price * segment['material']),
-            'total': total,
-        })
-
-    labor_total = round(area * segment['labor'] * complexity)
-    grand_total = materials_total + labor_total
-    saved_list = '\n'.join(
-        f"{material['title']} — {material['quantity']} ед. — ₸ {material['total']}"
-        for material in materials
-    )
-    return {
-        'materials': materials,
-        'materials_total': materials_total,
-        'labor_total': labor_total,
-        'grand_total': grand_total,
-        'segment_label': segment['label'],
-        'summary': f"{calculator['title']} · {area:g} {calculator['unit']} · {rooms} комн.",
-        'saved_list': saved_list,
-        'whatsapp_text': f"ESEPTEP: {calculator['title']} — {area:g} {calculator['unit']}. Итого: ₸ {grand_total}. Материалы:\n{saved_list}",
-        'meta': {
-            'area': area,
-            'thickness': thickness,
-            'rooms': rooms,
-            'segment': form_data['segment'],
-        },
-    }
-
-
-def _save_calculation_for_user(user, slug, result):
-    project = user.client_projects.order_by('-created_at').first()
-    if project is None:
-        project = ClientProject.objects.create(
-            user=user,
-            title=f'Проект {slug}',
-            city=getattr(user.profile, 'city', '') or 'Не указан',
-            area_m2=result['meta']['area'],
-            rooms=result['meta']['rooms'],
-            repair_segment=result['meta']['segment'],
-            status=ClientProject.Status.CALCULATED,
-        )
-
-    calculation = Calculation.objects.create(
-        project=project,
-        calculator_slug=slug,
-        area_m2=result['meta']['area'],
-        rooms=result['meta']['rooms'],
-        thickness=result['meta']['thickness'],
-        segment=result['meta']['segment'],
-        materials_total=result['materials_total'],
-        works_total=result['labor_total'],
-        grand_total=result['grand_total'],
-        result_data={
-            'materials': result['materials'],
-            'summary': result['summary'],
-            'segment_label': result['segment_label'],
-        },
-    )
-    return project, calculation

@@ -334,6 +334,16 @@ button, input, select, textarea { font: inherit; }
 .materials-table__row--muted { background: linear-gradient(90deg, transparent, var(--orange-soft), transparent); }
 .grand-total { align-items: center; padding-top: 16px; font-size: 1.1rem; }
 .grand-total strong { color: var(--orange-dark); font-size: 1.45rem; }
+.result-warning {
+    margin: 12px 0 0;
+    padding: 12px 14px;
+    border: 1px solid rgba(249, 115, 22, .18);
+    border-radius: 16px;
+    background: var(--orange-soft);
+    color: var(--muted);
+    font-size: .92rem;
+    line-height: 1.45;
+}
 .empty-result { padding: 30px 0; text-align: center; color: var(--muted); }
 .empty-result b { color: var(--text); }
 .master-template { margin-top: 16px; padding: 18px; }
