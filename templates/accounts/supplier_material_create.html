@@ -1,0 +1,5 @@
+{% extends 'base.html' %}
+{% block title %}Добавить материал — ESEPTEP{% endblock %}
+{% block content %}
+<section class="auth-wrap"><div class="auth-card"><h1>Добавить материал</h1><form method="post" class="auth-form">{% csrf_token %}{% for field in form %}<label class="auth-field"><span>{{ field.label }}</span>{{ field }}{% if field.errors %}<small>{{ field.errors|striptags }}</small>{% endif %}</label>{% endfor %}<button class="btn btn--primary" type="submit">Сохранить</button></form></div></section>
+{% endblock %}
