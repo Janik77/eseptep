@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<section class="hero hero--renovation hero--compact-home" aria-labelledby="hero-title">
+    <div class="hero__photo" data-parallax-bg aria-hidden="true"></div>
+    <div class="hero__overlay" aria-hidden="true"></div>
+    <div class="hero__content">
+        <h1 id="hero-title">Рассчитайте ремонт квартиры за 1 минуту</h1>
+        <p class="hero__lead">Материалы, мастера и ремонт под ключ в одном сервисе</p>
+        <div class="hero__actions" aria-label="Основные действия">
+            <a class="btn btn--primary" href="{% url 'calculators:home' %}">Начать расчёт</a>
+            <a class="btn btn--secondary" href="{% url 'projects:home' %}">Загрузить проект</a>
+        </div>
+    </div>
+</section>
+
+<section class="home-calculators feature-section" aria-labelledby="home-calculators-title">
+    <div class="section-heading">
+        <p class="section-heading__eyebrow">Калькуляторы</p>
+        <h2 id="home-calculators-title">Выберите раздел ремонта</h2>
+    </div>
+
+    <div class="calculator-grid calculator-grid--tilda" aria-label="Калькуляторы ремонта">
+        {% for item in calculators %}
+            <article class="calculator-card calculator-card--quick">
+                <div class="calculator-card__icon feature-card__icon--{{ item.icon }}" aria-hidden="true"></div>
+                <div class="calculator-card__body">
+                    <h2>{{ item.title }}</h2>
+                    <p>{{ item.description }}</p>
+                </div>
+                <a class="card-button calculator-card__arrow" href="{% url 'calculators:detail' item.slug %}" aria-label="Открыть {{ item.title }}">→</a>
+            </article>
+        {% endfor %}
+    </div>
+</section>
+
+<section id="mvp-cards" class="feature-section feature-section--secondary" aria-labelledby="feature-title">
+    <div class="section-heading">
+        <p class="section-heading__eyebrow">Главные возможности</p>
+        <h2 id="feature-title">Всё для старта ремонта</h2>
+    </div>
+
+    <div class="cards-slider" data-slider>
+        <div class="cards-track" data-slider-track tabindex="0" aria-label="Сценарии ESEPTEP">
+            {% for card in feature_cards %}
+                <article class="feature-card">
+                    <div class="feature-card__icon feature-card__icon--{{ card.icon }}" aria-hidden="true"></div>
+                    <div class="feature-card__topline">
+                        <span>{{ forloop.counter|stringformat:'02d' }}</span>
+                        <small>{{ card.eyebrow }}</small>
+                    </div>
+                    <h3>{{ card.title }}</h3>
+                    <p>{{ card.description }}</p>
+                    <a class="feature-card__link" href="{{ card.url }}">{{ card.cta }}</a>
+                </article>
+            {% endfor %}
+        </div>
+        <div class="slider-dots" aria-hidden="true">
+            {% for card in feature_cards %}
+                <button class="slider-dot{% if forloop.first %} is-active{% endif %}" type="button" data-slide-dot="{{ forloop.counter0 }}"></button>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endblock %}
