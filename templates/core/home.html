@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<section class="hero hero--renovation hero--compact-home" aria-labelledby="hero-title">
+    <div class="hero__photo" data-parallax-bg aria-hidden="true"></div>
+    <div class="hero__overlay" aria-hidden="true"></div>
+    <div class="hero__content">
+        <h1 id="hero-title">Рассчитайте ремонт квартиры за 1 минуту</h1>
+        <p class="hero__lead">Материалы, мастера и ремонт под ключ в одном сервисе</p>
+        <div class="hero__actions" aria-label="Основные действия">
+            <a class="btn btn--primary" href="{% url 'calculators:home' %}">Начать расчёт</a>
+            <a class="btn btn--secondary" href="{% url 'projects:home' %}">Загрузить проект</a>
+        </div>
+    </div>
+</section>
+
+<section id="mvp-cards" class="feature-section" aria-labelledby="feature-title">
+    <div class="section-heading">
+        <p class="section-heading__eyebrow">Главные возможности</p>
+        <h2 id="feature-title">Выберите первый шаг</h2>
+    </div>
+
+    <div class="cards-slider" data-slider>
+        <div class="cards-track" data-slider-track tabindex="0" aria-label="Сценарии ESEPTEP">
+            {% for card in feature_cards %}
+                <article class="feature-card">
+                    <div class="feature-card__icon feature-card__icon--{{ card.icon }}" aria-hidden="true"></div>
+                    <div class="feature-card__topline">
+                        <span>{{ forloop.counter|stringformat:'02d' }}</span>
+                        <small>{{ card.eyebrow }}</small>
+                    </div>
+                    <h3>{{ card.title }}</h3>
+                    <p>{{ card.description }}</p>
+                    <a class="feature-card__link" href="{{ card.url }}">{{ card.cta }}</a>
+                </article>
+            {% endfor %}
+        </div>
+        <div class="slider-dots" aria-hidden="true">
+            {% for card in feature_cards %}
+                <button class="slider-dot{% if forloop.first %} is-active{% endif %}" type="button" data-slide-dot="{{ forloop.counter0 }}"></button>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<section class="skeleton-section" aria-label="Будущие API-разделы">
+    <div class="skeleton-section__head">
+        <span class="skeleton-title">Скоро: цены поставщиков</span>
+        <span class="skeleton-status">Отдельный этап после расчёта материалов</span>
+    </div>
+</section>
+{% endblock %}
