@@ -1,5 +1,7 @@
 """Server-side calculator services for ESEPTEP."""
 
+from math import sqrt
+
 from accounts.models import Calculation, ClientProject
 
 from .definitions import SEGMENTS
@@ -28,6 +30,12 @@ def calculate_materials(calculator, form_data):
         return _calculate_teplyy_pol(calculator, form_data)
     if slug == 'dveri':
         return _calculate_dveri(calculator, form_data)
+    if slug == 'santehnika':
+        return _calculate_santehnika(calculator, form_data)
+    if slug == 'laminat-spc-parket':
+        return _calculate_laminat_spc_parket(calculator, form_data)
+    if slug == 'malyarka':
+        return _calculate_malyarka(calculator, form_data)
     return _calculate_ratio_based(calculator, form_data)
 
 
@@ -197,6 +205,126 @@ def _calculate_dveri(calculator, form_data):
         segment_key=segment_key,
         segment=segment,
         summary=f"{calculator['title']} · {count} шт · {segment['label']}",
+    )
+
+
+def _calculate_santehnika(calculator, form_data):
+    area = to_float(form_data.get('area'), 0)
+    bathrooms = max(1, int(to_float(form_data.get('bathrooms'), 1)))
+    kitchen = 1
+    plumbing_points = bathrooms * 4 + kitchen
+    material_rows = [
+        _row_by_title(calculator, 'Труба водоснабжения', area * 0.35 + bathrooms * 12 + kitchen * 8),
+        _row_by_title(calculator, 'Канализационная труба Ø50', bathrooms * 5 + kitchen * 4),
+        _row_by_title(calculator, 'Канализационная труба Ø110', bathrooms * 3),
+        _row_by_title(calculator, 'Фитинги / уголки / муфты', max(10, bathrooms * 18 + kitchen * 8 + area / 5)),
+        _row_by_title(calculator, 'Краны / запорная арматура', bathrooms * 4 + kitchen * 2),
+        _row_by_title(calculator, 'Коллектор', bathrooms),
+        _row_by_title(calculator, 'Унитаз', bathrooms),
+        _row_by_title(calculator, 'Инсталляция', bathrooms),
+        _row_by_title(calculator, 'Раковина', bathrooms),
+        _row_by_title(calculator, 'Смеситель', bathrooms + kitchen),
+        _row_by_title(calculator, 'Ванна', max(1, bathrooms - 1)),
+        _row_by_title(calculator, 'Душевая зона', bathrooms),
+        _row_by_title(calculator, 'Сифон / выпуск', plumbing_points),
+        _row_by_title(calculator, 'Теплоизоляция для труб', area * 0.2 + bathrooms * 3),
+        _row_by_title(calculator, 'Герметик санитарный', bathrooms + kitchen),
+        _row_by_title(calculator, 'ФУМ-лента', max(1, bathrooms + kitchen)),
+    ]
+    segment_key, segment = _get_segment('comfort', calculator)
+    return _build_result(
+        calculator=calculator,
+        materials=material_rows,
+        form_data=form_data,
+        area=area,
+        rooms=bathrooms,
+        thickness=1,
+        segment_key=segment_key,
+        segment=segment,
+        summary=f"{calculator['title']} · {area:g} м² · {bathrooms} санузел(а) + кухня",
+    )
+
+
+def _calculate_laminat_spc_parket(calculator, form_data):
+    area = to_float(form_data.get('area'), 0)
+    flooring_type = form_data.get('type', 'laminate')
+    straight = area * 1.05
+    diagonal = area * 1.12
+    herringbone = area * 1.18
+    perimeter = 4 * sqrt(area) if area > 0 else 0
+    plinth = perimeter * 1.05
+    underlay = straight
+    film = area * 1.05
+    trash = area / 5
+
+    material_rows = []
+    if flooring_type == 'spc':
+        material_rows.append(_row_by_title(calculator, 'SPC покрытие', straight))
+    elif flooring_type == 'parquet':
+        material_rows.append(_row_by_title(calculator, 'Паркет / инженерная доска', herringbone))
+    else:
+        material_rows.append(_row_by_title(calculator, 'Ламинат', straight))
+
+    material_rows.extend([
+        _row_by_title(calculator, 'Подложка', underlay),
+        _row_by_title(calculator, 'Плинтус', plinth),
+        _row_by_title(calculator, 'Уголки / соединители / заглушки', max(1, perimeter / 10)),
+        _row_by_title(calculator, 'Порог', max(1, area / 30)),
+        _row_by_title(calculator, 'Плёнка защитная', film),
+        _row_by_title(calculator, 'Мусорные мешки', trash),
+    ])
+
+    if flooring_type == 'parquet':
+        material_rows.extend([
+            _row_by_title(calculator, 'Клей для паркета', area * 0.25),
+            _row_by_title(calculator, 'Грунтовка', area * 0.12),
+        ])
+
+    segment_key, segment = _get_segment('comfort', calculator)
+    return _build_result(
+        calculator=calculator,
+        materials=material_rows,
+        form_data={**form_data, 'straight': straight, 'diagonal': diagonal, 'herringbone': herringbone},
+        area=area,
+        rooms=1,
+        thickness=1,
+        segment_key=segment_key,
+        segment=segment,
+        summary=f"{calculator['title']} · {area:g} м² · {flooring_type}",
+    )
+
+
+def _calculate_malyarka(calculator, form_data):
+    floor_area = to_float(form_data.get('floor_area'), 0)
+    finish_type = form_data.get('type', 'paint')
+    wall_area = floor_area * 3 * 0.9
+    material_rows = [
+        _row_by_title(calculator, 'Шпаклёвка', wall_area * 0.18),
+        _row_by_title(calculator, 'Грунтовка', wall_area * 0.16),
+        _row_by_title(calculator, 'Малярная лента', max(1, wall_area / 25)),
+        _row_by_title(calculator, 'Наждачная сетка', max(1, wall_area / 35)),
+        _row_by_title(calculator, 'Плёнка защитная', floor_area * 1.05),
+        _row_by_title(calculator, 'Мусорные мешки', floor_area / 5),
+    ]
+    if finish_type == 'wallpaper':
+        material_rows.append(_row_by_title(calculator, 'Обои', wall_area / 5))
+    else:
+        material_rows.extend([
+            _row_by_title(calculator, 'Стеклохолст / флизелин', wall_area * 1.05),
+            _row_by_title(calculator, 'Краска', wall_area * 0.22),
+        ])
+
+    segment_key, segment = _get_segment('comfort', calculator)
+    return _build_result(
+        calculator=calculator,
+        materials=material_rows,
+        form_data={**form_data, 'wall_area': wall_area, 'ceiling_included': False},
+        area=floor_area,
+        rooms=1,
+        thickness=1,
+        segment_key=segment_key,
+        segment=segment,
+        summary=f"{calculator['title']} · стены {wall_area:g} м² · потолок не включён",
     )
 
 
