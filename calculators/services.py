@@ -265,7 +265,6 @@ def _calculate_natyazhnoy_potolok(calculator, form_data):
 
 def _calculate_dveri(calculator, form_data):
     count = max(1, int(to_float(form_data.get('count'), 1)))
-    segment_key, segment = _get_segment(form_data.get('segment', 'comfort'), calculator)
     materials = [
         _row_by_title(calculator, 'Дверное полотно', count),
         _row_by_title(calculator, 'Коробка дверная', count),
@@ -273,20 +272,27 @@ def _calculate_dveri(calculator, form_data):
         _row_by_title(calculator, 'Ручки', count),
         _row_by_title(calculator, 'Замок', count),
         _row_by_title(calculator, 'Петли', count),
+        _row_by_title(calculator, 'Уплотнители / стопоры', count),
     ]
-    if segment_key == 'business':
-        materials.append(_row_by_title(calculator, 'Уплотнители / стопоры', count))
-    return _build_result(calculator, materials, form_data, count, count, 1, segment_key, segment, f"{calculator['title']} · {count} шт · {segment['label']}")
+    return _build_result(
+        calculator,
+        materials,
+        form_data,
+        count,
+        count,
+        1,
+        'comfort',
+        _plain_segment(),
+        f"{calculator['title']} · {count} шт",
+    )
 
 
 def _calculate_teplyy_pol(calculator, form_data):
     area = to_float(form_data.get('area'), 0)
     floor_type = form_data.get('type', 'mat')
-    segment_key, segment = _get_segment(form_data.get('segment', 'comfort'), calculator)
     if floor_type == 'cable':
-        cable_ratio = {'economy': 8, 'comfort': 9, 'business': 10}[segment_key]
         materials = [
-            _row_by_title(calculator, 'Нагревательный кабель', area * cable_ratio),
+            _row_by_title(calculator, 'Нагревательный кабель', area * 9),
             _row_by_title(calculator, 'Монтажная лента', area * 1.5),
             _row_by_title(calculator, 'Терморегулятор', 1),
             _row_by_title(calculator, 'Датчик температуры пола', 1),
@@ -294,20 +300,16 @@ def _calculate_teplyy_pol(calculator, form_data):
             _row_by_title(calculator, 'Теплоизоляция', area * 1.05),
         ]
     elif floor_type == 'water':
-        pipe_ratio = {'economy': 5, 'comfort': 6, 'business': 7}[segment_key]
-        staples_ratio = {'economy': 3, 'comfort': 4, 'business': 5}[segment_key]
         contours = max(1, area / 15)
         materials = [
-            _row_by_title(calculator, 'Труба PE-RT / PEX 16 мм', area * pipe_ratio),
+            _row_by_title(calculator, 'Труба PE-RT / PEX 16 мм', area * 6),
             _row_by_title(calculator, 'Теплоизоляция', area * 1.05),
             _row_by_title(calculator, 'Демпферная лента', area * 0.8),
-            _row_by_title(calculator, 'Скобы / крепёж трубы', area * staples_ratio),
+            _row_by_title(calculator, 'Скобы / крепёж трубы', area * 4),
             _row_by_title(calculator, 'Коллектор', contours),
             _row_by_title(calculator, 'Коллекторный шкаф', 1),
             _row_by_title(calculator, 'Фитинги', contours),
         ]
-        if segment_key == 'business':
-            materials.append(_row_by_title(calculator, 'Смесительный узел', 1))
     else:
         materials = [
             _row_by_title(calculator, 'Нагревательный мат', area * 1.05),
@@ -316,7 +318,17 @@ def _calculate_teplyy_pol(calculator, form_data):
             _row_by_title(calculator, 'Гофра под датчик', max(2, area * 0.25)),
             _row_by_title(calculator, 'Теплоизоляция', area * 1.05),
         ]
-    return _build_result(calculator, materials, form_data, area, 1, 1, segment_key, segment, f"{calculator['title']} · {area:g} м² · {floor_type}")
+    return _build_result(
+        calculator,
+        materials,
+        form_data,
+        area,
+        1,
+        1,
+        'comfort',
+        _plain_segment(),
+        f"{calculator['title']} · {area:g} м² · {floor_type}",
+    )
 
 
 def _build_result(calculator, materials, form_data, area, rooms, thickness, segment_key, segment, summary):

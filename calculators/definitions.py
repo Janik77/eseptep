@@ -130,7 +130,6 @@ CEILING_FIELDS = [
 
 DOORS_FIELDS = [
     {'name': 'count', 'label': 'Количество дверей', 'type': 'number', 'unit': 'шт', 'min': 1, 'step': 1, 'default': 3},
-    {'name': 'segment', 'label': 'Сегмент', 'type': 'select', 'default': 'comfort', 'options': SEGMENT_OPTIONS},
 ]
 
 WARM_FLOOR_FIELDS = [
@@ -146,7 +145,6 @@ WARM_FLOOR_FIELDS = [
             {'value': 'water', 'label': 'Водяной'},
         ],
     },
-    {'name': 'segment', 'label': 'Сегмент', 'type': 'select', 'default': 'comfort', 'options': SEGMENT_OPTIONS},
 ]
 
 DEFAULT_WARNING = 'Расчёт предварительный. Количество материалов нужно уточнить по проекту и фактическим условиям.'
