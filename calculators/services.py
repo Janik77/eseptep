@@ -98,21 +98,24 @@ def _calculate_demontazh(calculator, form_data):
 
 def _calculate_elektrika(calculator, form_data):
     area = to_float(form_data.get('area'), 0)
-    points = max(1, int(to_float(form_data.get('points'), max(8, area * 0.55))))
-    segment_key, segment = _get_segment(form_data.get('segment', 'comfort'), calculator)
-    group_multiplier = {'economy': 0.14, 'comfort': 0.18, 'business': 0.24}[segment_key]
-    diff_multiplier = {'economy': 0.03, 'comfort': 0.06, 'business': 0.1}[segment_key]
+    rooms = max(1, int(to_float(form_data.get('rooms'), 1)))
+    lighting_lines = 2
+    socket_groups = 5
+    stove_line = 1
+    total_groups = lighting_lines + socket_groups + stove_line + max(0, rooms - 1)
     materials = [
-        _row_by_title(calculator, 'Кабель ВВГнг-LS 3×2.5', points * 7 + area * 0.5),
-        _row_by_title(calculator, 'Кабель ВВГнг-LS 3×1.5', points * 3.5),
-        _row_by_title(calculator, 'Подрозетник/коробка', points),
-        _row_by_title(calculator, 'Розетки / выключатели', points),
-        _row_by_title(calculator, 'Автомат защиты', max(4, points * group_multiplier)),
-        _row_by_title(calculator, 'УЗО / дифавтомат', max(1, points * diff_multiplier)),
+        _row_by_title(calculator, 'Кабель ВВГнг-LS 3×2.5', area * 3.2 + rooms * 12),
+        _row_by_title(calculator, 'Кабель ВВГнг-LS 3×1.5', area * 1.8 + rooms * 8),
+        _row_by_title(calculator, 'Подрозетник/коробка', max(12, area * 0.45 + rooms * 6)),
+        _row_by_title(calculator, 'Розетки / выключатели', max(10, area * 0.38 + rooms * 5)),
+        _row_by_title(calculator, 'Автомат защиты', total_groups),
+        _row_by_title(calculator, 'УЗО / дифавтомат', max(2, rooms + 1)),
         _row_by_title(calculator, 'Щит электрический', 1),
         _row_by_title(calculator, 'Гофра / клипсы / расходники', max(1, area / 25)),
     ]
-    return _build_result(calculator, materials, form_data, area, 1, 1, segment_key, segment, f"{calculator['title']} · {points} точек · {segment['label']}")
+    materials.append({'title': 'Кабель на плиту 3×6', 'quantity': 1, 'unit': 'линия', 'reference_price': 18000})
+    materials.append({'title': 'Автомат плиты 32А', 'quantity': 1, 'unit': 'шт', 'reference_price': 6500})
+    return _build_result(calculator, materials, form_data, area, rooms, 1, 'comfort', _plain_segment(), f"{calculator['title']} · {area:g} м² · {rooms} комн.")
 
 
 def _calculate_santehnika(calculator, form_data):
@@ -144,31 +147,31 @@ def _calculate_santehnika(calculator, form_data):
 def _calculate_shtukaturka(calculator, form_data):
     area = to_float(form_data.get('area'), 0)
     thickness = to_float(form_data.get('thickness'), 2)
-    rooms = max(1, int(to_float(form_data.get('rooms'), 1)))
     thickness_factor = max(thickness, 0.5) / 2
-    room_factor = 1 + max(rooms - 1, 0) * 0.03
     materials = [
-        _row_by_title(calculator, 'Гипсовая штукатурка, мешок 30 кг', area * 0.95 * thickness_factor * room_factor),
+        _row_by_title(calculator, 'Гипсовая штукатурка, мешок 30 кг', area * 0.95 * thickness_factor),
         _row_by_title(calculator, 'Грунтовка глубокого проникновения', area * 0.18),
         _row_by_title(calculator, 'Маяк штукатурный', area * 0.22),
-        _row_by_title(calculator, 'Уголок штукатурный', rooms * 4),
+        _row_by_title(calculator, 'Уголок штукатурный', max(4, area * 0.08)),
     ]
-    return _build_result(calculator, materials, form_data, area, rooms, thickness, 'comfort', _plain_segment(), f"{calculator['title']} · {area:g} м² · {thickness:g} см")
+    return _build_result(calculator, materials, form_data, area, 1, thickness, 'comfort', _plain_segment(), f"{calculator['title']} · {area:g} м² · {thickness:g} см")
 
 
 def _calculate_gipsokarton(calculator, form_data):
     area = to_float(form_data.get('area'), 0)
-    construction_type = form_data.get('type', 'ceiling')
+    rooms = max(1, int(to_float(form_data.get('rooms'), 1)))
+    construction_type = form_data.get('construction_type', 'ceiling')
     profile_factor = {'ceiling': 1.7, 'partition': 2.2, 'box': 2.8}.get(construction_type, 1.7)
     sheet_factor = {'ceiling': 0.38, 'partition': 0.76, 'box': 0.55}.get(construction_type, 0.38)
+    room_factor = 1 + max(rooms - 1, 0) * 0.08
     materials = [
         _row_by_title(calculator, 'Лист ГКЛ 12.5 мм', area * sheet_factor),
-        _row_by_title(calculator, 'Профиль потолочный/направляющий', area * profile_factor),
-        _row_by_title(calculator, 'Подвесы', area * (0.8 if construction_type == 'ceiling' else 0.35)),
-        _row_by_title(calculator, 'Саморезы', area * 18),
-        _row_by_title(calculator, 'Лента / шпаклёвка швов', max(1, area * 0.08)),
+        _row_by_title(calculator, 'Профиль потолочный/направляющий', area * profile_factor * room_factor),
+        _row_by_title(calculator, 'Подвесы', area * (0.8 if construction_type == 'ceiling' else 0.35) * room_factor),
+        _row_by_title(calculator, 'Саморезы', area * 18 * room_factor),
+        _row_by_title(calculator, 'Лента / шпаклёвка швов', max(1, area * 0.08 * room_factor)),
     ]
-    return _build_result(calculator, materials, form_data, area, 1, 1, 'comfort', _plain_segment(), f"{calculator['title']} · {area:g} м² · {construction_type}")
+    return _build_result(calculator, materials, form_data, area, rooms, 1, 'comfort', _plain_segment(), f"{calculator['title']} · {area:g} м² · {rooms} комн. · {construction_type}")
 
 
 def _calculate_nalivnoy_pol(calculator, form_data):
@@ -248,19 +251,19 @@ def _calculate_malyarka(calculator, form_data):
 
 def _calculate_natyazhnoy_potolok(calculator, form_data):
     area = to_float(form_data.get('area'), 0)
-    light_points = max(0, int(to_float(form_data.get('light_points'), 0)))
-    corners = max(4, int(to_float(form_data.get('corners'), 4)))
-    cornice_length = to_float(form_data.get('cornice_length'), 0)
+    rooms = max(1, int(to_float(form_data.get('rooms'), 1)))
     perimeter = 4 * sqrt(area) if area > 0 else 0
+    light_points = max(rooms, round(area / 7))
+    corners = rooms * 4
     materials = [
         _row_by_title(calculator, 'ПВХ полотно', area),
-        _row_by_title(calculator, 'Профиль стеновой', perimeter),
+        _row_by_title(calculator, 'Профиль стеновой', perimeter * (1 + max(rooms - 1, 0) * 0.08)),
         _row_by_title(calculator, 'Закладные под свет', light_points),
         _row_by_title(calculator, 'Термокольцо / платформа', light_points),
         _row_by_title(calculator, 'Обвод угла', corners),
-        _row_by_title(calculator, 'Карнизная ниша / профиль', cornice_length),
+        _row_by_title(calculator, 'Карнизная ниша / профиль', 0),
     ]
-    return _build_result(calculator, materials, form_data, area, 1, 1, 'comfort', _plain_segment(), f"{calculator['title']} · {area:g} м² · {light_points} точек света")
+    return _build_result(calculator, materials, form_data, area, rooms, 1, 'comfort', _plain_segment(), f"{calculator['title']} · {area:g} м² · {rooms} комн.")
 
 
 def _calculate_dveri(calculator, form_data):

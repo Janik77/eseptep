@@ -59,7 +59,7 @@
                         <div>
                             <span>Материалы рассчитаны</span>
                             <h2>{{ result.summary }}</h2>
-                            <p>{{ result.segment_label }} · {{ result.materials_count }} позиций · цены справочно</p>
+                            <p>{% if result.segment_label != 'Предварительно' %}{{ result.segment_label }} · {% endif %}{{ result.materials_count }} позиций · цены справочно</p>
                         </div>
                         <strong>{{ result.materials_count }} позиции</strong>
                     </div>

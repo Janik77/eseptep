@@ -14,9 +14,8 @@ SEGMENTS = {
 SEGMENT_OPTIONS = [{'value': key, 'label': segment['label']} for key, segment in SEGMENTS.items()]
 
 ELECTRIC_FIELDS = [
-    {'name': 'area', 'label': 'Площадь квартиры', 'type': 'number', 'unit': 'м²', 'min': 1, 'step': 0.1, 'default': 60},
-    {'name': 'points', 'label': 'Электроточки', 'type': 'number', 'unit': 'шт', 'min': 1, 'step': 1, 'default': 35},
-    {'name': 'segment', 'label': 'Сегмент', 'type': 'select', 'default': 'comfort', 'options': SEGMENT_OPTIONS},
+    {'name': 'area', 'label': 'Площадь квартиры (м²)', 'type': 'number', 'unit': '', 'min': 1, 'step': 0.1, 'default': 60},
+    {'name': 'rooms', 'label': 'Количество жилых комнат', 'type': 'number', 'unit': '', 'min': 1, 'step': 1, 'default': 2},
 ]
 
 DEMOLITION_FIELDS = [
@@ -40,20 +39,20 @@ PLUMBING_FIELDS = [
 ]
 
 PLASTER_FIELDS = [
-    {'name': 'area', 'label': 'Площадь стен', 'type': 'number', 'unit': 'м²', 'min': 1, 'step': 0.1, 'default': 42},
-    {'name': 'thickness', 'label': 'Толщина слоя', 'type': 'number', 'unit': 'см', 'min': 0.5, 'step': 0.1, 'default': 2},
-    {'name': 'rooms', 'label': 'Количество комнат', 'type': 'number', 'unit': 'шт', 'min': 1, 'step': 1, 'default': 2},
+    {'name': 'area', 'label': 'Площадь помещения (м²)', 'type': 'number', 'unit': '', 'min': 1, 'step': 0.1, 'default': 42},
+    {'name': 'thickness', 'label': 'Толщина штукатурки (см)', 'type': 'number', 'unit': '', 'min': 0.5, 'step': 0.1, 'default': 2},
 ]
 
 DRYWALL_FIELDS = [
-    {'name': 'area', 'label': 'Площадь конструкции', 'type': 'number', 'unit': 'м²', 'min': 1, 'step': 0.1, 'default': 30},
+    {'name': 'area', 'label': 'Площадь (м²)', 'type': 'number', 'unit': '', 'min': 1, 'step': 0.1, 'default': 30},
+    {'name': 'rooms', 'label': 'Комнат', 'type': 'number', 'unit': '', 'min': 1, 'step': 1, 'default': 2},
     {
-        'name': 'type',
+        'name': 'construction_type',
         'label': 'Тип конструкции',
         'type': 'select',
         'default': 'ceiling',
         'options': [
-            {'value': 'ceiling', 'label': 'Потолок'},
+            {'value': 'ceiling', 'label': 'Потолок из гипсокартона'},
             {'value': 'partition', 'label': 'Перегородка'},
             {'value': 'box', 'label': 'Короб / ниша'},
         ],
@@ -122,10 +121,8 @@ PAINTING_FIELDS = [
 ]
 
 CEILING_FIELDS = [
-    {'name': 'area', 'label': 'Площадь потолка', 'type': 'number', 'unit': 'м²', 'min': 1, 'step': 0.1, 'default': 42},
-    {'name': 'light_points', 'label': 'Точки света', 'type': 'number', 'unit': 'шт', 'min': 0, 'step': 1, 'default': 6},
-    {'name': 'corners', 'label': 'Углы', 'type': 'number', 'unit': 'шт', 'min': 4, 'step': 1, 'default': 4},
-    {'name': 'cornice_length', 'label': 'Карниз / ниша', 'type': 'number', 'unit': 'м', 'min': 0, 'step': 0.1, 'default': 0},
+    {'name': 'area', 'label': 'Площадь потолка (м²)', 'type': 'number', 'unit': '', 'min': 1, 'step': 0.1, 'default': 42},
+    {'name': 'rooms', 'label': 'Количество комнат', 'type': 'number', 'unit': '', 'min': 1, 'step': 1, 'default': 2},
 ]
 
 DOORS_FIELDS = [
@@ -154,7 +151,7 @@ def _material(title, ratio, unit, reference_price):
     return {'title': title, 'ratio': ratio, 'unit': unit, 'reference_price': reference_price}
 
 
-def _definition(slug, title, description, icon, unit, materials, fields, legacy_slugs=None):
+def _definition(slug, title, description, icon, unit, materials, fields, legacy_slugs=None, warning=None):
     return {
         'slug': slug,
         'legacy_slugs': legacy_slugs or [],
@@ -167,7 +164,7 @@ def _definition(slug, title, description, icon, unit, materials, fields, legacy_
         'unit': unit,
         'reference_price': {'currency': 'KZT', 'source': 'demo_reference', 'is_primary_result': False},
         'segments': SEGMENTS,
-        'warning': DEFAULT_WARNING,
+        'warning': warning or DEFAULT_WARNING,
         'master_template_items': [
             {'title': material['title'], 'default_quantity': material['ratio'], 'unit': material['unit']}
             for material in materials
@@ -187,7 +184,7 @@ CALCULATORS = [
         _material('Вывоз мусора / машина', 0.03, 'машина', 18000),
         _material('Контейнер для строительного мусора', 0.03, 'контейнер', 28000),
     ], DEMOLITION_FIELDS),
-    _definition('elektrika', 'Электрика', 'Кабель, подрозетники, автоматы и щит по количеству точек.', 'electric', 'точка', [
+    _definition('elektrika', 'Электрика', 'Расчёт материалов: кабель, автоматы, розетки, выключатели, гофра, клипсы, щит и защита', 'electric', 'точка', [
         _material('Кабель ВВГнг-LS 3×2.5', 7.0, 'м', 380),
         _material('Кабель ВВГнг-LS 3×1.5', 3.5, 'м', 320),
         _material('Подрозетник/коробка', 1.0, 'шт', 220),
@@ -196,7 +193,7 @@ CALCULATORS = [
         _material('УЗО / дифавтомат', 0.06, 'шт', 13500),
         _material('Щит электрический', 0.02, 'шт', 28000),
         _material('Гофра / клипсы / расходники', 0.5, 'комплект', 1800),
-    ], ELECTRIC_FIELDS),
+    ], ELECTRIC_FIELDS, warning='В эконом-расчёте: освещение делится на 2 автомата, розетки примерно на 5 автоматов, плита отдельно 3×6 + 32А.'),
     _definition('santehnika', 'Сантехника', 'Предварительный расчёт труб, сантехприборов и расходников с учётом кухни.', 'plumbing', 'м²', [
         _material('Труба водоснабжения', 0.35, 'м', 520),
         _material('Канализационная труба Ø50', 0.18, 'м', 780),
@@ -227,7 +224,7 @@ CALCULATORS = [
         _material('Подвесы', 0.8, 'шт', 180),
         _material('Саморезы', 18, 'шт', 18),
         _material('Лента / шпаклёвка швов', 0.08, 'комплект', 2800),
-    ], DRYWALL_FIELDS, legacy_slugs=['gipsokarton']),
+    ], DRYWALL_FIELDS, legacy_slugs=['gipsokarton'], warning='Количество комнат влияет на периметр, профиль UD/UW, крепёж и точность расчёта.'),
     _definition('nalivnoy-pol', 'Наливной Пол', 'Смесь, грунт и демпферная лента по площади и толщине слоя.', 'floor', 'м²', [
         _material('Самовыравнивающаяся смесь, мешок 25 кг', 0.72, 'мешок', 4100),
         _material('Грунтовка для пола', 0.12, 'л', 700),
@@ -265,14 +262,14 @@ CALCULATORS = [
         _material('Плёнка защитная', 1.05, 'м²', 280),
         _material('Мусорные мешки', 0.2, 'шт', 120),
     ], PAINTING_FIELDS),
-    _definition('natyazhnoy-potolok', 'Натяжной Потолок', 'Полотно, профиль, световые точки, углы и карнизные ниши.', 'ceiling', 'м²', [
+    _definition('natyazhnoy-potolok', 'Натяжной Потолок', 'Полотно, профиль, закладные и световые точки.', 'ceiling', 'м²', [
         _material('ПВХ полотно', 1.0, 'м²', 4300),
         _material('Профиль стеновой', 0.45, 'м', 750),
         _material('Закладные под свет', 1.0, 'шт', 1600),
         _material('Термокольцо / платформа', 1.0, 'шт', 900),
         _material('Обвод угла', 1.0, 'шт', 500),
         _material('Карнизная ниша / профиль', 1.0, 'м', 3200),
-    ], CEILING_FIELDS),
+    ], CEILING_FIELDS, warning='Обычно площадь потолка равна площади пола. Работа не считается — только материалы.'),
     _definition('dveri', 'Двери', 'Полотно, коробка, наличники и фурнитура по количеству дверей.', 'door', 'шт', [
         _material('Дверное полотно', 1.0, 'шт', 52000),
         _material('Коробка дверная', 1.0, 'комплект', 12000),
