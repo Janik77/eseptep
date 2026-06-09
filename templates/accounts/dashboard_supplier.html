@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+{% block title %}Кабинет поставщика — ESEPTEP{% endblock %}
+{% block breadcrumbs %}<nav class="breadcrumbs"><a href="{% url 'core:home' %}">Главная</a><span>›</span><b>Кабинет поставщика</b></nav>{% endblock %}
+
+{% block content %}
+<section class="dashboard">
+  <div class="dashboard-card">
+    <h1>{{ supplier_profile.company_name }}</h1>
+    <p>{{ supplier_profile.city }} · {{ supplier_profile.address }}</p>
+    <p>Доставка: {{ supplier_profile.delivery_info }} · WhatsApp: {{ supplier_profile.whatsapp|default:'—' }}</p>
+    <div class="result-actions">
+      <a class="btn btn--secondary" href="{% url 'accounts:supplier_profile_edit' %}">Редактировать профиль</a>
+      <a class="btn btn--primary" href="{% url 'accounts:supplier_material_create' %}">Добавить материал</a>
+    </div>
+  </div>
+
+  <div class="dashboard-card">
+    <h2>Мои материалы</h2>
+    <div class="dashboard-list">
+      {% for material in materials %}
+      <article class="dashboard-item">
+        <b>{{ material.name }}</b>
+        <p>{{ material.category }} · {{ material.unit }} · ₸ {{ material.price }}</p>
+        <small>Наличие: {{ material.stock_status }} · Срок доставки: {{ material.delivery_time|default:'—' }}</small>
+      </article>
+      {% empty %}<div class="empty-state">Материалов пока нет.</div>{% endfor %}
+    </div>
+  </div>
+
+  <div class="dashboard-card">
+    <h2>Запросы от клиентов</h2>
+    <div class="dashboard-list">
+      {% for req in supplier_requests %}
+      <article class="dashboard-item">
+        <b>{{ req.project.title }}</b>
+        <p>{{ req.project.city }} · {{ req.project.area_m2 }} м²</p>
+        <p>Материалы: {% if req.calculation and req.calculation.result_data.materials %}{{ req.calculation.result_data.materials|length }} позиций{% else %}не указано{% endif %}</p>
+        <small>{{ req.comment|default:'Без комментария' }}</small>
+
+        <form method="post" class="master-response-form">
+          {% csrf_token %}
+          <input type="hidden" name="request_id" value="{{ req.id }}">
+          <label class="auth-field"><span>{{ response_form.total_price.label }}</span><input type="number" step="0.01" min="0" name="total_price" required></label>
+          <label class="auth-field"><span>{{ response_form.message.label }}</span><textarea name="message" rows="3"></textarea></label>
+          <label class="auth-field"><span>{{ response_form.delivery_time.label }}</span><input type="text" name="delivery_time" placeholder="Например, 1-2 дня"></label>
+          <button class="btn btn--primary" type="submit">Отправить ответ</button>
+        </form>
+      </article>
+      {% empty %}<div class="empty-state">Новых запросов пока нет.</div>{% endfor %}
+    </div>
+  </div>
+
+  <div class="dashboard-card">
+    <h2>Мои ответы</h2>
+    <div class="dashboard-list">
+      {% for response in my_responses %}
+      <article class="dashboard-item">
+        <b>{{ response.request.project.title }}</b>
+        <p>Цена: ₸ {{ response.total_price }} · Статус: {{ response.get_status_display }}</p>
+        <small>{{ response.created_at|date:'d.m.Y' }}</small>
+      </article>
+      {% empty %}<div class="empty-state">Ответов пока нет.</div>{% endfor %}
+    </div>
+  </div>
+</section>
+{% endblock %}
