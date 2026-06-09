@@ -1,0 +1,257 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ calculator.title }} — калькулятор ESEPTEP{% endblock %}
+
+{% block breadcrumbs %}<nav class="breadcrumbs"><a href="{% url 'core:home' %}">Главная</a><span>›</span><a href="{% url 'calculators:home' %}">Калькуляторы</a><span>›</span><b>{{ calculator.title }}</b></nav>{% endblock %}
+
+{% block content %}
+<section class="page-hero page-hero--compact calculator-detail-hero">
+    <a class="back-link" href="{% url 'calculators:home' %}">← Все калькуляторы</a>
+    <span class="hero__badge">{{ calculator.title }}</span>
+    <h1>Калькулятор: {{ calculator.title }}</h1>
+    <p>{{ calculator.description }}</p>
+</section>
+
+<section class="flow-panel flow-panel--compact" aria-label="Прогресс расчёта">
+    <div class="flow-panel__top">
+        <span>{% if result %}Шаг 3 из 3 · Смета{% else %}Шаг 2 из 3 · Параметры{% endif %}</span>
+        <strong>{% if result %}Материалы рассчитаны{% else %}Введите параметры{% endif %}</strong>
+    </div>
+    <div class="flow-progress" aria-hidden="true">
+        <span style="width: {% if result %}100{% else %}66{% endif %}%"></span>
+    </div>
+</section>
+
+<section class="calculator-tabs" aria-label="Калькулятор и шаблон мастера">
+    <input class="calculator-tabs__radio" type="radio" name="calculator-detail-tabs" id="tab-auto" checked>
+    <input class="calculator-tabs__radio" type="radio" name="calculator-detail-tabs" id="tab-master">
+
+    <div class="calculator-tabs__nav" role="tablist" aria-label="Разделы калькулятора">
+        <label class="calculator-tabs__button calculator-tabs__button--auto" for="tab-auto" role="tab">Авторасчёт</label>
+        <label class="calculator-tabs__button calculator-tabs__button--master" for="tab-master" role="tab">Шаблон мастера</label>
+    </div>
+
+    <div class="calculator-tabs__panel calculator-tabs__panel--auto">
+        <section class="calculator-workspace calculator-workspace--unified">
+            <form class="calc-form calc-form--panel" method="post" data-calc-form>
+                {% csrf_token %}
+                <div class="form-step-label">Параметры расчёта</div>
+                {% for field in form_fields %}
+                    <label>
+                        <span>{{ field.label }}{% if field.unit %} <small>{{ field.unit }}</small>{% endif %}</span>
+                        {% if field.type == 'select' %}
+                            <select name="{{ field.name }}">
+                                {% for option in field.options %}
+                                    <option value="{{ option.value }}" {% if field.value == option.value %}selected{% endif %}>{{ option.label }}</option>
+                                {% endfor %}
+                            </select>
+                        {% else %}
+                            <input type="{{ field.type }}" name="{{ field.name }}" min="{{ field.min }}" step="{{ field.step }}" value="{{ field.value }}" required>
+                        {% endif %}
+                    </label>
+                {% endfor %}
+                <button class="btn btn--primary" type="submit">Рассчитать материалы</button>
+            </form>
+
+            <div id="estimate-result" class="result-card result-card--panel{% if result %} has-result{% endif %}">
+                {% if result %}
+                    <div class="summary-card summary-card--compact" data-result-ready>
+                        <div>
+                            <span>Материалы рассчитаны</span>
+                            <h2>{{ result.summary }}</h2>
+                            <p>{{ result.segment_label }} · {{ result.materials_count }} позиций · цены справочно</p>
+                        </div>
+                        <strong>{{ result.materials_count }} позиции</strong>
+                    </div>
+                    <div class="result-params" aria-label="Введённые параметры">
+                        {% for field in form_fields %}
+                            <span><b>{{ field.label }}</b>{{ field.value }}{% if field.unit %} {{ field.unit }}{% endif %}</span>
+                        {% endfor %}
+                    </div>
+                    <div class="result-card__head">
+                        <span>Список материалов</span>
+                        <strong>Количество</strong>
+                    </div>
+                    <div class="materials-table materials-table--primary">
+                        {% for material in result.materials %}
+                            <div class="materials-table__row">
+                                <div><b>{{ material.title }}</b><small>Справочно ₸ {{ material.reference_price }} за {{ material.unit }}</small></div>
+                                <strong>{{ material.quantity }} {{ material.unit }}</strong>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <div class="grand-total grand-total--secondary"><span>Справочно по материалам</span><strong class="count-up" data-count-up="{{ result.reference_total }}" data-count-prefix="₸ ">₸ {{ result.reference_total }}</strong></div>
+                    {% if result.warning %}<p class="result-warning">{{ result.warning }}</p>{% endif %}
+
+                    {% if request.user.is_authenticated %}
+                    <div class="result-actions result-actions--backend result-actions--primary">
+                        <form method="post">
+                            {% csrf_token %}
+                            {% for field in form_fields %}
+                                <input type="hidden" name="{{ field.name }}" value="{{ field.value }}">
+                            {% endfor %}
+                            <button class="btn btn--secondary" type="submit" name="action" value="save_estimate">Сохранить в кабинет</button>
+                        </form>
+                        <form method="post">
+                            {% csrf_token %}
+                            {% for field in form_fields %}
+                                <input type="hidden" name="{{ field.name }}" value="{{ field.value }}">
+                            {% endfor %}
+                            <button class="btn btn--primary" type="submit" name="action" value="request_master">Отправить заявку мастерам</button>
+                        </form>
+                        <form method="post">
+                            {% csrf_token %}
+                            {% for field in form_fields %}
+                                <input type="hidden" name="{{ field.name }}" value="{{ field.value }}">
+                            {% endfor %}
+                            <button class="btn btn--secondary" type="submit" name="action" value="request_supplier">Отправить запрос поставщикам</button>
+                        </form>
+                    </div>
+                    {% else %}
+                    <div class="auth-soft-cta">
+                        <p>Войдите, чтобы сохранить смету и получить ответы мастеров.</p>
+                        <div class="result-actions">
+                            <a class="btn btn--primary" href="{% url 'accounts:login' %}?next={{ request.path|urlencode }}">Войти</a>
+                            <a class="btn btn--secondary" href="{% url 'accounts:register' %}">Регистрация</a>
+                        </div>
+                    </div>
+                    {% endif %}
+                    <p class="save-feedback" data-save-feedback aria-live="polite"></p>
+                {% else %}
+                    <div class="empty-result empty-result--panel">
+                        <b>Заполните параметры</b>
+                        <p>После расчёта здесь появятся материалы, количество и единицы измерения. Цена — только справочно.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </section>
+    </div>
+
+    <div class="calculator-tabs__panel calculator-tabs__panel--master">
+        <section class="master-template estimate-builder estimate-builder--panel" aria-labelledby="master-template-title" data-estimate-builder>
+            <div class="estimate-builder__header">
+                <div>
+                    <p class="section-heading__eyebrow">Шаблон мастера</p>
+                    <h2 id="master-template-title">Список материалов без цен</h2>
+                    <p>Проверьте материалы текущего калькулятора, укажите количество и скопируйте список для мастера.</p>
+                </div>
+                <div class="estimate-builder__total">
+                    <span>Список</span>
+                    <strong data-builder-total>0 позиций</strong>
+                </div>
+            </div>
+
+            <div class="estimate-builder__body estimate-builder__body--single">
+                <div class="estimate-editor estimate-editor--full">
+                    <div class="estimate-editor__topline">
+                        <span>Материалы текущего калькулятора</span>
+                        <button class="add-material-button" type="button" data-add-material>+ Добавить материал</button>
+                    </div>
+
+                    <div class="material-row-list" data-material-rows>
+                        {% for item in calculator.master_template_items %}
+                            <div class="material-row material-row--compact" data-material-row>
+                                <label>
+                                    <span>Материал</span>
+                                    <select data-row-material>
+                                        {% for option in calculator.master_template_items %}
+                                            <option value="{{ option.title }}" data-unit="{{ option.unit }}" {% if option.title == item.title %}selected{% endif %}>{{ option.title }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </label>
+                                <label class="quantity-stepper">
+                                    <span>Кол-во</span>
+                                    <div class="quantity-stepper__control">
+                                        <button type="button" data-step-decrease aria-label="Уменьшить количество">−</button>
+                                        <input type="number" min="0.1" step="0.1" value="{{ item.default_quantity|floatformat:1 }}" data-row-qty>
+                                        <button type="button" data-step-increase aria-label="Увеличить количество">+</button>
+                                    </div>
+                                </label>
+                                <div class="row-price row-price--unit">
+                                    <span>Ед.</span>
+                                    <strong data-row-total>{{ item.unit }}</strong>
+                                </div>
+                                <button class="remove-material-button" type="button" data-remove-row aria-label="Удалить материал">×</button>
+                            </div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="estimate-builder__actions estimate-builder__actions--copy">
+                        <button class="btn btn--primary" type="button" data-copy-template>Скопировать список</button>
+                    </div>
+                </div>
+            </div>
+
+            <textarea class="master-template__text" rows="7" data-master-output aria-label="Текст сметы для копирования"></textarea>
+            <pre class="master-template__preview" data-whatsapp-preview></pre>
+            <div class="copy-toast" role="status" aria-live="polite" data-copy-toast>Список скопирован</div>
+        </section>
+    </div>
+</section>
+
+{% if result %}
+<section class="post-flow-grid" aria-label="Следующие действия после расчёта">
+    <div class="recommendation-panel recommendation-panel--masters">
+        <div class="section-heading section-heading--inline">
+            <div>
+                <p class="section-heading__eyebrow">Рекомендации</p>
+                <h2>Рекомендуемые мастера</h2>
+            </div>
+            <span class="trust-badge">Проверенные профили</span>
+        </div>
+        <div class="recommendation-list recommendation-list--masters" aria-label="Рекомендуемые мастера">
+            {% for master in recommended_masters %}
+                <article class="master-card-v2">
+                    <div class="master-card-v2__photo-wrap">
+                        <img src="{{ master.photo }}" alt="{{ master.name }}" class="master-card-v2__photo" loading="lazy">
+                        <span class="master-status">{{ master.status }}</span>
+                    </div>
+                    <div class="master-card-v2__body">
+                        <div class="master-card-v2__head">
+                            <h3>{{ master.name }}</h3>
+                            <span class="master-rating">★ {{ master.rating }}</span>
+                        </div>
+                        <p>{{ master.specialization }}</p>
+                        <div class="master-meta-grid">
+                            <span>{{ master.experience }}</span>
+                            <span>{{ master.city }}</span>
+                        </div>
+                    </div>
+                </article>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="recommendation-panel recommendation-panel--stores">
+        <div class="section-heading section-heading--inline">
+            <div>
+                <p class="section-heading__eyebrow">Материалы</p>
+                <h2>Где купить материалы</h2>
+            </div>
+            <span class="trust-badge trust-badge--orange">Астана</span>
+        </div>
+        <div class="store-list" aria-label="Магазины материалов в Астане">
+            {% for seller in material_sellers %}
+                <article class="store-card">
+                    <div class="store-card__top">
+                        <div>
+                            <span class="store-label">Магазин</span>
+                            <h3>{{ seller.name }}</h3>
+                        </div>
+                        <strong class="store-price">{{ seller.price }}</strong>
+                    </div>
+                    <div class="store-info-grid">
+                        <div><span>Доставка</span><b>{{ seller.delivery }}</b></div>
+                        <div><span>Адрес</span><b>{{ seller.address }}</b></div>
+                        <div><span>Наличие</span><b>{{ seller.availability }}</b></div>
+                    </div>
+                    <div class="store-actions">
+                        <a class="card-button" href="{{ seller.whatsapp }}">Заказать</a>
+                    </div>
+                </article>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
+{% endblock %}
