@@ -63,6 +63,11 @@
                         </div>
                         <strong>{{ result.materials_count }} позиции</strong>
                     </div>
+                    <div class="result-params" aria-label="Введённые параметры">
+                        {% for field in form_fields %}
+                            <span><b>{{ field.label }}</b>{{ field.value }}{% if field.unit %} {{ field.unit }}{% endif %}</span>
+                        {% endfor %}
+                    </div>
                     <div class="result-card__head">
                         <span>Список материалов</span>
                         <strong>Количество</strong>

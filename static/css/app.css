@@ -2506,3 +2506,27 @@ button, input, select, textarea { font: inherit; }
         margin-inline: 12px;
     }
 }
+
+.result-params {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 12px 0;
+}
+
+.result-params span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 10px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    color: var(--muted);
+    background: var(--bg);
+    font-size: .84rem;
+    font-weight: 800;
+}
+
+.result-params b {
+    color: var(--text);
+}

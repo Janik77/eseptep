@@ -11,15 +11,11 @@ SEGMENTS = {
     'business': {'label': 'Бизнес', 'material': 1.22, 'labor': 10500},
 }
 
-SEGMENT_OPTIONS = [
-    {'value': key, 'label': segment['label']}
-    for key, segment in SEGMENTS.items()
-]
+SEGMENT_OPTIONS = [{'value': key, 'label': segment['label']} for key, segment in SEGMENTS.items()]
 
-DEFAULT_FIELDS = [
-    {'name': 'area', 'label': 'Площадь', 'type': 'number', 'unit': 'м²', 'min': 1, 'step': 0.1, 'default': 42},
-    {'name': 'thickness', 'label': 'Толщина', 'type': 'number', 'unit': 'см', 'min': 1, 'step': 0.1, 'default': 3},
-    {'name': 'rooms', 'label': 'Количество комнат', 'type': 'number', 'unit': 'комн.', 'min': 1, 'step': 1, 'default': 2},
+ELECTRIC_FIELDS = [
+    {'name': 'area', 'label': 'Площадь квартиры', 'type': 'number', 'unit': 'м²', 'min': 1, 'step': 0.1, 'default': 60},
+    {'name': 'points', 'label': 'Электроточки', 'type': 'number', 'unit': 'шт', 'min': 1, 'step': 1, 'default': 35},
     {'name': 'segment', 'label': 'Сегмент', 'type': 'select', 'default': 'comfort', 'options': SEGMENT_OPTIONS},
 ]
 
@@ -38,6 +34,105 @@ DEMOLITION_FIELDS = [
     },
 ]
 
+PLUMBING_FIELDS = [
+    {'name': 'area', 'label': 'Площадь квартиры', 'type': 'number', 'unit': 'м²', 'min': 1, 'step': 0.1, 'default': 60},
+    {'name': 'bathrooms', 'label': 'Количество санузлов', 'type': 'number', 'unit': 'шт', 'min': 1, 'step': 1, 'default': 1},
+]
+
+PLASTER_FIELDS = [
+    {'name': 'area', 'label': 'Площадь стен', 'type': 'number', 'unit': 'м²', 'min': 1, 'step': 0.1, 'default': 42},
+    {'name': 'thickness', 'label': 'Толщина слоя', 'type': 'number', 'unit': 'см', 'min': 0.5, 'step': 0.1, 'default': 2},
+    {'name': 'rooms', 'label': 'Количество комнат', 'type': 'number', 'unit': 'шт', 'min': 1, 'step': 1, 'default': 2},
+]
+
+DRYWALL_FIELDS = [
+    {'name': 'area', 'label': 'Площадь конструкции', 'type': 'number', 'unit': 'м²', 'min': 1, 'step': 0.1, 'default': 30},
+    {
+        'name': 'type',
+        'label': 'Тип конструкции',
+        'type': 'select',
+        'default': 'ceiling',
+        'options': [
+            {'value': 'ceiling', 'label': 'Потолок'},
+            {'value': 'partition', 'label': 'Перегородка'},
+            {'value': 'box', 'label': 'Короб / ниша'},
+        ],
+    },
+]
+
+SELF_LEVEL_FIELDS = [
+    {'name': 'area', 'label': 'Площадь пола', 'type': 'number', 'unit': 'м²', 'min': 1, 'step': 0.1, 'default': 42},
+    {'name': 'thickness', 'label': 'Толщина слоя', 'type': 'number', 'unit': 'мм', 'min': 1, 'step': 1, 'default': 5},
+]
+
+TILE_FIELDS = [
+    {'name': 'area', 'label': 'Площадь плитки', 'type': 'number', 'unit': 'м²', 'min': 1, 'step': 0.1, 'default': 24},
+    {'name': 'reserve', 'label': 'Запас', 'type': 'number', 'unit': '%', 'min': 5, 'step': 1, 'default': 10},
+    {
+        'name': 'layout',
+        'label': 'Тип укладки',
+        'type': 'select',
+        'default': 'straight',
+        'options': [
+            {'value': 'straight', 'label': 'Прямая'},
+            {'value': 'diagonal', 'label': 'Диагональная'},
+            {'value': 'complex', 'label': 'Сложная / крупный формат'},
+        ],
+    },
+]
+
+FLOORING_FIELDS = [
+    {'name': 'area', 'label': 'Площадь пола', 'type': 'number', 'unit': 'м²', 'min': 1, 'step': 0.1, 'default': 42},
+    {
+        'name': 'type',
+        'label': 'Тип покрытия',
+        'type': 'select',
+        'default': 'laminate',
+        'options': [
+            {'value': 'laminate', 'label': 'Ламинат'},
+            {'value': 'spc', 'label': 'SPC'},
+            {'value': 'parquet', 'label': 'Паркет / инженерная доска'},
+        ],
+    },
+    {
+        'name': 'layout',
+        'label': 'Тип укладки',
+        'type': 'select',
+        'default': 'straight',
+        'options': [
+            {'value': 'straight', 'label': 'Прямая'},
+            {'value': 'diagonal', 'label': 'Диагональная'},
+            {'value': 'herringbone', 'label': 'Ёлочка'},
+        ],
+    },
+]
+
+PAINTING_FIELDS = [
+    {'name': 'floor_area', 'label': 'Площадь пола', 'type': 'number', 'unit': 'м²', 'min': 1, 'step': 0.1, 'default': 42},
+    {
+        'name': 'type',
+        'label': 'Тип отделки',
+        'type': 'select',
+        'default': 'paint',
+        'options': [
+            {'value': 'wallpaper', 'label': 'Обои'},
+            {'value': 'paint', 'label': 'Покраска'},
+        ],
+    },
+]
+
+CEILING_FIELDS = [
+    {'name': 'area', 'label': 'Площадь потолка', 'type': 'number', 'unit': 'м²', 'min': 1, 'step': 0.1, 'default': 42},
+    {'name': 'light_points', 'label': 'Точки света', 'type': 'number', 'unit': 'шт', 'min': 0, 'step': 1, 'default': 6},
+    {'name': 'corners', 'label': 'Углы', 'type': 'number', 'unit': 'шт', 'min': 4, 'step': 1, 'default': 4},
+    {'name': 'cornice_length', 'label': 'Карниз / ниша', 'type': 'number', 'unit': 'м', 'min': 0, 'step': 0.1, 'default': 0},
+]
+
+DOORS_FIELDS = [
+    {'name': 'count', 'label': 'Количество дверей', 'type': 'number', 'unit': 'шт', 'min': 1, 'step': 1, 'default': 3},
+    {'name': 'segment', 'label': 'Сегмент', 'type': 'select', 'default': 'comfort', 'options': SEGMENT_OPTIONS},
+]
+
 WARM_FLOOR_FIELDS = [
     {'name': 'area', 'label': 'Площадь тёплого пола', 'type': 'number', 'unit': 'м²', 'min': 1, 'step': 0.1, 'default': 12},
     {
@@ -54,297 +149,157 @@ WARM_FLOOR_FIELDS = [
     {'name': 'segment', 'label': 'Сегмент', 'type': 'select', 'default': 'comfort', 'options': SEGMENT_OPTIONS},
 ]
 
-DOORS_FIELDS = [
-    {'name': 'count', 'label': 'Количество дверей', 'type': 'number', 'unit': 'шт', 'min': 1, 'step': 1, 'default': 3},
-    {'name': 'segment', 'label': 'Сегмент', 'type': 'select', 'default': 'comfort', 'options': SEGMENT_OPTIONS},
-]
-
-
-PLUMBING_FIELDS = [
-    {'name': 'area', 'label': 'Площадь квартиры', 'type': 'number', 'unit': 'м²', 'min': 1, 'step': 0.1, 'default': 60},
-    {'name': 'bathrooms', 'label': 'Количество санузлов', 'type': 'number', 'unit': 'шт', 'min': 1, 'step': 1, 'default': 1},
-]
-
-FLOORING_FIELDS = [
-    {'name': 'area', 'label': 'Площадь пола', 'type': 'number', 'unit': 'м²', 'min': 1, 'step': 0.1, 'default': 42},
-    {
-        'name': 'type',
-        'label': 'Тип покрытия',
-        'type': 'select',
-        'default': 'laminate',
-        'options': [
-            {'value': 'laminate', 'label': 'Ламинат'},
-            {'value': 'spc', 'label': 'SPC'},
-            {'value': 'parquet', 'label': 'Паркет / инженерная доска'},
-        ],
-    },
-]
-
-PAINTING_FIELDS = [
-    {'name': 'floor_area', 'label': 'Площадь пола', 'type': 'number', 'unit': 'м²', 'min': 1, 'step': 0.1, 'default': 42},
-    {
-        'name': 'type',
-        'label': 'Финиш',
-        'type': 'select',
-        'default': 'paint',
-        'options': [
-            {'value': 'wallpaper', 'label': 'Обои'},
-            {'value': 'paint', 'label': 'Покраска'},
-        ],
-    },
-]
-
-DEFAULT_WARNING = (
-    'Расчёт показывает ориентировочное количество материалов. '
-    'Цены указаны справочно и уточняются у поставщиков отдельным этапом.'
-)
+DEFAULT_WARNING = 'Расчёт предварительный. Количество материалов нужно уточнить по проекту и фактическим условиям.'
 
 
 def _material(title, ratio, unit, reference_price):
-    return {
-        'title': title,
-        'ratio': ratio,
-        'unit': unit,
-        'reference_price': reference_price,
-    }
+    return {'title': title, 'ratio': ratio, 'unit': unit, 'reference_price': reference_price}
 
 
-def _definition(slug, title, description, icon, unit, materials, fields=None, legacy_slugs=None):
+def _definition(slug, title, description, icon, unit, materials, fields, legacy_slugs=None):
     return {
         'slug': slug,
         'legacy_slugs': legacy_slugs or [],
         'title': title,
         'description': description,
         'icon': icon,
-        'fields': fields or DEFAULT_FIELDS,
+        'fields': fields,
         'materials': materials,
-        'units': {
-            'input': unit,
-            'materials': {material['title']: material['unit'] for material in materials},
-        },
+        'units': {'input': unit, 'materials': {material['title']: material['unit'] for material in materials}},
         'unit': unit,
-        'reference_price': {
-            'currency': 'KZT',
-            'source': 'demo_reference',
-            'is_primary_result': False,
-        },
+        'reference_price': {'currency': 'KZT', 'source': 'demo_reference', 'is_primary_result': False},
         'segments': SEGMENTS,
         'warning': DEFAULT_WARNING,
         'master_template_items': [
-            {
-                'title': material['title'],
-                'default_quantity': material['ratio'],
-                'unit': material['unit'],
-            }
+            {'title': material['title'], 'default_quantity': material['ratio'], 'unit': material['unit']}
             for material in materials
         ],
-        'base_materials': [
-            (material['title'], material['ratio'], material['reference_price'])
-            for material in materials
-        ],
+        'base_materials': [(material['title'], material['ratio'], material['reference_price']) for material in materials],
     }
 
 
 CALCULATORS = [
-    _definition(
-        'demontazh',
-        'Демонтаж',
-        'Мешки, защита, расходники и вывоз мусора по типу демонтажа.',
-        'demolition',
-        'м²',
-        [
-            _material('Мешки строительные 50 кг', 1.2, 'шт', 120),
-            _material('Плёнка защитная', 1.05, 'м²', 280),
-            _material('Бумажный малярный скотч', 0.04, 'рулон', 900),
-            _material('Перчатки рабочие', 0.05, 'пара', 650),
-            _material('Респиратор / маска', 0.05, 'шт', 750),
-            _material('Алмазный диск / расходный диск', 0.04, 'шт', 3500),
-            _material('Вывоз мусора / машина', 0.03, 'машина', 18000),
-            _material('Контейнер для строительного мусора', 0.03, 'контейнер', 28000),
-        ],
-        fields=DEMOLITION_FIELDS,
-    ),
-    _definition(
-        'elektrika',
-        'Электрика',
-        'Кабель, автоматы, подрозетники и точки подключения.',
-        'electric',
-        'точка',
-        [
-            _material('Кабель ВВГнг-LS', 4.5, 'м', 380),
-            _material('Подрозетник/коробка', 1.0, 'шт', 220),
-            _material('Автоматика и расходники', 0.08, 'комплект', 9000),
-        ],
-    ),
-    _definition(
-        'santehnika',
-        'Сантехника',
-        'Предварительный расчёт труб, сантехприборов и расходников с учётом кухни.',
-        'plumbing',
-        'м²',
-        [
-            _material('Труба водоснабжения', 0.35, 'м', 520),
-            _material('Канализационная труба Ø50', 0.18, 'м', 780),
-            _material('Канализационная труба Ø110', 0.08, 'м', 1600),
-            _material('Фитинги / уголки / муфты', 0.3, 'шт', 420),
-            _material('Краны / запорная арматура', 1.0, 'шт', 2800),
-            _material('Коллектор', 1.0, 'шт', 18000),
-            _material('Унитаз', 1.0, 'шт', 65000),
-            _material('Инсталляция', 1.0, 'шт', 85000),
-            _material('Раковина', 1.0, 'шт', 42000),
-            _material('Смеситель', 1.0, 'шт', 28000),
-            _material('Ванна', 1.0, 'шт', 120000),
-            _material('Душевая зона', 1.0, 'комплект', 140000),
-            _material('Сифон / выпуск', 1.0, 'шт', 6500),
-            _material('Теплоизоляция для труб', 0.2, 'м', 450),
-            _material('Герметик санитарный', 1.0, 'туба', 2400),
-            _material('ФУМ-лента', 1.0, 'рулон', 500),
-        ],
-        fields=PLUMBING_FIELDS,
-    ),
-    _definition(
-        'shtukaturka',
-        'Штукатурка',
-        'Расчёт смеси, маяков и грунтовки по площади стен.',
-        'trowel',
-        'м²',
-        [
-            _material('Гипсовая штукатурка, мешок 30 кг', 0.95, 'мешок', 3200),
-            _material('Грунтовка глубокого проникновения', 0.18, 'л', 650),
-            _material('Маяк штукатурный', 0.22, 'шт', 450),
-        ],
-    ),
-    _definition(
-        'gipsokarton-potolok',
-        'Гипсокартон Потолок',
-        'Листы ГКЛ, профиль, подвесы и крепёж для потолочных конструкций.',
-        'drywall',
-        'м²',
-        [
-            _material('Лист ГКЛ 12.5 мм', 0.38, 'шт', 3600),
-            _material('Профиль потолочный/направляющий', 1.7, 'м', 520),
-            _material('Подвесы, саморезы и лента', 0.1, 'комплект', 2800),
-        ],
-        legacy_slugs=['gipsokarton'],
-    ),
-    _definition(
-        'nalivnoy-pol',
-        'Наливной Пол',
-        'Смесь, грунт и демпферная лента для ровного основания.',
-        'floor',
-        'м²',
-        [
-            _material('Самовыравнивающаяся смесь, мешок 25 кг', 0.72, 'мешок', 4100),
-            _material('Грунтовка для пола', 0.12, 'л', 700),
-            _material('Демпферная лента', 0.45, 'м', 180),
-        ],
-    ),
-    _definition(
-        'plitka-keramogranit',
-        'Плитка - Керамогранит',
-        'Плитка/керамогранит, клей, затирка и СВП с учётом запаса.',
-        'tile',
-        'м²',
-        [
-            _material('Керамогранит', 1.08, 'м²', 6800),
-            _material('Плиточный клей, мешок 25 кг', 0.32, 'мешок', 3300),
-            _material('Затирка и СВП', 0.05, 'комплект', 9500),
-        ],
-        legacy_slugs=['plitka'],
-    ),
-    _definition(
-        'laminat-spc-parket',
-        'Ламинат-Spc-Паркет',
-        'Покрытие, подложка, плинтус и расходники по площади пола.',
-        'laminate',
-        'м²',
-        [
-            _material('Ламинат', 1.05, 'м²', 7200),
-            _material('SPC покрытие', 1.05, 'м²', 9200),
-            _material('Паркет / инженерная доска', 1.18, 'м²', 18500),
-            _material('Подложка', 1.05, 'м²', 900),
-            _material('Плинтус', 1.0, 'м', 1800),
-            _material('Уголки / соединители / заглушки', 0.1, 'комплект', 4500),
-            _material('Порог', 0.04, 'шт', 5500),
-            _material('Клей для паркета', 0.25, 'кг', 2600),
-            _material('Грунтовка', 0.12, 'л', 650),
-            _material('Плёнка защитная', 1.05, 'м²', 280),
-            _material('Мусорные мешки', 0.2, 'шт', 120),
-        ],
-        fields=FLOORING_FIELDS,
-    ),
-    _definition(
-        'malyarka',
-        'Малярка',
-        'Предварительный расчёт стен под покраску или обои без потолка.',
-        'paint',
-        'м²',
-        [
-            _material('Шпаклёвка', 0.18, 'мешок', 3600),
-            _material('Грунтовка', 0.16, 'л', 650),
-            _material('Стеклохолст / флизелин', 1.05, 'м²', 900),
-            _material('Краска', 0.22, 'л', 1800),
-            _material('Обои', 0.2, 'рулон', 9500),
-            _material('Малярная лента', 0.04, 'рулон', 900),
-            _material('Наждачная сетка', 0.03, 'упаковка', 1800),
-            _material('Плёнка защитная', 1.05, 'м²', 280),
-            _material('Мусорные мешки', 0.2, 'шт', 120),
-        ],
-        fields=PAINTING_FIELDS,
-    ),
-    _definition(
-        'natyazhnoy-potolok',
-        'Натяжной Потолок',
-        'Полотно, профиль, закладные и световые точки.',
-        'ceiling',
-        'м²',
-        [
-            _material('ПВХ полотно', 1.0, 'м²', 4300),
-            _material('Профиль стеновой', 0.45, 'м', 750),
-            _material('Закладные под свет', 0.18, 'шт', 1600),
-        ],
-    ),
-    _definition(
-        'dveri',
-        'Двери',
-        'Полотно, коробка, наличники и фурнитура по количеству дверей.',
-        'door',
-        'шт',
-        [
-            _material('Дверное полотно', 1.0, 'шт', 52000),
-            _material('Коробка дверная', 1.0, 'комплект', 12000),
-            _material('Наличники', 1.0, 'комплект', 8500),
-            _material('Ручки', 1.0, 'комплект', 6500),
-            _material('Замок', 1.0, 'шт', 4800),
-            _material('Петли', 1.0, 'комплект', 3500),
-            _material('Уплотнители / стопоры', 1.0, 'комплект', 2800),
-        ],
-        fields=DOORS_FIELDS,
-    ),
-    _definition(
-        'teplyy-pol',
-        'Тёплый Пол',
-        'Мат, кабель или водяной контур с расходниками по сегменту.',
-        'warmfloor',
-        'м²',
-        [
-            _material('Нагревательный мат', 1.05, 'м²', 14500),
-            _material('Нагревательный кабель', 9.0, 'м', 1200),
-            _material('Монтажная лента', 1.5, 'м', 450),
-            _material('Терморегулятор', 1.0, 'шт', 18500),
-            _material('Датчик температуры пола', 1.0, 'шт', 4500),
-            _material('Гофра под датчик', 2.0, 'м', 350),
-            _material('Теплоизоляция', 1.05, 'м²', 1600),
-            _material('Труба PE-RT / PEX 16 мм', 6.0, 'м', 650),
-            _material('Демпферная лента', 0.8, 'м', 180),
-            _material('Скобы / крепёж трубы', 4.0, 'шт', 80),
-            _material('Коллектор', 1.0, 'шт', 42000),
-            _material('Коллекторный шкаф', 1.0, 'шт', 38000),
-            _material('Фитинги', 1.0, 'комплект', 18000),
-            _material('Смесительный узел', 1.0, 'шт', 95000),
-        ],
-        fields=WARM_FLOOR_FIELDS,
-    ),
+    _definition('demontazh', 'Демонтаж', 'Мешки, защита, расходники и вывоз мусора по типу демонтажа.', 'demolition', 'м²', [
+        _material('Мешки строительные 50 кг', 1.2, 'шт', 120),
+        _material('Плёнка защитная', 1.05, 'м²', 280),
+        _material('Бумажный малярный скотч', 0.04, 'рулон', 900),
+        _material('Перчатки рабочие', 0.05, 'пара', 650),
+        _material('Респиратор / маска', 0.05, 'шт', 750),
+        _material('Алмазный диск / расходный диск', 0.04, 'шт', 3500),
+        _material('Вывоз мусора / машина', 0.03, 'машина', 18000),
+        _material('Контейнер для строительного мусора', 0.03, 'контейнер', 28000),
+    ], DEMOLITION_FIELDS),
+    _definition('elektrika', 'Электрика', 'Кабель, подрозетники, автоматы и щит по количеству точек.', 'electric', 'точка', [
+        _material('Кабель ВВГнг-LS 3×2.5', 7.0, 'м', 380),
+        _material('Кабель ВВГнг-LS 3×1.5', 3.5, 'м', 320),
+        _material('Подрозетник/коробка', 1.0, 'шт', 220),
+        _material('Розетки / выключатели', 1.0, 'шт', 2500),
+        _material('Автомат защиты', 0.18, 'шт', 4200),
+        _material('УЗО / дифавтомат', 0.06, 'шт', 13500),
+        _material('Щит электрический', 0.02, 'шт', 28000),
+        _material('Гофра / клипсы / расходники', 0.5, 'комплект', 1800),
+    ], ELECTRIC_FIELDS),
+    _definition('santehnika', 'Сантехника', 'Предварительный расчёт труб, сантехприборов и расходников с учётом кухни.', 'plumbing', 'м²', [
+        _material('Труба водоснабжения', 0.35, 'м', 520),
+        _material('Канализационная труба Ø50', 0.18, 'м', 780),
+        _material('Канализационная труба Ø110', 0.08, 'м', 1600),
+        _material('Фитинги / уголки / муфты', 0.3, 'шт', 420),
+        _material('Краны / запорная арматура', 1.0, 'шт', 2800),
+        _material('Коллектор', 1.0, 'шт', 18000),
+        _material('Унитаз', 1.0, 'шт', 65000),
+        _material('Инсталляция', 1.0, 'шт', 85000),
+        _material('Раковина', 1.0, 'шт', 42000),
+        _material('Смеситель', 1.0, 'шт', 28000),
+        _material('Ванна', 1.0, 'шт', 120000),
+        _material('Душевая зона', 1.0, 'комплект', 140000),
+        _material('Сифон / выпуск', 1.0, 'шт', 6500),
+        _material('Теплоизоляция для труб', 0.2, 'м', 450),
+        _material('Герметик санитарный', 1.0, 'туба', 2400),
+        _material('ФУМ-лента', 1.0, 'рулон', 500),
+    ], PLUMBING_FIELDS),
+    _definition('shtukaturka', 'Штукатурка', 'Расчёт смеси, маяков и грунтовки по площади стен и толщине слоя.', 'trowel', 'м²', [
+        _material('Гипсовая штукатурка, мешок 30 кг', 0.95, 'мешок', 3200),
+        _material('Грунтовка глубокого проникновения', 0.18, 'л', 650),
+        _material('Маяк штукатурный', 0.22, 'шт', 450),
+        _material('Уголок штукатурный', 0.08, 'шт', 600),
+    ], PLASTER_FIELDS),
+    _definition('gipsokarton-potolok', 'Гипсокартон Потолок', 'Листы ГКЛ, профиль, подвесы и крепёж по типу конструкции.', 'drywall', 'м²', [
+        _material('Лист ГКЛ 12.5 мм', 0.38, 'шт', 3600),
+        _material('Профиль потолочный/направляющий', 1.7, 'м', 520),
+        _material('Подвесы', 0.8, 'шт', 180),
+        _material('Саморезы', 18, 'шт', 18),
+        _material('Лента / шпаклёвка швов', 0.08, 'комплект', 2800),
+    ], DRYWALL_FIELDS, legacy_slugs=['gipsokarton']),
+    _definition('nalivnoy-pol', 'Наливной Пол', 'Смесь, грунт и демпферная лента по площади и толщине слоя.', 'floor', 'м²', [
+        _material('Самовыравнивающаяся смесь, мешок 25 кг', 0.72, 'мешок', 4100),
+        _material('Грунтовка для пола', 0.12, 'л', 700),
+        _material('Демпферная лента', 0.45, 'м', 180),
+        _material('Игольчатый валик / расходники', 0.03, 'комплект', 3500),
+    ], SELF_LEVEL_FIELDS),
+    _definition('plitka-keramogranit', 'Плитка - Керамогранит', 'Плитка/керамогранит, клей, затирка и СВП по запасу и типу укладки.', 'tile', 'м²', [
+        _material('Плитка / керамогранит', 1.08, 'м²', 6800),
+        _material('Плиточный клей, мешок 25 кг', 0.32, 'мешок', 3300),
+        _material('Затирка', 0.08, 'кг', 2200),
+        _material('СВП / крестики', 0.05, 'комплект', 9500),
+        _material('Грунтовка', 0.12, 'л', 650),
+    ], TILE_FIELDS, legacy_slugs=['plitka']),
+    _definition('laminat-spc-parket', 'Ламинат-Spc-Паркет', 'Покрытие, подложка, плинтус и расходники по типу покрытия и укладки.', 'laminate', 'м²', [
+        _material('Ламинат', 1.05, 'м²', 7200),
+        _material('SPC покрытие', 1.05, 'м²', 9200),
+        _material('Паркет / инженерная доска', 1.18, 'м²', 18500),
+        _material('Подложка', 1.05, 'м²', 900),
+        _material('Плинтус', 1.0, 'м', 1800),
+        _material('Уголки / соединители / заглушки', 0.1, 'комплект', 4500),
+        _material('Порог', 0.04, 'шт', 5500),
+        _material('Клей для паркета', 0.25, 'кг', 2600),
+        _material('Грунтовка', 0.12, 'л', 650),
+        _material('Плёнка защитная', 1.05, 'м²', 280),
+        _material('Мусорные мешки', 0.2, 'шт', 120),
+    ], FLOORING_FIELDS),
+    _definition('malyarka', 'Малярка', 'Предварительный расчёт стен под покраску или обои без потолка.', 'paint', 'м²', [
+        _material('Шпаклёвка', 0.18, 'мешок', 3600),
+        _material('Грунтовка', 0.16, 'л', 650),
+        _material('Стеклохолст / флизелин', 1.05, 'м²', 900),
+        _material('Краска', 0.22, 'л', 1800),
+        _material('Обои', 0.2, 'рулон', 9500),
+        _material('Малярная лента', 0.04, 'рулон', 900),
+        _material('Наждачная сетка', 0.03, 'упаковка', 1800),
+        _material('Плёнка защитная', 1.05, 'м²', 280),
+        _material('Мусорные мешки', 0.2, 'шт', 120),
+    ], PAINTING_FIELDS),
+    _definition('natyazhnoy-potolok', 'Натяжной Потолок', 'Полотно, профиль, световые точки, углы и карнизные ниши.', 'ceiling', 'м²', [
+        _material('ПВХ полотно', 1.0, 'м²', 4300),
+        _material('Профиль стеновой', 0.45, 'м', 750),
+        _material('Закладные под свет', 1.0, 'шт', 1600),
+        _material('Термокольцо / платформа', 1.0, 'шт', 900),
+        _material('Обвод угла', 1.0, 'шт', 500),
+        _material('Карнизная ниша / профиль', 1.0, 'м', 3200),
+    ], CEILING_FIELDS),
+    _definition('dveri', 'Двери', 'Полотно, коробка, наличники и фурнитура по количеству дверей.', 'door', 'шт', [
+        _material('Дверное полотно', 1.0, 'шт', 52000),
+        _material('Коробка дверная', 1.0, 'комплект', 12000),
+        _material('Наличники', 1.0, 'комплект', 8500),
+        _material('Ручки', 1.0, 'комплект', 6500),
+        _material('Замок', 1.0, 'шт', 4800),
+        _material('Петли', 1.0, 'комплект', 3500),
+        _material('Уплотнители / стопоры', 1.0, 'комплект', 2800),
+    ], DOORS_FIELDS),
+    _definition('teplyy-pol', 'Тёплый Пол', 'Мат, кабель или водяной контур с расходниками по сегменту.', 'warmfloor', 'м²', [
+        _material('Нагревательный мат', 1.05, 'м²', 14500),
+        _material('Нагревательный кабель', 9.0, 'м', 1200),
+        _material('Монтажная лента', 1.5, 'м', 450),
+        _material('Терморегулятор', 1.0, 'шт', 18500),
+        _material('Датчик температуры пола', 1.0, 'шт', 4500),
+        _material('Гофра под датчик', 2.0, 'м', 350),
+        _material('Теплоизоляция', 1.05, 'м²', 1600),
+        _material('Труба PE-RT / PEX 16 мм', 6.0, 'м', 650),
+        _material('Демпферная лента', 0.8, 'м', 180),
+        _material('Скобы / крепёж трубы', 4.0, 'шт', 80),
+        _material('Коллектор', 1.0, 'шт', 42000),
+        _material('Коллекторный шкаф', 1.0, 'шт', 38000),
+        _material('Фитинги', 1.0, 'комплект', 18000),
+        _material('Смесительный узел', 1.0, 'шт', 95000),
+    ], WARM_FLOOR_FIELDS),
 ]
 
 CALCULATORS_BY_SLUG = {item['slug']: item for item in CALCULATORS}
