@@ -89,6 +89,9 @@ def _calculate_demontazh(calculator, form_data):
         _row_by_title(calculator, 'Бумажный малярный скотч', max(1, area / 25)),
         _row_by_title(calculator, 'Перчатки рабочие', max(2, area / 20)),
         _row_by_title(calculator, 'Респиратор / маска', max(1, area / 20)),
+        _row_by_title(calculator, 'Очки защитные', max(1, area / 35)),
+        _row_by_title(calculator, 'Лом / монтажка', max(1, area / 60)),
+        _row_by_title(calculator, 'Шпатель / скребок', max(1, area / 25)),
         _row_by_title(calculator, 'Алмазный диск / расходный диск', max(1, area / 25)),
         _row_by_title(calculator, 'Вывоз мусора / машина', max(1, area / 45)),
         _row_by_title(calculator, 'Контейнер для строительного мусора', max(1, area / 45)),
@@ -101,20 +104,45 @@ def _calculate_elektrika(calculator, form_data):
     rooms = max(1, int(to_float(form_data.get('rooms'), 1)))
     lighting_lines = 2
     socket_groups = 5
-    stove_line = 1
-    total_groups = lighting_lines + socket_groups + stove_line + max(0, rooms - 1)
+    room_extra_groups = max(0, rooms - 1)
+    sockets = max(10, area * 0.32 + rooms * 4)
+    switches = max(4, rooms * 2 + 2)
+    junction_boxes = max(3, rooms + area / 25)
+    cable_25 = area * 3.2 + rooms * 12
+    cable_15 = area * 1.8 + rooms * 8
+    cable_6 = max(12, area * 0.18)
     materials = [
-        _row_by_title(calculator, 'Кабель ВВГнг-LS 3×2.5', area * 3.2 + rooms * 12),
-        _row_by_title(calculator, 'Кабель ВВГнг-LS 3×1.5', area * 1.8 + rooms * 8),
-        _row_by_title(calculator, 'Подрозетник/коробка', max(12, area * 0.45 + rooms * 6)),
-        _row_by_title(calculator, 'Розетки / выключатели', max(10, area * 0.38 + rooms * 5)),
-        _row_by_title(calculator, 'Автомат защиты', total_groups),
-        _row_by_title(calculator, 'УЗО / дифавтомат', max(2, rooms + 1)),
-        _row_by_title(calculator, 'Щит электрический', 1),
-        _row_by_title(calculator, 'Гофра / клипсы / расходники', max(1, area / 25)),
+        _row_by_title(calculator, 'Кабель ВВГнг-LS 3×2.5', cable_25),
+        _row_by_title(calculator, 'Кабель ВВГнг-LS 3×1.5', cable_15),
+        _row_by_title(calculator, 'Кабель ВВГнг-LS 3×6', cable_6),
+        _row_by_title(calculator, 'Подрозетники', max(12, sockets + switches)),
+        _row_by_title(calculator, 'Распредкоробки', junction_boxes),
+        _row_by_title(calculator, 'Розетки', sockets),
+        _row_by_title(calculator, 'Выключатели', switches),
+        _row_by_title(calculator, 'Автомат 10А', lighting_lines),
+        _row_by_title(calculator, 'Автомат 16А', socket_groups + room_extra_groups),
+        _row_by_title(calculator, 'Автомат 25А', 1),
+        _row_by_title(calculator, 'Автомат 32А', 1),
+        _row_by_title(calculator, 'УЗО', max(2, rooms)),
+        _row_by_title(calculator, 'Дифавтомат', max(1, rooms // 2)),
+        _row_by_title(calculator, 'Электрощит', 1),
+        _row_by_title(calculator, 'Гофра 16 мм', cable_15 * 0.55),
+        _row_by_title(calculator, 'Гофра 20 мм', (cable_25 + cable_6) * 0.35),
+        _row_by_title(calculator, 'Клипсы для гофры', max(30, area * 1.2)),
+        _row_by_title(calculator, 'Дюбель-гвоздь / анкер', max(40, area * 1.1)),
+        _row_by_title(calculator, 'Гвозди Toua / газовый пистолет', max(30, area * 0.7)),
+        _row_by_title(calculator, 'Реле напряжения', 1),
+        _row_by_title(calculator, 'DIN-рейка', 1),
+        _row_by_title(calculator, 'Нулевая шина', 1),
+        _row_by_title(calculator, 'Заземляющая шина', 1),
+        _row_by_title(calculator, 'Клеммы WAGO', max(20, junction_boxes * 6)),
+        _row_by_title(calculator, 'Интернет кабель UTP', area * 0.8 + rooms * 8),
+        _row_by_title(calculator, 'ТВ кабель', area * 0.45 + rooms * 5),
+        _row_by_title(calculator, 'Кабель домофона', max(10, area * 0.2)),
+        _row_by_title(calculator, 'Изолента', max(2, area / 35)),
+        _row_by_title(calculator, 'Стяжки пластиковые', max(50, area * 1.5)),
+        _row_by_title(calculator, 'Алебастр / гипс', max(5, area * 0.18)),
     ]
-    materials.append({'title': 'Кабель на плиту 3×6', 'quantity': 1, 'unit': 'линия', 'reference_price': 18000})
-    materials.append({'title': 'Автомат плиты 32А', 'quantity': 1, 'unit': 'шт', 'reference_price': 6500})
     return _build_result(calculator, materials, form_data, area, rooms, 1, 'comfort', _plain_segment(), f"{calculator['title']} · {area:g} м² · {rooms} комн.")
 
 
@@ -149,10 +177,21 @@ def _calculate_shtukaturka(calculator, form_data):
     thickness = to_float(form_data.get('thickness'), 2)
     thickness_factor = max(thickness, 0.5) / 2
     materials = [
-        _row_by_title(calculator, 'Гипсовая штукатурка, мешок 30 кг', area * 0.95 * thickness_factor),
-        _row_by_title(calculator, 'Грунтовка глубокого проникновения', area * 0.18),
-        _row_by_title(calculator, 'Маяк штукатурный', area * 0.22),
-        _row_by_title(calculator, 'Уголок штукатурный', max(4, area * 0.08)),
+        _row_by_title(calculator, 'Штукатурка гипсовая 30 кг', area * 0.95 * thickness_factor),
+        _row_by_title(calculator, 'Грунтовка 10 кг', max(1, area * 0.018)),
+        _row_by_title(calculator, 'Бетоноконтакт 15 кг', max(1, area * 0.012)),
+        _row_by_title(calculator, 'Армировочная сетка', area * 1.05),
+        _row_by_title(calculator, 'Маяк железный 3 м', area * 0.22),
+        _row_by_title(calculator, 'Алюминиевый уголок 90°', max(4, area * 0.08)),
+        _row_by_title(calculator, 'Правило 1,5 м', 1),
+        _row_by_title(calculator, 'Правило 3 м', 1),
+        _row_by_title(calculator, 'Шпатель 15 см', 2),
+        _row_by_title(calculator, 'Валик', 1),
+        _row_by_title(calculator, 'Ведро строительное', max(2, area / 40)),
+        _row_by_title(calculator, 'Бумажный малярный скотч', max(1, area / 25)),
+        _row_by_title(calculator, 'Плёнка защитная', area * 1.05),
+        _row_by_title(calculator, 'Монтажная пена', max(1, area / 50)),
+        _row_by_title(calculator, 'Мусорные мешки', area / 5),
     ]
     return _build_result(calculator, materials, form_data, area, 1, thickness, 'comfort', _plain_segment(), f"{calculator['title']} · {area:g} м² · {thickness:g} см")
 
