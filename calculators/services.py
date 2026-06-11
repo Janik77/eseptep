@@ -190,18 +190,31 @@ def _calculate_nalivnoy_pol(calculator, form_data):
 
 def _calculate_plitka(calculator, form_data):
     area = to_float(form_data.get('area'), 0)
-    reserve = to_float(form_data.get('reserve'), 10)
-    layout = form_data.get('layout', 'straight')
-    layout_factor = {'straight': 1.0, 'diagonal': 1.06, 'complex': 1.1}.get(layout, 1.0)
-    tile_area = area * (1 + reserve / 100) * layout_factor
+    zone_type = form_data.get('zone_type', 'floor')
+    tile_format = form_data.get('tile_format', '60x60')
+    reserve_factor = {'floor': 1.07, 'walls': 1.1, 'bathroom': 1.12, 'backsplash': 1.15}.get(zone_type, 1.08)
+    is_large_format = tile_format == '120x120'
+    tile_area = area * reserve_factor
+    edge_length = 4 * sqrt(area) if area > 0 else 0
+    wet_zone = zone_type == 'bathroom'
+    backsplash = zone_type == 'backsplash'
     materials = [
-        _row_by_title(calculator, 'Плитка / керамогранит', tile_area),
-        _row_by_title(calculator, 'Плиточный клей, мешок 25 кг', area * 0.32 * layout_factor),
-        _row_by_title(calculator, 'Затирка', area * 0.08),
-        _row_by_title(calculator, 'СВП / крестики', max(1, area * 0.05 * layout_factor)),
-        _row_by_title(calculator, 'Грунтовка', area * 0.12),
+        _row_by_title(calculator, 'Плитка / кафель', 0 if is_large_format else tile_area),
+        _row_by_title(calculator, 'Керамогранит', tile_area if is_large_format else 0),
+        _row_by_title(calculator, 'Гидроизоляция', area * 1.05 if wet_zone else 0),
+        _row_by_title(calculator, 'Клей плиточный 25 кг', 0 if is_large_format else area * 0.32),
+        _row_by_title(calculator, 'Клей для крупного формата 25 кг', area * 0.38 if is_large_format else 0),
+        _row_by_title(calculator, 'Фуга', 0 if wet_zone else area * (0.06 if backsplash else 0.08)),
+        _row_by_title(calculator, 'Эпоксидная фуга', area * 0.08 if wet_zone else 0),
+        _row_by_title(calculator, 'СВП', max(1, area * (0.08 if is_large_format else 0.04))),
+        _row_by_title(calculator, 'Крестики', 0 if is_large_format else max(1, area * 0.04)),
+        _row_by_title(calculator, 'Профиль / уголок для плитки', max(1, edge_length * (0.35 if backsplash else 0.2))),
+        _row_by_title(calculator, 'Силикон санитарный', max(1, area / 20) if wet_zone or backsplash else 1),
+        _row_by_title(calculator, 'Плиткорезный диск', max(1, area / 35)),
+        _row_by_title(calculator, 'Губка / ведро / мелкие расходники', max(1, area / 30)),
+        _row_by_title(calculator, 'Мусорные мешки', area / 5),
     ]
-    return _build_result(calculator, materials, form_data, area, 1, 1, 'comfort', _plain_segment(), f"{calculator['title']} · {area:g} м² · запас {reserve:g}%")
+    return _build_result(calculator, materials, form_data, area, 1, 1, 'comfort', _plain_segment(), f"{calculator['title']} · {area:g} м² · {zone_type} · {tile_format}")
 
 
 def _calculate_laminat_spc_parket(calculator, form_data):
@@ -296,30 +309,33 @@ def _calculate_teplyy_pol(calculator, form_data):
     if floor_type == 'cable':
         materials = [
             _row_by_title(calculator, 'Нагревательный кабель', area * 9),
-            _row_by_title(calculator, 'Монтажная лента', area * 1.5),
+            _row_by_title(calculator, 'Монтажная лента для кабеля', area * 1.5),
             _row_by_title(calculator, 'Терморегулятор', 1),
+            _row_by_title(calculator, 'Wi-Fi терморегулятор', 1),
             _row_by_title(calculator, 'Датчик температуры пола', 1),
             _row_by_title(calculator, 'Гофра под датчик', max(2, area * 0.25)),
-            _row_by_title(calculator, 'Теплоизоляция', area * 1.05),
+            _row_by_title(calculator, 'Теплоизоляция под тёплый пол', area * 1.05),
         ]
     elif floor_type == 'water':
         contours = max(1, area / 15)
         materials = [
             _row_by_title(calculator, 'Труба PE-RT / PEX 16 мм', area * 6),
-            _row_by_title(calculator, 'Теплоизоляция', area * 1.05),
+            _row_by_title(calculator, 'Теплоизоляция под тёплый пол', area * 1.05),
             _row_by_title(calculator, 'Демпферная лента', area * 0.8),
             _row_by_title(calculator, 'Скобы / крепёж трубы', area * 4),
             _row_by_title(calculator, 'Коллектор', contours),
             _row_by_title(calculator, 'Коллекторный шкаф', 1),
-            _row_by_title(calculator, 'Фитинги', contours),
+            _row_by_title(calculator, 'Фитинги и соединители', contours),
+            _row_by_title(calculator, 'Смесительный узел', 1),
         ]
     else:
         materials = [
             _row_by_title(calculator, 'Нагревательный мат', area * 1.05),
             _row_by_title(calculator, 'Терморегулятор', 1),
+            _row_by_title(calculator, 'Wi-Fi терморегулятор', 1),
             _row_by_title(calculator, 'Датчик температуры пола', 1),
             _row_by_title(calculator, 'Гофра под датчик', max(2, area * 0.25)),
-            _row_by_title(calculator, 'Теплоизоляция', area * 1.05),
+            _row_by_title(calculator, 'Теплоизоляция под тёплый пол', area * 1.05),
         ]
     return _build_result(
         calculator,
