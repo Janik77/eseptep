@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+{% block title %}Кабинет мастера — ESEPTEP{% endblock %}
+{% block breadcrumbs %}<nav class="breadcrumbs"><a href="{% url 'core:home' %}">Главная</a><span>›</span><b>Кабинет мастера</b></nav>{% endblock %}
+
+{% block content %}
+<section class="dashboard">
+  <div class="dashboard-card master-profile-card">
+    <div class="master-profile-head">
+      {% if master_profile.photo %}
+      <img src="{{ master_profile.photo.url }}" alt="{{ master_profile.full_name }}" class="master-avatar">
+      {% else %}
+      <div class="master-avatar master-avatar--placeholder">{{ master_profile.full_name|first }}</div>
+      {% endif %}
+      <div>
+        <h1>{{ master_profile.full_name }}</h1>
+        <p>{{ master_profile.city }} · {{ master_profile.specialization }}</p>
+        <p>Опыт: {{ master_profile.experience_years }} лет · Рейтинг: {{ master_profile.rating }} · {% if master_profile.is_available %}Свободен{% else %}Занят{% endif %}</p>
+      </div>
+    </div>
+    <a class="btn btn--secondary" href="{% url 'accounts:master_profile_edit' %}">Редактировать профиль</a>
+  </div>
+
+  <div class="dashboard-card">
+    <h2>Новые заявки</h2>
+    <div class="dashboard-list">
+      {% for request_item in new_requests %}
+      <article class="dashboard-item">
+        <b>{{ request_item.project.title }}</b>
+        <p>{{ request_item.project.area_m2 }} м² · {{ request_item.project.city }} · {{ request_item.project.get_repair_segment_display }}</p>
+        <p>Сумма сметы: {% if request_item.calculation %}₸ {{ request_item.calculation.grand_total }}{% else %}—{% endif %}</p>
+        <small>{{ request_item.comment|default:'Без комментария' }} · {{ request_item.created_at|date:'d.m.Y' }}</small>
+
+        <form method="post" class="master-response-form">
+          {% csrf_token %}
+          <input type="hidden" name="request_id" value="{{ request_item.id }}">
+          <label class="auth-field">
+            <span>{{ response_form.price_from.label }}</span>
+            <input type="number" step="0.01" min="0" name="price_from" required>
+          </label>
+          <label class="auth-field">
+            <span>{{ response_form.message.label }}</span>
+            <textarea name="message" rows="3"></textarea>
+          </label>
+          <button type="submit" class="btn btn--primary">Отправить отклик</button>
+        </form>
+      </article>
+      {% empty %}<div class="empty-state">Пока нет новых заявок.</div>{% endfor %}
+    </div>
+  </div>
+
+  <div class="dashboard-card">
+    <h2>Мои отклики</h2>
+    <div class="dashboard-list">
+      {% for response in my_responses %}
+      <article class="dashboard-item">
+        <b>{{ response.request.project.title }}</b>
+        <p>Цена: ₸ {{ response.price_from }} · Статус: {{ response.get_status_display }}</p>
+        <small>{{ response.created_at|date:'d.m.Y' }}</small>
+      </article>
+      {% empty %}<div class="empty-state">Вы еще не отправляли отклики.</div>{% endfor %}
+    </div>
+  </div>
+</section>
+{% endblock %}
