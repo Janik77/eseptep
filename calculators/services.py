@@ -166,7 +166,7 @@ def _calculate_elektrika(calculator, form_data):
         'УЗО': max(2, rooms + 1),
         'Дифавтомат': max(1, rooms),
         'Реле напряжения': 1,
-        'Электрощит': 1,
+        'Электрощит 36 модулей': 1,
         'Нулевая шина': max(1, rooms),
         'Заземляющая шина': max(1, rooms),
         'Интернет кабель UTP': ceil(area * 0.8),
@@ -179,16 +179,16 @@ def _calculate_elektrika(calculator, form_data):
     cable_protection = base_quantities['Гофра 16 мм'] + base_quantities['Гофра 20 мм']
     base_quantities['Клипсы для гофры'] = ceil(cable_protection * 2.5)
     base_quantities['Дюбель-гвоздь / анкер'] = ceil(cable_protection * 2.5)
-    base_quantities['Гвозди Toua / расходник'] = ceil(cable_protection * 2.5)
+    base_quantities['Гвозди Toua'] = ceil(cable_protection * 2.5)
     base_quantities['DIN-рейка'] = max(1, ceil((base_quantities['Автомат 10А'] + base_quantities['Автомат 16А'] + base_quantities['УЗО'] + base_quantities['Дифавтомат']) / 5))
     base_quantities['Клеммы WAGO'] = ceil(base_quantities['Распредкоробки'] * 7)
-    base_quantities['Алебастр'] = ceil(base_quantities['Подрозетники'] * 0.3)
+    base_quantities['Алебастр / гипс'] = ceil(base_quantities['Подрозетники'] * 0.3)
 
     variant_settings = {
         'economy': {
             'title': 'Эконом',
-            'factor': 0.88,
-            'price': 0.9,
+            'factor': 1.0,
+            'price': 0.5405683293,
             'description': 'Минимальная комплектация для базовой разводки без большого запаса.',
         },
         'comfort': {
@@ -199,13 +199,13 @@ def _calculate_elektrika(calculator, form_data):
         },
         'business': {
             'title': 'Бизнес',
-            'factor': 1.18,
-            'price': 1.18,
+            'factor': 1.0,
+            'price': 2.2594368116,
             'description': 'Расширенная комплектация: больше групп, защиты, кабеля и расходников.',
         },
     }
     fixed_materials = {
-        'Автомат 25А', 'Автомат 32А', 'Реле напряжения', 'Электрощит', 'Нулевая шина', 'Заземляющая шина', 'Стяжки пластиковые'
+        'Автомат 25А', 'Автомат 32А', 'Реле напряжения', 'Электрощит 36 модулей', 'Нулевая шина', 'Заземляющая шина', 'Стяжки пластиковые'
     }
     semi_fixed_materials = {'Автомат 10А', 'Автомат 16А', 'УЗО', 'Дифавтомат', 'DIN-рейка', 'Изолента'}
 
