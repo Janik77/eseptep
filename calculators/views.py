@@ -109,6 +109,8 @@ def calculator_detail(request, slug):
         raise Http404('Калькулятор не найден')
 
     form_data = _get_form_data(calculator, request.POST if request.method == 'POST' else None)
+    if request.method == 'POST' and request.POST.get('selected_variant'):
+        form_data['selected_variant'] = request.POST.get('selected_variant')
     form_fields = _get_form_fields(calculator, form_data)
     result = None
 

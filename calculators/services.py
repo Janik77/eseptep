@@ -1,6 +1,6 @@
 """Server-side calculator services for ESEPTEP."""
 
-from math import sqrt
+from math import ceil, sqrt
 
 from accounts.models import Calculation, ClientProject
 
@@ -64,6 +64,12 @@ def save_calculation_for_user(user, slug, result):
         grand_total=result['grand_total'],
         result_data={
             'materials': result['materials'],
+            'variants': result.get('variants'),
+            'selected_variant': result.get('selected_variant'),
+            'totals': result.get('totals', {
+                'materials_total': result['materials_total'],
+                'grand_total': result['grand_total'],
+            }),
             'summary': result['summary'],
             'segment_label': result['segment_label'],
             'warning': result['warning'],
@@ -81,95 +87,221 @@ def _calculate_ratio_based(calculator, form_data):
 
 def _calculate_demontazh(calculator, form_data):
     area = to_float(form_data.get('area'), 0)
-    demolition_type = form_data.get('type', 'partial')
-    bag_multiplier = {'cosmetic': 1.2, 'partial': 2.0, 'full': 2.8}.get(demolition_type, 2.0)
-    materials = [
-        _row_by_title(calculator, 'Мешки строительные 50 кг', area * bag_multiplier),
-        _row_by_title(calculator, 'Плёнка защитная', area * 1.05),
-        _row_by_title(calculator, 'Бумажный малярный скотч', max(1, area / 25)),
-        _row_by_title(calculator, 'Перчатки рабочие', max(2, area / 20)),
-        _row_by_title(calculator, 'Респиратор / маска', max(1, area / 20)),
-        _row_by_title(calculator, 'Очки защитные', max(1, area / 35)),
-        _row_by_title(calculator, 'Лом / монтажка', max(1, area / 60)),
-        _row_by_title(calculator, 'Шпатель / скребок', max(1, area / 25)),
-        _row_by_title(calculator, 'Алмазный диск / расходный диск', max(1, area / 25)),
-        _row_by_title(calculator, 'Вывоз мусора / машина', max(1, area / 45)),
-        _row_by_title(calculator, 'Контейнер для строительного мусора', max(1, area / 45)),
-    ]
-    return _build_result(calculator, materials, form_data, area, 1, 1, 'comfort', _plain_segment(), f"{calculator['title']} · {area:g} м² · {demolition_type}")
+    demolition_type = form_data.get('demolition_type') or form_data.get('type', 'partial')
+    selected_variant = form_data.get('selected_variant', 'optimal')
+
+    film_m2 = ceil(area * 1.05)
+    tape = max(1, ceil(area / 25))
+    gloves = max(1, ceil(area / 30))
+    truck = max(1, ceil(area / 45))
+
+    if demolition_type == 'cosmetic':
+        bags = {'base': ceil(area * 0.8), 'optimal': ceil(area * 1.1), 'maximum': ceil(area * 1.4)}
+        disks = max(1, ceil(area / 50))
+        respirators = max(1, ceil(area / 60))
+        container = 0
+    elif demolition_type == 'full':
+        bags = {'base': ceil(area * 2.2), 'optimal': ceil(area * 2.8), 'maximum': ceil(area * 3.5)}
+        disks = ceil(area / 25)
+        respirators = ceil(area / 20)
+        container = max(1, ceil(area / 45))
+    else:
+        bags = {'base': ceil(area * 1.4), 'optimal': ceil(area * 1.8), 'maximum': ceil(area * 2.3)}
+        disks = max(1, ceil(area / 35))
+        respirators = max(1, ceil(area / 35))
+        container = max(1, ceil(area / 80))
+
+    variants = {
+        'base': _variant('base', 'Базовый', 'Минимальные расходники и базовый вывоз мусора.', [
+            _variant_row('Мешки строительные 50 кг', bags['base'], 'шт', 70),
+            _variant_row('Плёнка защитная', film_m2, 'м²', 35),
+            _variant_row('Бумажный малярный скотч', tape, 'шт', 900),
+            _variant_row('Перчатки рабочие', gloves, 'пар', 150),
+            _variant_row('Алмазный диск / расходный диск', disks, 'шт', 1500),
+            _variant_row('Вывоз мусора / машина', truck, 'рейс', 25000),
+            _variant_row('Контейнер для мусора', container, 'шт', 80000),
+        ]),
+        'optimal': _variant('optimal', 'Оптимальный', 'Самый практичный вариант: нормальные расходники и вывоз.', [
+            _variant_row('Мешки строительные 50 кг', bags['optimal'], 'шт', 80),
+            _variant_row('Плёнка защитная плотная', film_m2, 'м²', 45),
+            _variant_row('Бумажный малярный скотч', tape, 'шт', 1200),
+            _variant_row('Перчатки рабочие', gloves, 'пар', 250),
+            _variant_row('Респиратор / маска', respirators, 'шт', 800),
+            _variant_row('Алмазный диск средний', disks, 'шт', 3500),
+            _variant_row('Вывоз мусора / Газель', truck, 'рейс', 35000),
+            _variant_row('Контейнер для строительного мусора', container, 'шт', 100000),
+        ]),
+        'maximum': _variant('maximum', 'Максимальный', 'Больше запас расходников, защита от пыли и усиленный вывоз.', [
+            _variant_row('Мешки строительные 50 кг', bags['maximum'], 'шт', 90),
+            _variant_row('Плёнка защитная плотная', film_m2, 'м²', 55),
+            _variant_row('Бумажный малярный скотч', tape, 'шт', 1600),
+            _variant_row('Перчатки рабочие', gloves, 'пар', 450),
+            _variant_row('Респиратор / защита от пыли', respirators, 'шт', 1500),
+            _variant_row('Алмазный диск хороший', disks, 'шт', 7000),
+            _variant_row('Вывоз мусора / отдельная машина', truck, 'рейс', 45000),
+            _variant_row('Контейнер для строительного мусора', container, 'шт', 120000),
+        ]),
+    }
+    return _build_variant_result(calculator, variants, selected_variant, form_data, area, 1, 1, f"{calculator['title']} · {area:g} м² · {demolition_type}")
 
 
 def _calculate_elektrika(calculator, form_data):
     area = to_float(form_data.get('area'), 0)
     rooms = max(1, int(to_float(form_data.get('rooms'), 1)))
-    lighting_lines = 2
-    socket_groups = 5
-    room_extra_groups = max(0, rooms - 1)
-    sockets = max(10, area * 0.32 + rooms * 4)
-    switches = max(4, rooms * 2 + 2)
-    junction_boxes = max(3, rooms + area / 25)
-    cable_25 = area * 3.2 + rooms * 12
-    cable_15 = area * 1.8 + rooms * 8
-    cable_6 = max(12, area * 0.18)
-    materials = [
-        _row_by_title(calculator, 'Кабель ВВГнг-LS 3×2.5', cable_25),
-        _row_by_title(calculator, 'Кабель ВВГнг-LS 3×1.5', cable_15),
-        _row_by_title(calculator, 'Кабель ВВГнг-LS 3×6', cable_6),
-        _row_by_title(calculator, 'Подрозетники', max(12, sockets + switches)),
-        _row_by_title(calculator, 'Распредкоробки', junction_boxes),
-        _row_by_title(calculator, 'Розетки', sockets),
-        _row_by_title(calculator, 'Выключатели', switches),
-        _row_by_title(calculator, 'Автомат 10А', lighting_lines),
-        _row_by_title(calculator, 'Автомат 16А', socket_groups + room_extra_groups),
-        _row_by_title(calculator, 'Автомат 25А', 1),
-        _row_by_title(calculator, 'Автомат 32А', 1),
-        _row_by_title(calculator, 'УЗО', max(2, rooms)),
-        _row_by_title(calculator, 'Дифавтомат', max(1, rooms // 2)),
-        _row_by_title(calculator, 'Электрощит', 1),
-        _row_by_title(calculator, 'Гофра 16 мм', cable_15 * 0.55),
-        _row_by_title(calculator, 'Гофра 20 мм', (cable_25 + cable_6) * 0.35),
-        _row_by_title(calculator, 'Клипсы для гофры', max(30, area * 1.2)),
-        _row_by_title(calculator, 'Дюбель-гвоздь / анкер', max(40, area * 1.1)),
-        _row_by_title(calculator, 'Гвозди Toua / газовый пистолет', max(30, area * 0.7)),
-        _row_by_title(calculator, 'Реле напряжения', 1),
-        _row_by_title(calculator, 'DIN-рейка', 1),
-        _row_by_title(calculator, 'Нулевая шина', 1),
-        _row_by_title(calculator, 'Заземляющая шина', 1),
-        _row_by_title(calculator, 'Клеммы WAGO', max(20, junction_boxes * 6)),
-        _row_by_title(calculator, 'Интернет кабель UTP', area * 0.8 + rooms * 8),
-        _row_by_title(calculator, 'ТВ кабель', area * 0.45 + rooms * 5),
-        _row_by_title(calculator, 'Кабель домофона', max(10, area * 0.2)),
-        _row_by_title(calculator, 'Изолента', max(2, area / 35)),
-        _row_by_title(calculator, 'Стяжки пластиковые', max(50, area * 1.5)),
-        _row_by_title(calculator, 'Алебастр / гипс', max(5, area * 0.18)),
-    ]
-    return _build_result(calculator, materials, form_data, area, rooms, 1, 'comfort', _plain_segment(), f"{calculator['title']} · {area:g} м² · {rooms} комн.")
+    selected_variant = form_data.get('selected_variant', 'optimal')
+
+    light_points = max(rooms + 2, ceil(area / 18))
+    socket_points = max(rooms * 4 + 6, ceil(area / 4))
+    switches = max(rooms + 2, ceil(light_points * 0.8))
+    junction_boxes = max(rooms + 2, ceil(light_points * 0.7))
+    cable_light = ceil(area * 1.4)
+    cable_socket = ceil(area * 2.2)
+    cable_stove = 15
+    gofra = ceil((cable_light + cable_socket + cable_stove) * 0.45)
+    clips = ceil(gofra * 2.5)
+    tv_cable = ceil(area * 0.35)
+    internet_cable = ceil(area * 0.25)
+    podrozetniki = socket_points + switches
+
+    variants = {
+        'base': _variant('base', 'Базовый', 'Базовая комплектация: кабель, автоматы, розетки, выключатели и щит.', [
+            _variant_row('Кабель ВВГнг-LS 3×1.5 — освещение', cable_light, 'м', 520),
+            _variant_row('Кабель ВВГнг-LS 3×2.5 — розетки', cable_socket, 'м', 850),
+            _variant_row('Кабель ВВГнг-LS 3×6 — плита', cable_stove, 'м', 1800),
+            _variant_row('Подрозетники', podrozetniki, 'шт', 180),
+            _variant_row('Розетки', socket_points, 'шт', 1200),
+            _variant_row('Выключатели', switches, 'шт', 1100),
+            _variant_row('Распределительные коробки', junction_boxes, 'шт', 450),
+            _variant_row('Автоматы освещения', 2, 'шт', 2200),
+            _variant_row('Автоматы розеток', max(3, ceil(socket_points / 5)), 'шт', 2500),
+            _variant_row('Автомат плиты 32А', 1, 'шт', 3500),
+            _variant_row('Щит электрический', 1, 'шт', 18000),
+            _variant_row('Гофра', gofra, 'м', 180),
+            _variant_row('Клипсы / крепёж', clips, 'шт', 35),
+            _variant_row('Изолента', 3, 'шт', 700),
+            _variant_row('Стяжки пластиковые', 2, 'пачка', 1800),
+            _variant_row('Алебастр / гипс для подрозетников', ceil(podrozetniki * 0.4), 'кг', 300),
+        ]),
+        'optimal': _variant('optimal', 'Оптимальный', 'Оптимальный вариант: больше защиты, отдельные линии кухни и влажных зон.', [
+            _variant_row('Кабель ВВГнг-LS 3×1.5 — освещение', ceil(cable_light * 1.12), 'м', 580),
+            _variant_row('Кабель ВВГнг-LS 3×2.5 — розетки / кухня / духовка', ceil(cable_socket * 1.12), 'м', 950),
+            _variant_row('Кабель ВВГнг-LS 3×6 — плита', cable_stove, 'м', 2000),
+            _variant_row('Подрозетники усиленные', podrozetniki, 'шт', 250),
+            _variant_row('Розетки', socket_points, 'шт', 1800),
+            _variant_row('Выключатели', switches, 'шт', 1600),
+            _variant_row('Распределительные коробки', junction_boxes, 'шт', 650),
+            _variant_row('Автоматы освещения', 2, 'шт', 3200),
+            _variant_row('Автоматы розеток', max(4, ceil(socket_points / 5)), 'шт', 3500),
+            _variant_row('Автомат плиты 32А', 1, 'шт', 4500),
+            _variant_row('УЗО / дифавтомат', max(1, ceil(rooms / 2)), 'шт', 12000),
+            _variant_row('Щит электрический', 1, 'шт', 28000),
+            _variant_row('Гофра', ceil(gofra * 1.15), 'м', 250),
+            _variant_row('Клипсы / крепёж', ceil(clips * 1.15), 'шт', 45),
+            _variant_row('TV кабель', tv_cable, 'м', 220),
+            _variant_row('Кабель интернета', internet_cable, 'м', 280),
+            _variant_row('Изолента', 5, 'шт', 700),
+            _variant_row('Стяжки пластиковые', 2, 'пачка', 1800),
+            _variant_row('Алебастр / гипс для подрозетников', ceil(podrozetniki * 0.45), 'кг', 300),
+        ]),
+        'maximum': _variant('maximum', 'Максимальный', 'Максимальная комплектация: больше групп, больше защиты, запас кабеля и расширенный щит.', [
+            _variant_row('Кабель ВВГнг-LS 3×1.5 премиум — освещение', ceil(cable_light * 1.25), 'м', 650),
+            _variant_row('Кабель ВВГнг-LS 3×2.5 премиум — розетки / кухня / техника', ceil(cable_socket * 1.25), 'м', 1100),
+            _variant_row('Кабель ВВГнг-LS 3×6 — плита', cable_stove, 'м', 2300),
+            _variant_row('Подрозетники глубокие', podrozetniki, 'шт', 350),
+            _variant_row('Розетки премиум', socket_points, 'шт', 2800),
+            _variant_row('Выключатели премиум', switches, 'шт', 2500),
+            _variant_row('Распределительные коробки', junction_boxes, 'шт', 900),
+            _variant_row('Автоматы освещения', 2, 'шт', 4500),
+            _variant_row('Автоматы розеток', max(5, ceil(socket_points / 4)), 'шт', 5000),
+            _variant_row('Автомат плиты 32А', 1, 'шт', 6500),
+            _variant_row('УЗО / дифавтоматы', max(2, ceil(rooms / 1.5)), 'шт', 18000),
+            _variant_row('Щит электрический большой', 1, 'шт', 45000),
+            _variant_row('Гофра усиленная', ceil(gofra * 1.25), 'м', 350),
+            _variant_row('Клипсы / крепёж', ceil(clips * 1.25), 'шт', 60),
+            _variant_row('TV кабель', ceil(tv_cable * 1.2), 'м', 300),
+            _variant_row('Кабель интернета', ceil(internet_cable * 1.2), 'м', 380),
+            _variant_row('Изолента', 6, 'шт', 900),
+            _variant_row('Стяжки пластиковые', 3, 'пачка', 2200),
+            _variant_row('Алебастр / гипс для подрозетников', ceil(podrozetniki * 0.5), 'кг', 350),
+        ]),
+    }
+    return _build_variant_result(calculator, variants, selected_variant, form_data, area, rooms, 1, f"{calculator['title']} · {area:g} м² · {rooms} комн.")
 
 
 def _calculate_santehnika(calculator, form_data):
     area = to_float(form_data.get('area'), 0)
-    bathrooms = max(1, int(to_float(form_data.get('bathrooms'), 1)))
-    kitchen = 1
-    plumbing_points = bathrooms * 4 + kitchen
-    materials = [
-        _row_by_title(calculator, 'Труба водоснабжения', area * 0.35 + bathrooms * 12 + kitchen * 8),
-        _row_by_title(calculator, 'Канализационная труба Ø50', bathrooms * 5 + kitchen * 4),
-        _row_by_title(calculator, 'Канализационная труба Ø110', bathrooms * 3),
-        _row_by_title(calculator, 'Фитинги / уголки / муфты', max(10, bathrooms * 18 + kitchen * 8 + area / 5)),
-        _row_by_title(calculator, 'Краны / запорная арматура', bathrooms * 4 + kitchen * 2),
-        _row_by_title(calculator, 'Коллектор', bathrooms),
-        _row_by_title(calculator, 'Унитаз', bathrooms),
-        _row_by_title(calculator, 'Инсталляция', bathrooms),
-        _row_by_title(calculator, 'Раковина', bathrooms),
-        _row_by_title(calculator, 'Смеситель', bathrooms + kitchen),
-        _row_by_title(calculator, 'Ванна', max(1, bathrooms - 1)),
-        _row_by_title(calculator, 'Душевая зона', bathrooms),
-        _row_by_title(calculator, 'Сифон / выпуск', plumbing_points),
-        _row_by_title(calculator, 'Теплоизоляция для труб', area * 0.2 + bathrooms * 3),
-        _row_by_title(calculator, 'Герметик санитарный', bathrooms + kitchen),
-        _row_by_title(calculator, 'ФУМ-лента', max(1, bathrooms + kitchen)),
-    ]
-    return _build_result(calculator, materials, form_data, area, bathrooms, 1, 'comfort', _plain_segment(), f"{calculator['title']} · {area:g} м² · {bathrooms} санузел(а) + кухня")
+    baths = max(1, int(to_float(form_data.get('bathrooms'), 1)))
+    kitchen_point = 1
+    selected_variant = form_data.get('selected_variant', 'optimal')
+    price_sets = {
+        'base': {'water': 450, 'sewer50': 650, 'sewer110': 1800, 'fittings': 350, 'valves': 2500, 'collector': 12000, 'toilet': 35000, 'sink': 25000, 'mixer': 18000, 'shower': 45000, 'siphon': 2500, 'insulation': 250},
+        'optimal': {'water': 700, 'sewer50': 900, 'sewer110': 2500, 'fittings': 600, 'valves': 4500, 'collector': 25000, 'toilet': 70000, 'sink': 50000, 'mixer': 35000, 'shower': 90000, 'siphon': 4500, 'insulation': 350},
+        'maximum': {'water': 1100, 'sewer50': 1400, 'sewer110': 3500, 'fittings': 1000, 'valves': 8000, 'collector': 50000, 'toilet': 150000, 'sink': 100000, 'mixer': 80000, 'shower': 180000, 'siphon': 8000, 'insulation': 500},
+    }
+
+    def plumbing_variant(key, title, description, values, extra=0):
+        prices = price_sets[key]
+        materials = [
+            _variant_row('Труба водоснабжения', values['waterPipe'], 'м', prices['water']),
+            _variant_row('Канализационная труба Ø50', values['sewer50'], 'м', prices['sewer50']),
+            _variant_row('Канализационная труба Ø110', values['sewer110'], 'м', prices['sewer110']),
+            _variant_row('Фитинги / уголки / муфты', values['fittings'], 'шт', prices['fittings']),
+            _variant_row('Краны / запорная арматура', values['valves'], 'шт', prices['valves']),
+            _variant_row('Коллектор', values['collector'], 'шт', prices['collector']),
+            _variant_row('Унитаз / инсталляция', values['toilet'], 'шт', prices['toilet']),
+            _variant_row('Раковина', values['sink'], 'шт', prices['sink']),
+            _variant_row('Смесители', values['mixer'], 'шт', prices['mixer']),
+            _variant_row('Ванна / душевая зона', values['shower'], 'шт', prices['shower']),
+            _variant_row('Сифоны / выпуск', values['siphon'], 'шт', prices['siphon']),
+            _variant_row('Теплоизоляция для труб', values['insulation'], 'м', prices['insulation']),
+        ]
+        return _variant(key, title, description, materials, extra=extra)
+
+    variants = {
+        'base': plumbing_variant('base', 'Базовый', 'Базовая разводка: трубы, канализация, простая сантехника и смесители.', {
+            'waterPipe': ceil(area * 0.45 + baths * 18 + kitchen_point * 10),
+            'sewer50': ceil(baths * 6 + kitchen_point * 5),
+            'sewer110': ceil(baths * 3),
+            'fittings': ceil(baths * 18 + kitchen_point * 8),
+            'valves': ceil(baths * 2 + 2),
+            'collector': 0,
+            'toilet': baths,
+            'sink': baths,
+            'mixer': baths + kitchen_point,
+            'shower': baths,
+            'siphon': baths + kitchen_point,
+            'insulation': ceil(area * 0.15),
+        }),
+        'optimal': plumbing_variant('optimal', 'Оптимальный', 'Оптимальная разводка: коллектор, хорошие краны, нормальная сантехника.', {
+            'waterPipe': ceil(area * 0.6 + baths * 24 + kitchen_point * 12),
+            'sewer50': ceil(baths * 8 + kitchen_point * 6),
+            'sewer110': ceil(baths * 4),
+            'fittings': ceil(baths * 28 + kitchen_point * 10),
+            'valves': ceil(baths * 4 + 3),
+            'collector': 1,
+            'toilet': baths,
+            'sink': baths,
+            'mixer': baths + kitchen_point,
+            'shower': baths,
+            'siphon': baths + kitchen_point,
+            'insulation': ceil(area * 0.2),
+        }),
+        'maximum': plumbing_variant('maximum', 'Максимальный', 'Скрытая разводка, качественная сантехника, коллекторы, запас под технику.', {
+            'waterPipe': ceil(area * 0.8 + baths * 32 + kitchen_point * 15),
+            'sewer50': ceil(baths * 10 + kitchen_point * 8),
+            'sewer110': ceil(baths * 5),
+            'fittings': ceil(baths * 40 + kitchen_point * 14),
+            'valves': ceil(baths * 6 + 4),
+            'collector': 2,
+            'toilet': baths,
+            'sink': baths,
+            'mixer': baths + kitchen_point,
+            'shower': baths,
+            'siphon': baths + kitchen_point,
+            'insulation': ceil(area * 0.25),
+        }, extra=150000),
+    }
+    return _build_variant_result(calculator, variants, selected_variant, form_data, area, baths, 1, f"{calculator['title']} · {area:g} м² · {baths} сануз.")
 
 
 def _calculate_shtukaturka(calculator, form_data):
@@ -445,6 +577,85 @@ def _calculate_teplyy_pol(calculator, form_data):
         _plain_segment(),
         f"{calculator['title']} · {area:g} м² · {floor_type}",
     )
+
+
+
+def _variant_row(title, quantity, unit, reference_price):
+    quantity = _round_quantity(quantity)
+    reference_total = round(quantity * reference_price)
+    return {
+        'title': title,
+        'quantity': quantity,
+        'unit': unit,
+        'reference_price': reference_price,
+        'reference_total': reference_total,
+        'price': reference_price,
+        'total': reference_total,
+    }
+
+
+def _variant(key, title, description, materials, extra=0):
+    extra_total = round(extra)
+    total = sum(material['reference_total'] for material in materials) + extra_total
+    return {
+        'key': key,
+        'title': title,
+        'label': title,
+        'description': description,
+        'materials': materials,
+        'materials_count': len(materials),
+        'total': total,
+        'reference_total': total,
+        'extra': extra_total,
+    }
+
+
+def _build_variant_result(calculator, variants_by_key, selected_key, form_data, area, rooms, thickness, summary):
+    if selected_key not in variants_by_key:
+        selected_key = 'optimal' if 'optimal' in variants_by_key else next(iter(variants_by_key))
+    selected = variants_by_key[selected_key]
+    ordered_variants = [variants_by_key[key] for key in ('base', 'optimal', 'maximum') if key in variants_by_key]
+    materials = selected['materials']
+    saved_list = '\n'.join(
+        f"{index}. {material['title']} — {material['quantity']} {material['unit']}"
+        for index, material in enumerate(materials, start=1)
+        if material['quantity'] > 0
+    )
+    copy_text = f"ESEPTEP.KZ\n{calculator['title']} — {selected['title']}\n\n{saved_list}\n\nСписок составлен через ESEPTEP.KZ"
+    return {
+        'materials': materials,
+        'materials_count': len(materials),
+        'reference_total': selected['total'],
+        'reference_labor_total': 0,
+        'reference_grand_total': selected['total'],
+        'materials_total': selected['total'],
+        'labor_total': 0,
+        'grand_total': selected['total'],
+        'segment_label': 'Предварительно',
+        'summary': summary,
+        'saved_list': saved_list,
+        'whatsapp_text': copy_text,
+        'copy_text': copy_text,
+        'warning': calculator.get('warning'),
+        'master_template_items': calculator.get('master_template_items', []),
+        'variants': ordered_variants,
+        'variants_by_key': variants_by_key,
+        'selected_variant': selected_key,
+        'selected_variant_label': selected['title'],
+        'selected_variant_description': selected['description'],
+        'totals': {
+            'materials_total': selected['total'],
+            'grand_total': selected['total'],
+        },
+        'meta': {
+            'area': area,
+            'thickness': thickness,
+            'rooms': rooms,
+            'segment': 'comfort',
+            'selected_variant': selected_key,
+            'input': dict(form_data),
+        },
+    }
 
 
 def _build_result(calculator, materials, form_data, area, rooms, thickness, segment_key, segment, summary):

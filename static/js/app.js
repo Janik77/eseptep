@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initResultFlow();
     initCountUp(prefersReducedMotion);
     initMasterTemplate();
+    initVariantResults();
 });
 
 function initReveal(prefersReducedMotion) {
@@ -340,4 +341,64 @@ function initMasterTemplate() {
     });
 
     buildEstimate();
+}
+
+function initVariantResults() {
+    document.querySelectorAll('[data-variant-result]').forEach((root) => {
+        const buttons = Array.from(root.querySelectorAll('[data-variant-button]'));
+        const panels = Array.from(root.querySelectorAll('[data-variant-panel]'));
+        const label = root.querySelector('[data-active-variant-label]');
+        const hiddenInputs = document.querySelectorAll('[data-selected-variant-input]');
+        const copyButton = root.querySelector('[data-copy-variant]');
+        const toast = root.querySelector('[data-variant-copy-toast]');
+        let activeKey = buttons.find((button) => button.classList.contains('is-active'))?.dataset.variantButton || buttons[0]?.dataset.variantButton;
+
+        const setActive = (key) => {
+            activeKey = key;
+            buttons.forEach((button) => {
+                const isActive = button.dataset.variantButton === key;
+                button.classList.toggle('is-active', isActive);
+                button.setAttribute('aria-selected', String(isActive));
+                if (isActive && label) {
+                    label.textContent = button.querySelector('b')?.textContent || '';
+                }
+            });
+            panels.forEach((panel) => {
+                panel.classList.toggle('is-active', panel.dataset.variantPanel === key);
+            });
+            hiddenInputs.forEach((input) => {
+                input.value = key;
+            });
+        };
+
+        buttons.forEach((button) => {
+            button.addEventListener('click', () => setActive(button.dataset.variantButton));
+        });
+
+        copyButton?.addEventListener('click', async () => {
+            const source = root.querySelector(`[data-variant-copy-source="${activeKey}"]`);
+            const text = source?.value || '';
+            if (!text.trim()) {
+                return;
+            }
+
+            try {
+                await navigator.clipboard.writeText(text);
+            } catch (error) {
+                source.select();
+                document.execCommand('copy');
+            }
+
+            copyButton.textContent = 'Скопировано';
+            toast?.classList.add('is-visible');
+            window.setTimeout(() => {
+                copyButton.textContent = 'Скопировать список без цен';
+                toast?.classList.remove('is-visible');
+            }, 1800);
+        });
+
+        if (activeKey) {
+            setActive(activeKey);
+        }
+    });
 }
