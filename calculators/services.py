@@ -265,6 +265,7 @@ def _calculate_plitka(calculator, form_data):
         _row_by_title(calculator, 'Гидроизоляция', area * 1.05 if wet_zone else 0),
         _row_by_title(calculator, 'Клей плиточный 25 кг', 0 if is_large_format else area * 0.32),
         _row_by_title(calculator, 'Клей для крупного формата 25 кг', area * 0.38 if is_large_format else 0),
+        _row_by_title(calculator, 'Грунтовка', area * 0.12),
         _row_by_title(calculator, 'Фуга', 0 if wet_zone else area * (0.06 if backsplash else 0.08)),
         _row_by_title(calculator, 'Эпоксидная фуга', area * 0.08 if wet_zone else 0),
         _row_by_title(calculator, 'СВП', max(1, area * (0.08 if is_large_format else 0.04))),

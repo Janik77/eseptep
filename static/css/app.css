@@ -2530,3 +2530,106 @@ button, input, select, textarea { font: inherit; }
 .result-params b {
     color: var(--text);
 }
+
+/* Compact master template rows */
+.estimate-builder__header--simple {
+    display: block;
+    padding: 16px 18px 12px;
+    background: #fff;
+}
+
+.estimate-builder__header--simple h2 {
+    margin: 8px 0 2px;
+}
+
+.estimate-builder__header--simple [data-builder-total] {
+    color: var(--muted);
+    font-size: .88rem;
+    font-weight: 800;
+}
+
+.estimate-editor__topline--simple {
+    justify-content: flex-start;
+    padding: 10px 14px;
+    background: var(--orange-soft);
+}
+
+.estimate-editor__topline--simple span {
+    color: var(--orange-dark);
+    font-size: .82rem;
+    letter-spacing: 0;
+    text-transform: none;
+}
+
+.material-row-list--simple {
+    gap: 6px;
+    padding: 10px;
+}
+
+.material-row--fixed {
+    grid-template-columns: 28px minmax(0, 1fr) 132px 42px;
+    align-items: center;
+    gap: 8px;
+    min-height: 48px;
+    padding: 8px 10px;
+    border-radius: 14px;
+    background: #fff;
+    box-shadow: none;
+}
+
+.material-row--fixed:hover {
+    transform: none;
+    box-shadow: 0 8px 20px rgba(31, 41, 51, 0.05);
+}
+
+.material-row__index {
+    color: var(--muted);
+    font-size: .84rem;
+    font-weight: 900;
+}
+
+.material-row__title {
+    min-width: 0;
+    color: var(--text);
+    font-size: .94rem;
+    font-weight: 850;
+    line-height: 1.25;
+}
+
+.material-row__unit {
+    color: var(--muted);
+    font-size: .8rem;
+    font-weight: 900;
+    text-align: right;
+}
+
+.quantity-stepper--compact .quantity-stepper__control {
+    grid-template-columns: 28px minmax(50px, 1fr) 28px;
+    gap: 4px;
+}
+
+.quantity-stepper--compact .quantity-stepper__control button,
+.quantity-stepper--compact .quantity-stepper__control input {
+    min-height: 32px;
+    border-radius: 10px;
+}
+
+.quantity-stepper--compact .quantity-stepper__control input {
+    padding: 0 4px;
+    font-size: .9rem;
+}
+
+@media (max-width: 640px) {
+    .material-row--fixed {
+        grid-template-columns: 24px minmax(0, 1fr) 112px 36px;
+        padding: 8px;
+    }
+
+    .material-row__title {
+        font-size: .88rem;
+    }
+
+    .quantity-stepper--compact .quantity-stepper__control {
+        grid-template-columns: 26px minmax(42px, 1fr) 26px;
+    }
+}

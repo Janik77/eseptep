@@ -234,47 +234,47 @@ function initMasterTemplate() {
         return;
     }
 
-    const rowsContainer = builder.querySelector('[data-material-rows]');
     const output = builder.querySelector('[data-master-output]');
     const preview = builder.querySelector('[data-whatsapp-preview]');
     const totalElement = builder.querySelector('[data-builder-total]');
     const copyButton = builder.querySelector('[data-copy-template]');
-    const addButton = builder.querySelector('[data-add-material]');
     const toast = builder.querySelector('[data-copy-toast]');
     const whatsappLink = builder.querySelector('[data-whatsapp-link]');
 
     const getRows = () => [...builder.querySelectorAll('[data-material-row]')];
+    const getPositiveRows = () => getRows().map((row) => {
+        const materialNode = row.querySelector('[data-row-material]');
+        const quantityInput = row.querySelector('[data-row-qty]');
+        const unit = materialNode?.dataset.unit || row.querySelector('[data-row-total]')?.textContent?.trim() || '';
+        const quantity = Math.max(Number(quantityInput?.value || 0), 0);
+
+        return {
+            material: materialNode?.dataset.value || materialNode?.textContent?.trim() || 'Материал',
+            quantity,
+            unit,
+        };
+    }).filter((item) => item.quantity > 0);
 
     const buildEstimate = () => {
-        const rows = getRows();
+        const filledRows = getPositiveRows();
         const lines = ['ESEPTEP · список материалов для мастера', ''];
 
-        rows.forEach((row, index) => {
-            const materialSelect = row.querySelector('[data-row-material]');
-            const quantityInput = row.querySelector('[data-row-qty]');
-            const unitNode = row.querySelector('[data-row-total]');
-            const selectedOption = materialSelect?.selectedOptions?.[0];
-            const material = materialSelect?.value || 'Материал';
-            const unit = selectedOption?.dataset.unit || '';
-            const quantity = Math.max(Number(quantityInput?.value || 0), 0);
-            const quantityLabel = `${quantity.toLocaleString('ru-RU')} ${unit}`.trim();
-
-            if (unitNode) {
-                unitNode.textContent = unit || '—';
-            }
-
-            lines.push(`${index + 1}. ${material}`);
-            lines.push(`   Кол-во: ${quantityLabel}`);
-        });
+        if (filledRows.length === 0) {
+            lines.push('Заполните количество у нужных материалов — в список попадут только позиции больше 0.');
+        } else {
+            filledRows.forEach((item, index) => {
+                const quantityLabel = `${item.quantity.toLocaleString('ru-RU')} ${item.unit}`.trim();
+                lines.push(`${index + 1}. ${item.material} — ${quantityLabel}`);
+            });
+        }
 
         lines.push('');
-        lines.push('Цены и наличие уточняются у поставщиков отдельным этапом.');
-        lines.push('Комментарий: подготовьте цену, сроки и наличие.');
+        lines.push('Цены не указаны. Количество нужно проверить по проекту.');
 
         const text = lines.join('\n');
 
         if (totalElement) {
-            totalElement.textContent = `${rows.length} позиций`;
+            totalElement.textContent = `${filledRows.length} из ${getRows().length} заполнено`;
         }
 
         if (output) {
@@ -288,21 +288,20 @@ function initMasterTemplate() {
         if (whatsappLink) {
             whatsappLink.href = `https://wa.me/?text=${encodeURIComponent(text)}`;
         }
+
+        return text;
     };
 
     const bindRow = (row) => {
-        const materialSelect = row.querySelector('[data-row-material]');
         const quantityInput = row.querySelector('[data-row-qty]');
         const decreaseButton = row.querySelector('[data-step-decrease]');
         const increaseButton = row.querySelector('[data-step-increase]');
-        const removeButton = row.querySelector('[data-remove-row]');
 
-        materialSelect?.addEventListener('change', buildEstimate);
         quantityInput?.addEventListener('input', buildEstimate);
 
         decreaseButton?.addEventListener('click', () => {
             const current = Number(quantityInput.value || 0);
-            quantityInput.value = Math.max(0.1, current - 1).toFixed(1);
+            quantityInput.value = Math.max(0, current - 1).toFixed(1);
             buildEstimate();
         });
 
@@ -311,54 +310,19 @@ function initMasterTemplate() {
             quantityInput.value = (current + 1).toFixed(1);
             buildEstimate();
         });
-
-        removeButton?.addEventListener('click', () => {
-            if (getRows().length === 1) {
-                quantityInput.value = '0.1';
-                buildEstimate();
-                return;
-            }
-
-            row.remove();
-            buildEstimate();
-        });
     };
 
     getRows().forEach(bindRow);
 
-    addButton?.addEventListener('click', () => {
-        const firstRow = getRows()[0];
-
-        if (!firstRow || !rowsContainer) {
-            return;
-        }
-
-        const newRow = firstRow.cloneNode(true);
-        const quantityInput = newRow.querySelector('[data-row-qty]');
-        const materialSelect = newRow.querySelector('[data-row-material]');
-
-        if (quantityInput) {
-            quantityInput.value = '1.0';
-        }
-
-        if (materialSelect) {
-            materialSelect.selectedIndex = 0;
-        }
-
-        rowsContainer.appendChild(newRow);
-        bindRow(newRow);
-        buildEstimate();
-    });
-
     copyButton?.addEventListener('click', async () => {
-        buildEstimate();
+        const text = buildEstimate();
 
         if (!output) {
             return;
         }
 
         try {
-            await navigator.clipboard.writeText(output.value);
+            await navigator.clipboard.writeText(text);
         } catch (error) {
             output.select();
             document.execCommand('copy');
@@ -370,7 +334,7 @@ function initMasterTemplate() {
 
         window.setTimeout(() => {
             copyButton.classList.remove('is-copied');
-            copyButton.textContent = 'Копировать список';
+            copyButton.textContent = 'Скопировать список';
             toast?.classList.remove('is-visible');
         }, 1800);
     });

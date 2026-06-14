@@ -129,49 +129,33 @@
 
     <div class="calculator-tabs__panel calculator-tabs__panel--master">
         <section class="master-template estimate-builder estimate-builder--panel" aria-labelledby="master-template-title" data-estimate-builder>
-            <div class="estimate-builder__header">
+            <div class="estimate-builder__header estimate-builder__header--simple">
                 <div>
                     <p class="section-heading__eyebrow">Шаблон мастера</p>
-                    <h2 id="master-template-title">Список материалов без цен</h2>
-                    <p>Проверьте материалы текущего калькулятора, укажите количество и скопируйте список для мастера.</p>
-                </div>
-                <div class="estimate-builder__total">
-                    <span>Список</span>
-                    <strong data-builder-total>0 позиций</strong>
+                    <h2 id="master-template-title">Список материалов</h2>
+                    <p><span data-builder-total>{{ calculator.master_template_items|length }} позиций</span></p>
                 </div>
             </div>
 
             <div class="estimate-builder__body estimate-builder__body--single">
                 <div class="estimate-editor estimate-editor--full">
-                    <div class="estimate-editor__topline">
-                        <span>Материалы текущего калькулятора</span>
-                        <button class="add-material-button" type="button" data-add-material>+ Добавить материал</button>
+                    <div class="estimate-editor__topline estimate-editor__topline--simple">
+                        <span>Заполните только нужные позиции. В список уйдут только заполненные материалы.</span>
                     </div>
 
-                    <div class="material-row-list" data-material-rows>
+                    <div class="material-row-list material-row-list--simple" data-material-rows>
                         {% for item in calculator.master_template_items %}
-                            <div class="material-row material-row--compact" data-material-row>
-                                <label>
-                                    <span>Материал</span>
-                                    <select data-row-material>
-                                        {% for option in calculator.master_template_items %}
-                                            <option value="{{ option.title }}" data-unit="{{ option.unit }}" {% if option.title == item.title %}selected{% endif %}>{{ option.title }}</option>
-                                        {% endfor %}
-                                    </select>
-                                </label>
-                                <label class="quantity-stepper">
-                                    <span>Кол-во</span>
+                            <div class="material-row material-row--compact material-row--fixed" data-material-row>
+                                <div class="material-row__index">{{ forloop.counter }}.</div>
+                                <div class="material-row__title" data-row-material data-unit="{{ item.unit }}">{{ item.title }}</div>
+                                <div class="quantity-stepper quantity-stepper--compact">
                                     <div class="quantity-stepper__control">
                                         <button type="button" data-step-decrease aria-label="Уменьшить количество">−</button>
-                                        <input type="number" min="0.1" step="0.1" value="{{ item.default_quantity|floatformat:1 }}" data-row-qty>
+                                        <input type="number" min="0" step="0.1" value="0" data-row-qty aria-label="Количество для {{ item.title }}">
                                         <button type="button" data-step-increase aria-label="Увеличить количество">+</button>
                                     </div>
-                                </label>
-                                <div class="row-price row-price--unit">
-                                    <span>Ед.</span>
-                                    <strong data-row-total>{{ item.unit }}</strong>
                                 </div>
-                                <button class="remove-material-button" type="button" data-remove-row aria-label="Удалить материал">×</button>
+                                <small class="material-row__unit" data-row-total>{{ item.unit }}</small>
                             </div>
                         {% endfor %}
                     </div>
