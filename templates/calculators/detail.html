@@ -74,7 +74,7 @@
                             <div class="variant-result__head">
                                 <div>
                                     <span>Варианты расчёта</span>
-                                    <h3>Базовый / Оптимальный / Максимальный</h3>
+                                    <h3>{{ result.variant_heading|default:"Базовый / Оптимальный / Максимальный" }}</h3>
                                 </div>
                                 <small>Активен: <b data-active-variant-label>{{ result.selected_variant_label }}</b></small>
                             </div>

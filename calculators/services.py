@@ -148,83 +148,83 @@ def _calculate_demontazh(calculator, form_data):
 def _calculate_elektrika(calculator, form_data):
     area = to_float(form_data.get('area'), 0)
     rooms = max(1, int(to_float(form_data.get('rooms'), 1)))
-    selected_variant = form_data.get('selected_variant', 'optimal')
+    selected_variant = form_data.get('selected_variant', 'comfort')
 
-    light_points = max(rooms + 2, ceil(area / 18))
-    socket_points = max(rooms * 4 + 6, ceil(area / 4))
-    switches = max(rooms + 2, ceil(light_points * 0.8))
-    junction_boxes = max(rooms + 2, ceil(light_points * 0.7))
-    cable_light = ceil(area * 1.4)
-    cable_socket = ceil(area * 2.2)
-    cable_stove = 15
-    gofra = ceil((cable_light + cable_socket + cable_stove) * 0.45)
-    clips = ceil(gofra * 2.5)
-    tv_cable = ceil(area * 0.35)
-    internet_cable = ceil(area * 0.25)
-    podrozetniki = socket_points + switches
-
-    variants = {
-        'base': _variant('base', 'Базовый', 'Базовая комплектация: кабель, автоматы, розетки, выключатели и щит.', [
-            _variant_row('Кабель ВВГнг-LS 3×1.5 — освещение', cable_light, 'м', 520),
-            _variant_row('Кабель ВВГнг-LS 3×2.5 — розетки', cable_socket, 'м', 850),
-            _variant_row('Кабель ВВГнг-LS 3×6 — плита', cable_stove, 'м', 1800),
-            _variant_row('Подрозетники', podrozetniki, 'шт', 180),
-            _variant_row('Розетки', socket_points, 'шт', 1200),
-            _variant_row('Выключатели', switches, 'шт', 1100),
-            _variant_row('Распределительные коробки', junction_boxes, 'шт', 450),
-            _variant_row('Автоматы освещения', 2, 'шт', 2200),
-            _variant_row('Автоматы розеток', max(3, ceil(socket_points / 5)), 'шт', 2500),
-            _variant_row('Автомат плиты 32А', 1, 'шт', 3500),
-            _variant_row('Щит электрический', 1, 'шт', 18000),
-            _variant_row('Гофра', gofra, 'м', 180),
-            _variant_row('Клипсы / крепёж', clips, 'шт', 35),
-            _variant_row('Изолента', 3, 'шт', 700),
-            _variant_row('Стяжки пластиковые', 2, 'пачка', 1800),
-            _variant_row('Алебастр / гипс для подрозетников', ceil(podrozetniki * 0.4), 'кг', 300),
-        ]),
-        'optimal': _variant('optimal', 'Оптимальный', 'Оптимальный вариант: больше защиты, отдельные линии кухни и влажных зон.', [
-            _variant_row('Кабель ВВГнг-LS 3×1.5 — освещение', ceil(cable_light * 1.12), 'м', 580),
-            _variant_row('Кабель ВВГнг-LS 3×2.5 — розетки / кухня / духовка', ceil(cable_socket * 1.12), 'м', 950),
-            _variant_row('Кабель ВВГнг-LS 3×6 — плита', cable_stove, 'м', 2000),
-            _variant_row('Подрозетники усиленные', podrozetniki, 'шт', 250),
-            _variant_row('Розетки', socket_points, 'шт', 1800),
-            _variant_row('Выключатели', switches, 'шт', 1600),
-            _variant_row('Распределительные коробки', junction_boxes, 'шт', 650),
-            _variant_row('Автоматы освещения', 2, 'шт', 3200),
-            _variant_row('Автоматы розеток', max(4, ceil(socket_points / 5)), 'шт', 3500),
-            _variant_row('Автомат плиты 32А', 1, 'шт', 4500),
-            _variant_row('УЗО / дифавтомат', max(1, ceil(rooms / 2)), 'шт', 12000),
-            _variant_row('Щит электрический', 1, 'шт', 28000),
-            _variant_row('Гофра', ceil(gofra * 1.15), 'м', 250),
-            _variant_row('Клипсы / крепёж', ceil(clips * 1.15), 'шт', 45),
-            _variant_row('TV кабель', tv_cable, 'м', 220),
-            _variant_row('Кабель интернета', internet_cable, 'м', 280),
-            _variant_row('Изолента', 5, 'шт', 700),
-            _variant_row('Стяжки пластиковые', 2, 'пачка', 1800),
-            _variant_row('Алебастр / гипс для подрозетников', ceil(podrozetniki * 0.45), 'кг', 300),
-        ]),
-        'maximum': _variant('maximum', 'Максимальный', 'Максимальная комплектация: больше групп, больше защиты, запас кабеля и расширенный щит.', [
-            _variant_row('Кабель ВВГнг-LS 3×1.5 премиум — освещение', ceil(cable_light * 1.25), 'м', 650),
-            _variant_row('Кабель ВВГнг-LS 3×2.5 премиум — розетки / кухня / техника', ceil(cable_socket * 1.25), 'м', 1100),
-            _variant_row('Кабель ВВГнг-LS 3×6 — плита', cable_stove, 'м', 2300),
-            _variant_row('Подрозетники глубокие', podrozetniki, 'шт', 350),
-            _variant_row('Розетки премиум', socket_points, 'шт', 2800),
-            _variant_row('Выключатели премиум', switches, 'шт', 2500),
-            _variant_row('Распределительные коробки', junction_boxes, 'шт', 900),
-            _variant_row('Автоматы освещения', 2, 'шт', 4500),
-            _variant_row('Автоматы розеток', max(5, ceil(socket_points / 4)), 'шт', 5000),
-            _variant_row('Автомат плиты 32А', 1, 'шт', 6500),
-            _variant_row('УЗО / дифавтоматы', max(2, ceil(rooms / 1.5)), 'шт', 18000),
-            _variant_row('Щит электрический большой', 1, 'шт', 45000),
-            _variant_row('Гофра усиленная', ceil(gofra * 1.25), 'м', 350),
-            _variant_row('Клипсы / крепёж', ceil(clips * 1.25), 'шт', 60),
-            _variant_row('TV кабель', ceil(tv_cable * 1.2), 'м', 300),
-            _variant_row('Кабель интернета', ceil(internet_cable * 1.2), 'м', 380),
-            _variant_row('Изолента', 6, 'шт', 900),
-            _variant_row('Стяжки пластиковые', 3, 'пачка', 2200),
-            _variant_row('Алебастр / гипс для подрозетников', ceil(podrozetniki * 0.5), 'кг', 350),
-        ]),
+    base_quantities = {
+        'Кабель ВВГнг-LS 3×1.5': ceil(area * 2.2),
+        'Кабель ВВГнг-LS 3×2.5': ceil(area * 4.4),
+        'Кабель ВВГнг-LS 3×6': ceil(area * 0.45),
+        'Гофра 16 мм': ceil(area * 2.5),
+        'Гофра 20 мм': ceil((ceil(area * 4.4) + ceil(area * 0.45)) * 0.39),
+        'Розетки': max(rooms * 4 + 6, ceil(area * 0.5 + rooms * 4)),
+        'Выключатели': max(rooms + 2, ceil(area * 0.15 + rooms * 2)),
+        'Распредкоробки': max(rooms + 2, ceil(area * 0.15 + rooms * 2)),
+        'Автомат 10А': max(2, rooms + 1),
+        'Автомат 16А': max(4, rooms * 2 + 2),
+        'Автомат 25А': 1,
+        'Автомат 32А': 1,
+        'УЗО': max(2, rooms + 1),
+        'Дифавтомат': max(1, rooms),
+        'Реле напряжения': 1,
+        'Электрощит': 1,
+        'Нулевая шина': max(1, rooms),
+        'Заземляющая шина': max(1, rooms),
+        'Интернет кабель UTP': ceil(area * 0.8),
+        'ТВ кабель': ceil(area * 0.45),
+        'Кабель домофона': ceil(area * 0.15),
+        'Изолента': max(2, ceil(area / 12)),
+        'Стяжки пластиковые': max(2, ceil(area / 40)),
     }
+    base_quantities['Подрозетники'] = base_quantities['Розетки'] + base_quantities['Выключатели']
+    cable_protection = base_quantities['Гофра 16 мм'] + base_quantities['Гофра 20 мм']
+    base_quantities['Клипсы для гофры'] = ceil(cable_protection * 2.5)
+    base_quantities['Дюбель-гвоздь / анкер'] = ceil(cable_protection * 2.5)
+    base_quantities['Гвозди Toua / расходник'] = ceil(cable_protection * 2.5)
+    base_quantities['DIN-рейка'] = max(1, ceil((base_quantities['Автомат 10А'] + base_quantities['Автомат 16А'] + base_quantities['УЗО'] + base_quantities['Дифавтомат']) / 5))
+    base_quantities['Клеммы WAGO'] = ceil(base_quantities['Распредкоробки'] * 7)
+    base_quantities['Алебастр'] = ceil(base_quantities['Подрозетники'] * 0.3)
+
+    variant_settings = {
+        'economy': {
+            'title': 'Эконом',
+            'factor': 0.88,
+            'price': 0.9,
+            'description': 'Минимальная комплектация для базовой разводки без большого запаса.',
+        },
+        'comfort': {
+            'title': 'Комфорт',
+            'factor': 1.0,
+            'price': 1.0,
+            'description': 'Оптимальная комплектация: кабель, защита, щит и слаботочные линии с нормальным запасом.',
+        },
+        'business': {
+            'title': 'Бизнес',
+            'factor': 1.18,
+            'price': 1.18,
+            'description': 'Расширенная комплектация: больше групп, защиты, кабеля и расходников.',
+        },
+    }
+    fixed_materials = {
+        'Автомат 25А', 'Автомат 32А', 'Реле напряжения', 'Электрощит', 'Нулевая шина', 'Заземляющая шина', 'Стяжки пластиковые'
+    }
+    semi_fixed_materials = {'Автомат 10А', 'Автомат 16А', 'УЗО', 'Дифавтомат', 'DIN-рейка', 'Изолента'}
+
+    def adjusted_quantity(title, quantity, factor):
+        if title in fixed_materials:
+            return quantity
+        if title in semi_fixed_materials:
+            return max(1, ceil(quantity * (0.9 + (factor - 1) * 0.7)))
+        return ceil(quantity * factor)
+
+    def electric_variant(key, settings):
+        materials = []
+        for material in calculator['materials']:
+            quantity = adjusted_quantity(material['title'], base_quantities[material['title']], settings['factor'])
+            price = round(material['reference_price'] * settings['price'])
+            materials.append(_variant_row(material['title'], quantity, material['unit'], price))
+        return _variant(key, settings['title'], settings['description'], materials)
+
+    variants = {key: electric_variant(key, settings) for key, settings in variant_settings.items()}
     return _build_variant_result(calculator, variants, selected_variant, form_data, area, rooms, 1, f"{calculator['title']} · {area:g} м² · {rooms} комн.")
 
 
@@ -613,9 +613,9 @@ def _variant(key, title, description, materials, extra=0):
 
 def _build_variant_result(calculator, variants_by_key, selected_key, form_data, area, rooms, thickness, summary):
     if selected_key not in variants_by_key:
-        selected_key = 'optimal' if 'optimal' in variants_by_key else next(iter(variants_by_key))
+        selected_key = 'comfort' if 'comfort' in variants_by_key else 'optimal' if 'optimal' in variants_by_key else next(iter(variants_by_key))
     selected = variants_by_key[selected_key]
-    ordered_variants = [variants_by_key[key] for key in ('base', 'optimal', 'maximum') if key in variants_by_key]
+    ordered_variants = [variants_by_key[key] for key in ('base', 'optimal', 'maximum', 'economy', 'comfort', 'business') if key in variants_by_key]
     materials = selected['materials']
     saved_list = '\n'.join(
         f"{index}. {material['title']} — {material['quantity']} {material['unit']}"
@@ -644,6 +644,7 @@ def _build_variant_result(calculator, variants_by_key, selected_key, form_data, 
         'selected_variant': selected_key,
         'selected_variant_label': selected['title'],
         'selected_variant_description': selected['description'],
+        'variant_heading': ' / '.join(variant['title'] for variant in ordered_variants),
         'totals': {
             'materials_total': selected['total'],
             'grand_total': selected['total'],
