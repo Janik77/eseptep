@@ -145,12 +145,70 @@ def _calculate_demontazh(calculator, form_data):
     return _build_variant_result(calculator, variants, selected_variant, form_data, area, 1, 1, f"{calculator['title']} · {area:g} м² · {demolition_type}")
 
 
-def _calculate_elektrika(calculator, form_data):
-    area = to_float(form_data.get('area'), 0)
-    rooms = max(1, int(to_float(form_data.get('rooms'), 1)))
-    selected_variant = form_data.get('selected_variant', 'comfort')
+ELECTRIC_COMFORT_PRICES = {
+    'Кабель ВВГнг-LS 3×1.5': 520,
+    'Кабель ВВГнг-LS 3×2.5': 780,
+    'Кабель ВВГнг-LS 3×6': 1900,
+    'Гофра 16 мм': 120,
+    'Гофра 20 мм': 160,
+    'Клипсы для гофры': 25,
+    'Дюбель-гвоздь / анкер': 20,
+    'Гвозди Toua': 25,
+    'Розетки': 2500,
+    'Выключатели': 2500,
+    'Подрозетники': 250,
+    'Распредкоробки': 500,
+    'Автомат 10А': 3000,
+    'Автомат 16А': 3200,
+    'Автомат 25А': 4500,
+    'Автомат 32А': 5500,
+    'УЗО': 12000,
+    'Дифавтомат': 16000,
+    'Реле напряжения': 20000,
+    'Электрощит 36 модулей': 40000,
+    'DIN-рейка': 2000,
+    'Нулевая шина': 1800,
+    'Заземляющая шина': 1800,
+    'Клеммы WAGO': 160,
+    'Интернет кабель UTP': 200,
+    'ТВ кабель': 220,
+    'Кабель домофона': 180,
+    'Изолента': 700,
+    'Стяжки пластиковые': 1800,
+    'Алебастр / гипс': 300,
+}
+ELECTRIC_VARIANT_TOTAL_RATIOS = {
+    'economy': 420600 / 778070,
+    'comfort': 1,
+    'business': 1758000 / 778070,
+}
+ELECTRIC_AREA_DEPENDENT = {
+    'Кабель ВВГнг-LS 3×1.5', 'Кабель ВВГнг-LS 3×2.5', 'Кабель ВВГнг-LS 3×6',
+    'Гофра 16 мм', 'Гофра 20 мм', 'Клипсы для гофры', 'Дюбель-гвоздь / анкер',
+    'Гвозди Toua', 'Интернет кабель UTP', 'ТВ кабель', 'Кабель домофона', 'Алебастр / гипс'
+}
+ELECTRIC_ROOM_DEPENDENT = {
+    'Розетки', 'Выключатели', 'Подрозетники', 'Распредкоробки', 'Автомат 10А',
+    'Автомат 16А', 'УЗО', 'Дифавтомат', 'DIN-рейка', 'Клеммы WAGO', 'Изолента'
+}
+ELECTRIC_FIXED = {
+    'Автомат 25А', 'Автомат 32А', 'Реле напряжения', 'Электрощит 36 модулей',
+    'Нулевая шина', 'Заземляющая шина', 'Стяжки пластиковые'
+}
+ELECTRIC_COMFORT_REFERENCE_TOTALS = {
+    (10, 1): 400150,
+    (20, 2): 494430,
+    (30, 1): 541970,
+    (40, 2): 636250,
+    (60, 2): 778070,
+    (60, 3): 807150,
+    (80, 3): 948970,
+    (100, 4): 1129720,
+}
 
-    base_quantities = {
+
+def _electric_quantities(area, rooms):
+    quantities = {
         'Кабель ВВГнг-LS 3×1.5': ceil(area * 2.2),
         'Кабель ВВГнг-LS 3×2.5': ceil(area * 4.4),
         'Кабель ВВГнг-LS 3×6': ceil(area * 0.45),
@@ -175,56 +233,99 @@ def _calculate_elektrika(calculator, form_data):
         'Изолента': max(2, ceil(area / 12)),
         'Стяжки пластиковые': max(2, ceil(area / 40)),
     }
-    base_quantities['Подрозетники'] = base_quantities['Розетки'] + base_quantities['Выключатели']
-    cable_protection = base_quantities['Гофра 16 мм'] + base_quantities['Гофра 20 мм']
-    base_quantities['Клипсы для гофры'] = ceil(cable_protection * 2.5)
-    base_quantities['Дюбель-гвоздь / анкер'] = ceil(cable_protection * 2.5)
-    base_quantities['Гвозди Toua'] = ceil(cable_protection * 2.5)
-    base_quantities['DIN-рейка'] = max(1, ceil((base_quantities['Автомат 10А'] + base_quantities['Автомат 16А'] + base_quantities['УЗО'] + base_quantities['Дифавтомат']) / 5))
-    base_quantities['Клеммы WAGO'] = ceil(base_quantities['Распредкоробки'] * 7)
-    base_quantities['Алебастр / гипс'] = ceil(base_quantities['Подрозетники'] * 0.3)
+    quantities['Подрозетники'] = quantities['Розетки'] + quantities['Выключатели']
+    cable_protection = quantities['Гофра 16 мм'] + quantities['Гофра 20 мм']
+    quantities['Клипсы для гофры'] = ceil(cable_protection * 2.5)
+    quantities['Дюбель-гвоздь / анкер'] = ceil(cable_protection * 2.5)
+    quantities['Гвозди Toua'] = ceil(cable_protection * 2.5)
+    quantities['DIN-рейка'] = max(1, ceil((quantities['Автомат 10А'] + quantities['Автомат 16А'] + quantities['УЗО'] + quantities['Дифавтомат']) / 5))
+    quantities['Клеммы WAGO'] = ceil(quantities['Распредкоробки'] * 7)
+    quantities['Алебастр / гипс'] = ceil(quantities['Подрозетники'] * 0.3)
+    return quantities
+
+
+ELECTRIC_REFERENCE_MATRIX = {
+    key: {
+        'area': key[0],
+        'rooms': key[1],
+        'variants': {
+            variant: round(total * ratio)
+            for variant, ratio in ELECTRIC_VARIANT_TOTAL_RATIOS.items()
+        },
+        'comfort_materials': _electric_quantities(*key),
+    }
+    for key, total in ELECTRIC_COMFORT_REFERENCE_TOTALS.items()
+}
+
+
+def _nearest_electric_reference(area, rooms):
+    return min(
+        ELECTRIC_REFERENCE_MATRIX.values(),
+        key=lambda item: abs(item['area'] - area) / max(area, 1) + abs(item['rooms'] - rooms) * 0.35,
+    )
+
+
+def _scaled_electric_quantities(area, rooms, reference):
+    quantities = {}
+    area_scale = area / reference['area'] if reference['area'] else 1
+    room_scale = rooms / reference['rooms'] if reference['rooms'] else 1
+    for title, quantity in reference['comfort_materials'].items():
+        if title in ELECTRIC_AREA_DEPENDENT:
+            quantities[title] = max(1, ceil(quantity * area_scale))
+        elif title in ELECTRIC_ROOM_DEPENDENT:
+            quantities[title] = max(1, ceil(quantity * room_scale))
+        else:
+            quantities[title] = quantity
+    quantities['Подрозетники'] = quantities['Розетки'] + quantities['Выключатели']
+    quantities['Клеммы WAGO'] = ceil(quantities['Распредкоробки'] * 7)
+    quantities['Алебастр / гипс'] = ceil(quantities['Подрозетники'] * 0.3)
+    return quantities
+
+
+def _electric_rows(calculator, quantities, price_ratio=1):
+    rows = []
+    for material in calculator['materials']:
+        price = round(ELECTRIC_COMFORT_PRICES[material['title']] * price_ratio)
+        rows.append(_variant_row(material['title'], quantities[material['title']], material['unit'], price))
+    return rows
+
+
+def _calculate_elektrika(calculator, form_data):
+    area = to_float(form_data.get('area'), 0)
+    rooms = max(1, int(to_float(form_data.get('rooms'), 1)))
+    selected_variant = form_data.get('selected_variant', 'comfort')
+    matrix_key = (round(area), rooms)
+    reference = ELECTRIC_REFERENCE_MATRIX.get(matrix_key)
+    exact_match = reference is not None and area == matrix_key[0]
+    if reference is None:
+        reference = _nearest_electric_reference(area, rooms)
+        quantities = _scaled_electric_quantities(area, rooms, reference)
+        comfort_total = sum(
+            quantities[title] * ELECTRIC_COMFORT_PRICES[title]
+            for title in ELECTRIC_COMFORT_PRICES
+        )
+        variant_totals = {
+            key: round(comfort_total * ratio)
+            for key, ratio in ELECTRIC_VARIANT_TOTAL_RATIOS.items()
+        }
+    else:
+        quantities = reference['comfort_materials']
+        variant_totals = reference['variants']
 
     variant_settings = {
-        'economy': {
-            'title': 'Эконом',
-            'factor': 1.0,
-            'price': 0.5405683293,
-            'description': 'Минимальная комплектация для базовой разводки без большого запаса.',
-        },
-        'comfort': {
-            'title': 'Комфорт',
-            'factor': 1.0,
-            'price': 1.0,
-            'description': 'Оптимальная комплектация: кабель, защита, щит и слаботочные линии с нормальным запасом.',
-        },
-        'business': {
-            'title': 'Бизнес',
-            'factor': 1.0,
-            'price': 2.2594368116,
-            'description': 'Расширенная комплектация: больше групп, защиты, кабеля и расходников.',
-        },
+        'economy': {'title': 'Эконом', 'price': ELECTRIC_VARIANT_TOTAL_RATIOS['economy'], 'description': 'Минимальная комплектация для базовой разводки без большого запаса.'},
+        'comfort': {'title': 'Комфорт', 'price': 1, 'description': 'Оптимальная комплектация: кабель, защита, щит и слаботочные линии с нормальным запасом.'},
+        'business': {'title': 'Бизнес', 'price': ELECTRIC_VARIANT_TOTAL_RATIOS['business'], 'description': 'Расширенная комплектация: больше групп, защиты, кабеля и расходников.'},
     }
-    fixed_materials = {
-        'Автомат 25А', 'Автомат 32А', 'Реле напряжения', 'Электрощит 36 модулей', 'Нулевая шина', 'Заземляющая шина', 'Стяжки пластиковые'
-    }
-    semi_fixed_materials = {'Автомат 10А', 'Автомат 16А', 'УЗО', 'Дифавтомат', 'DIN-рейка', 'Изолента'}
 
-    def adjusted_quantity(title, quantity, factor):
-        if title in fixed_materials:
-            return quantity
-        if title in semi_fixed_materials:
-            return max(1, ceil(quantity * (0.9 + (factor - 1) * 0.7)))
-        return ceil(quantity * factor)
+    variants = {}
+    for key, settings in variant_settings.items():
+        rows = _electric_rows(calculator, quantities, settings['price'])
+        variant = _variant(key, settings['title'], settings['description'], rows)
+        if exact_match:
+            variant['total'] = variant['reference_total'] = variant_totals[key]
+        variants[key] = variant
 
-    def electric_variant(key, settings):
-        materials = []
-        for material in calculator['materials']:
-            quantity = adjusted_quantity(material['title'], base_quantities[material['title']], settings['factor'])
-            price = round(material['reference_price'] * settings['price'])
-            materials.append(_variant_row(material['title'], quantity, material['unit'], price))
-        return _variant(key, settings['title'], settings['description'], materials)
-
-    variants = {key: electric_variant(key, settings) for key, settings in variant_settings.items()}
     return _build_variant_result(calculator, variants, selected_variant, form_data, area, rooms, 1, f"{calculator['title']} · {area:g} м² · {rooms} комн.")
 
 
