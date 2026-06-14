@@ -333,11 +333,11 @@ def _calculate_santehnika(calculator, form_data):
     area = to_float(form_data.get('area'), 0)
     baths = max(1, int(to_float(form_data.get('bathrooms'), 1)))
     kitchen_point = 1
-    selected_variant = form_data.get('selected_variant', 'optimal')
+    selected_variant = form_data.get('selected_variant', 'comfort')
     price_sets = {
-        'base': {'water': 450, 'sewer50': 650, 'sewer110': 1800, 'fittings': 350, 'valves': 2500, 'collector': 12000, 'toilet': 35000, 'sink': 25000, 'mixer': 18000, 'shower': 45000, 'siphon': 2500, 'insulation': 250},
-        'optimal': {'water': 700, 'sewer50': 900, 'sewer110': 2500, 'fittings': 600, 'valves': 4500, 'collector': 25000, 'toilet': 70000, 'sink': 50000, 'mixer': 35000, 'shower': 90000, 'siphon': 4500, 'insulation': 350},
-        'maximum': {'water': 1100, 'sewer50': 1400, 'sewer110': 3500, 'fittings': 1000, 'valves': 8000, 'collector': 50000, 'toilet': 150000, 'sink': 100000, 'mixer': 80000, 'shower': 180000, 'siphon': 8000, 'insulation': 500},
+        'economy': {'water': 450, 'sewer50': 650, 'sewer110': 1800, 'fittings': 350, 'valves': 2500, 'collector': 12000, 'toilet': 35000, 'sink': 25000, 'mixer': 18000, 'shower': 45000, 'siphon': 2500, 'insulation': 250},
+        'comfort': {'water': 700, 'sewer50': 900, 'sewer110': 2500, 'fittings': 600, 'valves': 4500, 'collector': 25000, 'toilet': 70000, 'sink': 50000, 'mixer': 35000, 'shower': 90000, 'siphon': 4500, 'insulation': 350},
+        'business': {'water': 1100, 'sewer50': 1400, 'sewer110': 3500, 'fittings': 1000, 'valves': 8000, 'collector': 50000, 'toilet': 150000, 'sink': 100000, 'mixer': 80000, 'shower': 180000, 'siphon': 8000, 'insulation': 500},
     }
 
     def plumbing_variant(key, title, description, values, extra=0):
@@ -359,7 +359,7 @@ def _calculate_santehnika(calculator, form_data):
         return _variant(key, title, description, materials, extra=extra)
 
     variants = {
-        'base': plumbing_variant('base', 'Базовый', 'Базовая разводка: трубы, канализация, простая сантехника и смесители.', {
+        'economy': plumbing_variant('economy', 'Эконом', 'Базовая разводка: трубы, канализация, простая сантехника и смесители.', {
             'waterPipe': ceil(area * 0.45 + baths * 18 + kitchen_point * 10),
             'sewer50': ceil(baths * 6 + kitchen_point * 5),
             'sewer110': ceil(baths * 3),
@@ -373,7 +373,7 @@ def _calculate_santehnika(calculator, form_data):
             'siphon': baths + kitchen_point,
             'insulation': ceil(area * 0.15),
         }),
-        'optimal': plumbing_variant('optimal', 'Оптимальный', 'Оптимальная разводка: коллектор, хорошие краны, нормальная сантехника.', {
+        'comfort': plumbing_variant('comfort', 'Комфорт', 'Оптимальная разводка: коллектор, хорошие краны, нормальная сантехника.', {
             'waterPipe': ceil(area * 0.6 + baths * 24 + kitchen_point * 12),
             'sewer50': ceil(baths * 8 + kitchen_point * 6),
             'sewer110': ceil(baths * 4),
@@ -387,7 +387,7 @@ def _calculate_santehnika(calculator, form_data):
             'siphon': baths + kitchen_point,
             'insulation': ceil(area * 0.2),
         }),
-        'maximum': plumbing_variant('maximum', 'Максимальный', 'Скрытая разводка, качественная сантехника, коллекторы, запас под технику.', {
+        'business': plumbing_variant('business', 'Бизнес', 'Скрытая разводка, качественная сантехника, коллекторы, запас под технику.', {
             'waterPipe': ceil(area * 0.8 + baths * 32 + kitchen_point * 15),
             'sewer50': ceil(baths * 10 + kitchen_point * 8),
             'sewer110': ceil(baths * 5),
