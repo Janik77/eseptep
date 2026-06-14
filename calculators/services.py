@@ -90,7 +90,7 @@ def _calculate_demontazh(calculator, form_data):
     demolition_type = form_data.get('demolition_type') or form_data.get('type', 'partial')
     selected_variant = form_data.get('selected_variant', 'optimal')
 
-    film_m2 = ceil(area * 1.05)
+    film_m2 = ceil(area * 1.2)
     tape = max(1, ceil(area / 25))
     gloves = max(1, ceil(area / 30))
     truck = max(1, ceil(area / 45))
@@ -106,10 +106,10 @@ def _calculate_demontazh(calculator, form_data):
         respirators = ceil(area / 20)
         container = max(1, ceil(area / 45))
     else:
-        bags = {'base': ceil(area * 1.4), 'optimal': ceil(area * 1.8), 'maximum': ceil(area * 2.3)}
+        bags = {'base': ceil(area * 1.4), 'optimal': ceil(area * 1.6), 'maximum': ceil(area * 2.3)}
         disks = max(1, ceil(area / 35))
         respirators = max(1, ceil(area / 35))
-        container = max(1, ceil(area / 80))
+        container = 0
 
     variants = {
         'base': _variant('base', 'Базовый', 'Минимальные расходники и базовый вывоз мусора.', [
@@ -595,6 +595,7 @@ def _variant_row(title, quantity, unit, reference_price):
 
 
 def _variant(key, title, description, materials, extra=0):
+    materials = [material for material in materials if material['quantity'] > 0]
     extra_total = round(extra)
     total = sum(material['reference_total'] for material in materials) + extra_total
     return {

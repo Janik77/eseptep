@@ -170,6 +170,12 @@ def _get_form_data(calculator, post_data=None):
 def _get_form_fields(calculator, form_data):
     fields = []
     for field in calculator.get('fields', []):
-        prepared = {**field, 'value': form_data.get(field['name'], field.get('default', ''))}
+        value = form_data.get(field['name'], field.get('default', ''))
+        prepared = {**field, 'value': value, 'display_value': value}
+        if field.get('type') == 'select':
+            prepared['display_value'] = next(
+                (option['label'] for option in field.get('options', []) if option['value'] == value),
+                value,
+            )
         fields.append(prepared)
     return fields

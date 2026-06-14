@@ -2741,3 +2741,34 @@ button, input, select, textarea { font: inherit; }
         justify-self: start;
     }
 }
+
+.materials-table--priced .materials-table__row {
+    align-items: center;
+    grid-template-columns: minmax(0, 1fr) minmax(110px, auto) minmax(120px, auto);
+}
+
+.materials-table--priced .materials-table__row > strong {
+    justify-self: center;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.materials-table--priced .material-line-total {
+    justify-self: end;
+    text-align: right;
+}
+
+@media (max-width: 720px) {
+    .materials-table--priced .materials-table__row {
+        align-items: flex-start;
+        border-radius: 16px;
+        grid-template-columns: 1fr;
+        padding: 14px;
+    }
+
+    .materials-table--priced .materials-table__row > strong,
+    .materials-table--priced .material-line-total {
+        justify-self: start;
+        text-align: left;
+    }
+}
