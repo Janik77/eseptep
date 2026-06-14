@@ -3,30 +3,74 @@
 {% block title %}Ремонт под ключ — ESEPTEP{% endblock %}
 
 {% block content %}
-<section class="page-hero page-hero--compact">
-    <span class="hero__badge">Мастера и услуги</span>
-    <h1>Ремонт под ключ без лишних звонков</h1>
-    <p>Подберите пакет работ, отправьте смету мастеру и получите понятную заявку в WhatsApp.</p>
+<section class="page-hero page-hero--compact turnkey-hero">
+    <span class="hero__badge">Ремонт под ключ</span>
+    <h1>Рассчитайте ремонт квартиры за 1 минуту</h1>
+    <p>Выберите город, застройщика и квадратуру — мы подготовим предварительный расчёт стоимости ремонта.</p>
 </section>
 
-<section class="service-grid">
-    <article class="service-card">
-        <span class="service-card__icon">🏠</span>
-        <h2>Косметический ремонт</h2>
-        <p>Покраска, обои, полы и аккуратное обновление квартиры.</p>
-        <a class="card-button" href="{% url 'calculators:home' %}">Посчитать материалы</a>
-    </article>
-    <article class="service-card">
-        <span class="service-card__icon">🧱</span>
-        <h2>Черновые работы</h2>
-        <p>Штукатурка, стяжка, гипсокартон, демонтаж и подготовка.</p>
-        <a class="card-button" href="{% url 'calculators:detail' 'shtukaturka' %}">Открыть расчёт</a>
-    </article>
-    <article class="service-card">
-        <span class="service-card__icon">🔧</span>
-        <h2>Инженерия</h2>
-        <p>Электрика, сантехника, тёплый пол и монтажные работы.</p>
-        <a class="card-button" href="{% url 'calculators:detail' 'elektrika' %}">Открыть расчёт</a>
-    </article>
+<section class="turnkey-layout" aria-label="Расчёт ремонта под ключ">
+    <form class="calc-form turnkey-form" method="post">
+        {% csrf_token %}
+        <label>
+            <span>Город</span>
+            <select name="city">
+                {% for city in cities %}
+                    <option value="{{ city }}" {% if form_data.city == city %}selected{% endif %}>{{ city }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <label>
+            <span>Застройщик</span>
+            <select name="developer">
+                {% for developer in developers %}
+                    <option value="{{ developer }}" {% if form_data.developer == developer %}selected{% endif %}>{{ developer }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <label>
+            <span>Квадратура квартиры</span>
+            <input type="number" min="1" step="0.1" name="area" value="{{ form_data.area }}" placeholder="Например: 60" required>
+        </label>
+        <button class="btn btn--primary" type="submit">Рассчитать</button>
+    </form>
+
+    <div class="turnkey-note">
+        <b>Расчёт предварительный</b>
+        <p>Точная стоимость зависит от планировки, состояния квартиры, выбранных материалов и требований заказчика.</p>
+    </div>
 </section>
+
+{% if results %}
+<section class="turnkey-results" aria-label="Варианты ремонта под ключ">
+    {% for package in results %}
+        <details class="turnkey-card{% if package.key == 'standard' %} is-active{% endif %}" {% if package.key == 'standard' %}open{% endif %}>
+            <summary>
+                <span>{{ package.title }}</span>
+                <strong>₸ {{ package.total }}</strong>
+                <small>{{ package.description }} · {{ package.duration }}</small>
+            </summary>
+            <div class="turnkey-card__body">
+                <p>Что входит:</p>
+                <ul>
+                    {% for item in package.items %}
+                        <li>{{ item }}</li>
+                    {% endfor %}
+                </ul>
+                <div class="turnkey-card__meta"><span>Срок</span><b>{{ package.duration }}</b></div>
+            </div>
+        </details>
+    {% endfor %}
+</section>
+{% else %}
+<section class="turnkey-results turnkey-results--empty" aria-label="Пакеты ремонта под ключ">
+    {% for package in packages %}
+        <article class="turnkey-card turnkey-card--preview">
+            <h2>{{ package.title }}</h2>
+            <p>{{ package.description }}</p>
+            <b>{{ package.duration }}</b>
+        </article>
+    {% endfor %}
+</section>
+{% endif %}
 {% endblock %}

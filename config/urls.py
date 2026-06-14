@@ -2,6 +2,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
+from marketplace.views import marketplace_home
 
 from accounts.views import (
     client_dashboard,
@@ -17,6 +18,7 @@ urlpatterns = [
     path('', include('core.urls')),
     path('calculators/', include('calculators.urls')),
     path('marketplace/', include('marketplace.urls')),
+    path('masters/', marketplace_home, name='masters'),
     path('projects/', include('projects.urls')),
     path('accounts/', include('accounts.urls')),
     path('dashboard/client/', client_dashboard, name='dashboard_client_root'),
