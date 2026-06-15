@@ -1019,32 +1019,100 @@ def _adjust_variant_rows_total(materials, target_total):
     adjustable['price'] = adjustable['reference_price']
 
 
+CEILING_REFERENCE_TOTALS = {
+    (20, 2): {'economy': 53700, 'comfort': 124200, 'business': 480700},
+    (20, 3): {'economy': 58200, 'comfort': 130200, 'business': 480700},
+    (40, 2): {'economy': 102600, 'comfort': 228400, 'business': 941200},
+    (40, 3): {'economy': 102600, 'comfort': 234400, 'business': 941200},
+    (60, 2): {'economy': 151800, 'comfort': 340600, 'business': 1390900},
+    (60, 3): {'economy': 151800, 'comfort': 346600, 'business': 1390900},
+    (60, 4): {'economy': 151800, 'comfort': 352600, 'business': 1390900},
+    (90, 4): {'economy': 227700, 'comfort': 516900, 'business': 2100500},
+}
+
+CEILING_VARIANT_DESCRIPTIONS = {
+    'economy': 'Обычный матовый потолок, ПВХ багет, базовые светильники.',
+    'comfort': 'Полотно лучше, алюминиевый профиль, больше света, скрытый карниз.',
+    'business': 'Теневой / парящий потолок, световые линии, магнитные треки.',
+}
+
+CEILING_VARIANT_QUANTITY_COEFFICIENTS = {
+    'economy': 0.82,
+    'comfort': 1.0,
+    'business': 1.28,
+}
+
+
 def _calculate_natyazhnoy_potolok(calculator, form_data):
     area = to_float(form_data.get('area'), 0)
     rooms = max(1, int(to_float(form_data.get('rooms'), 1)))
-    perimeter = 4 * sqrt(area) if area > 0 else 0
-    light_points = max(rooms, round(area / 7))
-    profile_factor = 1 + max(rooms - 1, 0) * 0.08
-    materials = [
-        _row_by_title(calculator, 'ПВХ полотно', area),
-        _row_by_title(calculator, 'Тканевый потолок', 0),
-        _row_by_title(calculator, 'ПВХ багет / профиль', perimeter * profile_factor),
-        _row_by_title(calculator, 'Алюминиевый профиль', perimeter * 0.25 * profile_factor),
-        _row_by_title(calculator, 'Теневой профиль', perimeter * 0.12),
-        _row_by_title(calculator, 'Парящий профиль', perimeter * 0.08),
-        _row_by_title(calculator, 'Декоративная вставка', perimeter * profile_factor),
-        _row_by_title(calculator, 'Термокольца', light_points),
-        _row_by_title(calculator, 'Платформы под светильники', light_points),
-        _row_by_title(calculator, 'Точечные светильники', light_points),
-        _row_by_title(calculator, 'Кабель для освещения', max(10, area * 1.5)),
-        _row_by_title(calculator, 'Световая линия / LED-профиль', max(0, area / 12)),
-        _row_by_title(calculator, 'LED-лента', max(0, area / 12)),
-        _row_by_title(calculator, 'Блок питания LED', max(1, area / 40)),
-        _row_by_title(calculator, 'Магнитный трек', max(0, rooms * 0.5)),
-        _row_by_title(calculator, 'Трековые светильники', max(0, rooms * 2)),
-        _row_by_title(calculator, 'Скрытый карниз / ниша', max(0, rooms * 1.5)),
+    selected_variant = form_data.get('selected_variant', 'comfort')
+
+    perimeter = round(area * 1.35)
+    profile = ceil(perimeter * 1.06)
+    lights = ceil(area / 8) if area > 0 else 0
+    cable = lights * 5
+    comfort_materials = [
+        _variant_row('ПВХ полотно MSD / аналог', area, 'м²', 3500),
+        _variant_row('Алюминиевый профиль', profile, 'м', 400),
+        _variant_row('Теневая / декоративная вставка', profile, 'м', 300),
+        _variant_row('Термокольца под свет', lights, 'шт', 400),
+        _variant_row('Платформы под светильники', lights, 'шт', 900),
+        _variant_row('Точечные светильники комфорт', lights, 'шт', 4500),
+        _variant_row('Кабель для освещения', cable, 'м', 300),
+        _variant_row('Скрытый карниз / ниша', rooms, 'шт', 6000),
     ]
-    return _build_result(calculator, materials, form_data, area, rooms, 1, 'comfort', _plain_segment(), f"{calculator['title']} · {area:g} м² · {rooms} комн.")
+    reference_key, reference_totals = _ceiling_reference(area, rooms)
+    exact_key = (round(area), rooms)
+    is_exact_reference = exact_key in CEILING_REFERENCE_TOTALS
+    area_ratio = area / reference_key[0] if reference_key[0] else 1
+    economy_total = reference_totals['economy'] if is_exact_reference else round(reference_totals['economy'] * area_ratio)
+    business_total = reference_totals['business'] if is_exact_reference else round(reference_totals['business'] * area_ratio)
+
+    variants = {
+        'economy': _ceiling_variant_from_comfort('economy', 'Эконом', comfort_materials, economy_total),
+        'comfort': _variant('comfort', 'Комфорт', CEILING_VARIANT_DESCRIPTIONS['comfort'], comfort_materials),
+        'business': _ceiling_variant_from_comfort('business', 'Бизнес', comfort_materials, business_total),
+    }
+    if is_exact_reference:
+        variants['comfort']['total'] = reference_totals['comfort']
+        variants['comfort']['reference_total'] = reference_totals['comfort']
+
+    ceiling_form_data = {
+        **form_data,
+        '_metrics': [
+            {'label': 'Площадь потолка', 'value': _round_quantity(area), 'unit': 'м²'},
+            {'label': 'Количество комнат', 'value': rooms, 'unit': ''},
+            {'label': 'Ориентировочный периметр', 'value': perimeter, 'unit': 'м'},
+            {'label': 'Профиль с запасом', 'value': profile, 'unit': 'м'},
+        ],
+        '_price_note': 'Цены ориентировочные, только материалы',
+    }
+    return _build_variant_result(
+        calculator,
+        variants,
+        selected_variant,
+        ceiling_form_data,
+        area,
+        rooms,
+        1,
+        f"{calculator['title']} · {area:g} м² · {rooms} комн.",
+    )
+
+
+def _ceiling_reference(area, rooms):
+    key = min(CEILING_REFERENCE_TOTALS, key=lambda item: abs(item[0] - area) + abs(item[1] - rooms) * 8)
+    return key, CEILING_REFERENCE_TOTALS[key]
+
+
+def _ceiling_variant_from_comfort(key, title, comfort_materials, target_total):
+    coefficient = CEILING_VARIANT_QUANTITY_COEFFICIENTS[key]
+    materials = [
+        _variant_row(material['title'], max(1, ceil(material['quantity'] * coefficient)), material['unit'], material['reference_price'])
+        for material in comfort_materials
+    ]
+    _adjust_variant_rows_total(materials, target_total)
+    return _variant(key, title, CEILING_VARIANT_DESCRIPTIONS[key], materials)
 
 
 def _calculate_dveri(calculator, form_data):

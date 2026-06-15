@@ -106,7 +106,7 @@
                                             </div>
                                         {% endfor %}
                                     </div>
-                                    <div class="grand-total grand-total--secondary"><span>Цены ориентировочные по Казахстану</span><strong>Итог: ₸ {{ variant.total }}</strong></div>
+                                    <div class="grand-total grand-total--secondary"><span>{{ result.price_note|default:"Цены ориентировочные по Казахстану" }}</span><strong>Итог: ₸ {{ variant.total }}</strong></div>
                                     <textarea class="master-template__text" data-variant-copy-source="{{ variant.key }}" aria-label="Список {{ variant.title }} без цен">ESEPTEP.KZ
 {{ calculator.title }} — {{ variant.title }}
 
