@@ -45,7 +45,7 @@ PLASTER_FIELDS = [
 
 DRYWALL_FIELDS = [
     {'name': 'area', 'label': 'Площадь (м²)', 'type': 'number', 'unit': '', 'min': 1, 'step': 0.1, 'default': 30},
-    {'name': 'rooms', 'label': 'Комнат', 'type': 'number', 'unit': '', 'min': 1, 'step': 1, 'default': 2},
+    {'name': 'rooms', 'label': 'Количество комнат', 'type': 'number', 'unit': '', 'min': 1, 'step': 1, 'default': 2},
     {
         'name': 'construction_type',
         'label': 'Тип конструкции',
@@ -53,8 +53,8 @@ DRYWALL_FIELDS = [
         'default': 'ceiling',
         'options': [
             {'value': 'ceiling', 'label': 'Потолок из гипсокартона'},
+            {'value': 'wall', 'label': 'Обшивка стены'},
             {'value': 'partition', 'label': 'Перегородка'},
-            {'value': 'box', 'label': 'Короб / ниша'},
         ],
     },
 ]
@@ -153,6 +153,39 @@ WARM_FLOOR_FIELDS = [
         ],
     },
 ]
+
+DRYWALL_MASTER_TEMPLATE_GROUPS = {
+    'ceiling': [
+        {'title': 'Гипсокартон потолочный 2 слоя', 'default_quantity': 1.0, 'unit': 'лист'},
+        {'title': 'Профиль CD усиленный', 'default_quantity': 1.0, 'unit': 'шт'},
+        {'title': 'Профиль UD усиленный', 'default_quantity': 1.0, 'unit': 'шт'},
+        {'title': 'Подвес усиленный', 'default_quantity': 1.0, 'unit': 'шт'},
+        {'title': 'Краб усиленный', 'default_quantity': 1.0, 'unit': 'шт'},
+        {'title': 'Соединитель CD профиля', 'default_quantity': 1.0, 'unit': 'шт'},
+        {'title': 'Соединитель двухуровневый CD 60×27', 'default_quantity': 1.0, 'unit': 'шт'},
+        {'title': 'Дюбель-гвоздь', 'default_quantity': 1.0, 'unit': 'шт'},
+        {'title': 'Саморезы ГКЛ', 'default_quantity': 1.0, 'unit': 'пачка'},
+        {'title': 'Саморезы-клопы', 'default_quantity': 1.0, 'unit': 'пачка'},
+    ],
+    'wall': [
+        {'title': 'Гипсокартон стеновой 12.5 мм', 'default_quantity': 1.0, 'unit': 'лист'},
+        {'title': 'Профиль UW усиленный', 'default_quantity': 1.0, 'unit': 'шт'},
+        {'title': 'Профиль CW усиленный', 'default_quantity': 1.0, 'unit': 'шт'},
+        {'title': 'Шумоизоляция Knauf Acoustic', 'default_quantity': 1.0, 'unit': 'м²'},
+        {'title': 'Демпферная лента', 'default_quantity': 1.0, 'unit': 'м'},
+        {'title': 'Дюбель-гвоздь', 'default_quantity': 1.0, 'unit': 'шт'},
+        {'title': 'Саморезы ГКЛ', 'default_quantity': 1.0, 'unit': 'пачка'},
+    ],
+    'partition': [
+        {'title': 'Гипсокартон 2 слоя с одной стороны', 'default_quantity': 1.0, 'unit': 'лист'},
+        {'title': 'Профиль UW усиленный', 'default_quantity': 1.0, 'unit': 'шт'},
+        {'title': 'Профиль CW усиленный', 'default_quantity': 1.0, 'unit': 'шт'},
+        {'title': 'Шумоизоляция Knauf Acoustic', 'default_quantity': 1.0, 'unit': 'м²'},
+        {'title': 'Демпферная лента', 'default_quantity': 1.0, 'unit': 'м'},
+        {'title': 'Дюбель-гвоздь 8×60', 'default_quantity': 1.0, 'unit': 'шт'},
+        {'title': 'Саморезы ГКЛ', 'default_quantity': 1.0, 'unit': 'пачка'},
+    ],
+}
 
 DEFAULT_WARNING = 'Расчёт предварительный. Количество материалов нужно уточнить по проекту и фактическим условиям.'
 
@@ -264,26 +297,25 @@ CALCULATORS = [
         _material('Монтажная пена', 1.0, 'шт', 2500),
         _material('Мусорные мешки', 1.0, 'шт', 50),
     ], PLASTER_FIELDS, warning='Расчёт предварительный. Количество материалов нужно уточнить по проекту и фактическим условиям.'),
-    _definition('gipsokarton-potolok', 'Гипсокартон Потолок', 'Листы ГКЛ, профиль, подвесы и крепёж по типу конструкции.', 'drywall', 'м²', [
-        _material('Гипсокартон стеновой 12.5 мм', 0.38, 'шт', 3600),
-        _material('Гипсокартон потолочный 9.5 мм', 0.38, 'шт', 3400),
-        _material('Гипсокартон влагостойкий', 0.38, 'шт', 5200),
-        _material('Профиль CD 60×27', 1.4, 'м', 520),
-        _material('Профиль UD 27×28', 0.45, 'м', 420),
-        _material('Профиль UW 50×40', 0.5, 'м', 650),
-        _material('Профиль CW 50×50', 1.2, 'м', 720),
-        _material('Профиль UW 75×40', 0.5, 'м', 850),
-        _material('Профиль CW 75×50', 1.2, 'м', 920),
-        _material('Подвес прямой', 0.8, 'шт', 180),
-        _material('Краб одноуровневый', 0.45, 'шт', 260),
-        _material('Соединитель CD профиля', 0.18, 'шт', 220),
-        _material('Соединитель двухуровневый CD 60×27', 0.12, 'шт', 380),
-        _material('Дюбель-гвоздь', 1.8, 'шт', 45),
-        _material('Саморезы ГКЛ', 18, 'шт', 18),
-        _material('Саморезы-клопы', 8, 'шт', 16),
-        _material('Шумоизоляция', 1.0, 'м²', 1900),
-        _material('Демпферная лента', 0.45, 'м', 180),
-    ], DRYWALL_FIELDS, legacy_slugs=['gipsokarton'], warning='Количество комнат влияет на периметр, профиль UD/UW, крепёж и точность расчёта.'),
+    _definition('gipsokarton-potolok', 'Гипсокартон', 'Расчёт монтажа гипсокартона и каркаса по площади, комнатам и типу конструкции.', 'drywall', 'м²', [
+        _material('Гипсокартон потолочный 2 слоя', 1.0, 'лист', 3900),
+        _material('Профиль CD усиленный', 1.0, 'шт', 1450),
+        _material('Профиль UD усиленный', 1.0, 'шт', 1200),
+        _material('Подвес усиленный', 1.0, 'шт', 180),
+        _material('Краб усиленный', 1.0, 'шт', 180),
+        _material('Соединитель CD профиля', 1.0, 'шт', 150),
+        _material('Соединитель двухуровневый CD 60×27', 1.0, 'шт', 180),
+        _material('Дюбель-гвоздь', 1.0, 'шт', 30),
+        _material('Саморезы ГКЛ', 1.0, 'пачка', 3000),
+        _material('Саморезы-клопы', 1.0, 'пачка', 3000),
+        _material('Гипсокартон стеновой 12.5 мм', 1.0, 'лист', 4500),
+        _material('Профиль UW усиленный', 1.0, 'шт', 1900),
+        _material('Профиль CW усиленный', 1.0, 'шт', 2300),
+        _material('Шумоизоляция Knauf Acoustic', 1.0, 'м²', 3200),
+        _material('Демпферная лента', 1.0, 'м', 350),
+        _material('Гипсокартон 2 слоя с одной стороны', 1.0, 'лист', 4500),
+        _material('Дюбель-гвоздь 8×60', 1.0, 'шт', 45),
+    ], DRYWALL_FIELDS, legacy_slugs=['gipsokarton'], warning='Малярные материалы не включены. Тут считается только монтаж гипсокартона и каркас. Для точного расчёта важны планировка, количество комнат, высота, ниши, световые линии и сложность конструкции.'),
     _definition('nalivnoy-pol', 'Наливной Пол', 'Смесь, грунт и демпферная лента по площади и толщине слоя.', 'floor', 'м²', [
         _material('Наливной пол 25 кг', 0.72, 'мешок', 4100),
         _material('Грунтовка', 0.12, 'л', 700),
@@ -405,6 +437,7 @@ CALCULATORS = [
 ]
 
 CALCULATORS_BY_SLUG = {item['slug']: item for item in CALCULATORS}
+CALCULATORS_BY_SLUG['gipsokarton-potolok']['master_template_groups'] = DRYWALL_MASTER_TEMPLATE_GROUPS
 for item in CALCULATORS:
     for legacy_slug in item.get('legacy_slugs', []):
         CALCULATORS_BY_SLUG[legacy_slug] = item

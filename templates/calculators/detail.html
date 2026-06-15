@@ -188,7 +188,7 @@
                 <div>
                     <p class="section-heading__eyebrow">Шаблон мастера</p>
                     <h2 id="master-template-title">Список материалов</h2>
-                    <p><span data-builder-total>{{ calculator.master_template_items|length }} позиций</span></p>
+                    <p><span data-builder-total>{% if calculator.master_template_groups %}{% if form_data.construction_type == 'wall' %}{{ calculator.master_template_groups.wall|length }}{% elif form_data.construction_type == 'partition' %}{{ calculator.master_template_groups.partition|length }}{% else %}{{ calculator.master_template_groups.ceiling|length }}{% endif %}{% else %}{{ calculator.master_template_items|length }}{% endif %} позиций</span></p>
                 </div>
             </div>
 
@@ -199,7 +199,9 @@
                     </div>
 
                     <div class="material-row-list material-row-list--simple" data-material-rows>
-                        {% for item in calculator.master_template_items %}
+                        {% if calculator.master_template_groups %}
+                            {% if form_data.construction_type == 'wall' %}
+                                {% for item in calculator.master_template_groups.wall %}
                             <div class="material-row material-row--compact material-row--fixed" data-material-row>
                                 <div class="material-row__index">{{ forloop.counter }}.</div>
                                 <div class="material-row__title" data-row-material data-unit="{{ item.unit }}">{{ item.title }}</div>
@@ -212,7 +214,54 @@
                                 </div>
                                 <small class="material-row__unit" data-row-total>{{ item.unit }}</small>
                             </div>
-                        {% endfor %}
+                                {% endfor %}
+                            {% elif form_data.construction_type == 'partition' %}
+                                {% for item in calculator.master_template_groups.partition %}
+                            <div class="material-row material-row--compact material-row--fixed" data-material-row>
+                                <div class="material-row__index">{{ forloop.counter }}.</div>
+                                <div class="material-row__title" data-row-material data-unit="{{ item.unit }}">{{ item.title }}</div>
+                                <div class="quantity-stepper quantity-stepper--compact">
+                                    <div class="quantity-stepper__control">
+                                        <button type="button" data-step-decrease aria-label="Уменьшить количество">−</button>
+                                        <input type="number" min="0" step="0.1" value="0" data-row-qty aria-label="Количество для {{ item.title }}">
+                                        <button type="button" data-step-increase aria-label="Увеличить количество">+</button>
+                                    </div>
+                                </div>
+                                <small class="material-row__unit" data-row-total>{{ item.unit }}</small>
+                            </div>
+                                {% endfor %}
+                            {% else %}
+                                {% for item in calculator.master_template_groups.ceiling %}
+                            <div class="material-row material-row--compact material-row--fixed" data-material-row>
+                                <div class="material-row__index">{{ forloop.counter }}.</div>
+                                <div class="material-row__title" data-row-material data-unit="{{ item.unit }}">{{ item.title }}</div>
+                                <div class="quantity-stepper quantity-stepper--compact">
+                                    <div class="quantity-stepper__control">
+                                        <button type="button" data-step-decrease aria-label="Уменьшить количество">−</button>
+                                        <input type="number" min="0" step="0.1" value="0" data-row-qty aria-label="Количество для {{ item.title }}">
+                                        <button type="button" data-step-increase aria-label="Увеличить количество">+</button>
+                                    </div>
+                                </div>
+                                <small class="material-row__unit" data-row-total>{{ item.unit }}</small>
+                            </div>
+                                {% endfor %}
+                            {% endif %}
+                        {% else %}
+                            {% for item in calculator.master_template_items %}
+                            <div class="material-row material-row--compact material-row--fixed" data-material-row>
+                                <div class="material-row__index">{{ forloop.counter }}.</div>
+                                <div class="material-row__title" data-row-material data-unit="{{ item.unit }}">{{ item.title }}</div>
+                                <div class="quantity-stepper quantity-stepper--compact">
+                                    <div class="quantity-stepper__control">
+                                        <button type="button" data-step-decrease aria-label="Уменьшить количество">−</button>
+                                        <input type="number" min="0" step="0.1" value="0" data-row-qty aria-label="Количество для {{ item.title }}">
+                                        <button type="button" data-step-increase aria-label="Увеличить количество">+</button>
+                                    </div>
+                                </div>
+                                <small class="material-row__unit" data-row-total>{{ item.unit }}</small>
+                            </div>
+                            {% endfor %}
+                        {% endif %}
                     </div>
 
                     <div class="estimate-builder__actions estimate-builder__actions--copy">

@@ -443,36 +443,280 @@ def _calculate_shtukaturka(calculator, form_data):
     return _build_result(calculator, materials, plaster_form_data, area, 1, thickness, 'comfort', _plain_segment(), f"{calculator['title']} · {area:g} м² · {thickness:g} см")
 
 
+DRYWALL_CONSTRUCTION_LABELS = {
+    'ceiling': 'Потолок из гипсокартона',
+    'wall': 'Обшивка стены',
+    'partition': 'Перегородка',
+}
+
+DRYWALL_PERIMETER_OVERRIDES = {
+    (30, 2): 41,
+    (50, 3): 66,
+    (50, 4): 73,
+    (80, 4): 100,
+}
+
+DRYWALL_VARIANT_DESCRIPTIONS = {
+    'economy': 'Базовый каркас и стандартные материалы.',
+    'comfort': 'Усиленный каркас, больше профиля и крепежа.',
+    'business': 'Двойной каркас, двухуровневые соединители, шумоизоляция и усиление.',
+}
+
+DRYWALL_REFERENCE_MATRIX = {
+    'ceiling': {
+        (30, 2): {
+            'totals': {'economy': 143725, 'comfort': 246300, 'business': 444200},
+            'materials': [
+                ('Гипсокартон потолочный 2 слоя', 22, 'лист', 3900),
+                ('Профиль CD усиленный', 54, 'шт', 1450),
+                ('Профиль UD усиленный', 17, 'шт', 1200),
+                ('Подвес усиленный', 120, 'шт', 180),
+                ('Краб усиленный', 42, 'шт', 180),
+                ('Соединитель CD профиля', 12, 'шт', 150),
+                ('Соединитель двухуровневый CD 60×27', 51, 'шт', 180),
+                ('Дюбель-гвоздь', 322, 'шт', 30),
+                ('Саморезы ГКЛ', 3, 'пачка', 3000),
+                ('Саморезы-клопы', 1, 'пачка', 3000),
+            ],
+        },
+        (50, 3): {
+            'totals': {'economy': 235230, 'comfort': 407760, 'business': 739605},
+            'materials': [
+                ('Гипсокартон потолочный 2 слоя', 38, 'лист', 3900),
+                ('Профиль CD усиленный', 90, 'шт', 1450),
+                ('Профиль UD усиленный', 26, 'шт', 1200),
+                ('Подвес усиленный', 200, 'шт', 180),
+                ('Краб усиленный', 70, 'шт', 180),
+                ('Соединитель CD профиля', 20, 'шт', 150),
+                ('Соединитель двухуровневый CD 60×27', 85, 'шт', 180),
+                ('Дюбель-гвоздь', 532, 'шт', 30),
+                ('Саморезы ГКЛ', 4, 'пачка', 3000),
+                ('Саморезы-клопы', 1, 'пачка', 3000),
+            ],
+        },
+        (50, 4): {
+            'totals': {'economy': 238530, 'comfort': 411780, 'business': 747115},
+            'materials': [
+                ('Гипсокартон потолочный 2 слоя', 38, 'лист', 3900),
+                ('Профиль CD усиленный', 90, 'шт', 1450),
+                ('Профиль UD усиленный', 29, 'шт', 1200),
+                ('Подвес усиленный', 200, 'шт', 180),
+                ('Краб усиленный', 70, 'шт', 180),
+                ('Соединитель CD профиля', 20, 'шт', 150),
+                ('Соединитель двухуровневый CD 60×27', 85, 'шт', 180),
+                ('Дюбель-гвоздь', 546, 'шт', 30),
+                ('Саморезы ГКЛ', 4, 'пачка', 3000),
+                ('Саморезы-клопы', 1, 'пачка', 3000),
+            ],
+        },
+        (80, 4): {
+            'totals': {'economy': 370335, 'comfort': 647040, 'business': 1168715},
+            'materials': [
+                ('Гипсокартон потолочный 2 слоя', 60, 'лист', 3900),
+                ('Профиль CD усиленный', 144, 'шт', 1450),
+                ('Профиль UD усиленный', 40, 'шт', 1200),
+                ('Подвес усиленный', 320, 'шт', 180),
+                ('Краб усиленный', 112, 'шт', 180),
+                ('Соединитель CD профиля', 32, 'шт', 150),
+                ('Соединитель двухуровневый CD 60×27', 136, 'шт', 180),
+                ('Дюбель-гвоздь', 840, 'шт', 30),
+                ('Саморезы ГКЛ', 6, 'пачка', 3000),
+                ('Саморезы-клопы', 2, 'пачка', 3000),
+            ],
+        },
+    },
+    'wall': {
+        (30, 2): {
+            'totals': {'economy': 118390, 'comfort': 272440, 'business': 409360},
+            'materials': [
+                ('Гипсокартон стеновой 12.5 мм', 11, 'лист', 4500),
+                ('Профиль UW усиленный', 16, 'шт', 1900),
+                ('Профиль CW усиленный', 28, 'шт', 2300),
+                ('Шумоизоляция Knauf Acoustic', 32, 'м²', 3200),
+                ('Демпферная лента', 44, 'м', 350),
+                ('Дюбель-гвоздь', 124, 'шт', 35),
+                ('Саморезы ГКЛ', 2, 'пачка', 3000),
+            ],
+        },
+        (50, 3): {
+            'totals': {'economy': 199050, 'comfort': 451130, 'business': 682900},
+            'materials': [
+                ('Гипсокартон стеновой 12.5 мм', 19, 'лист', 4500),
+                ('Профиль UW усиленный', 25, 'шт', 1900),
+                ('Профиль CW усиленный', 47, 'шт', 2300),
+                ('Шумоизоляция Knauf Acoustic', 53, 'м²', 3200),
+                ('Демпферная лента', 70, 'м', 350),
+                ('Дюбель-гвоздь', 198, 'шт', 35),
+                ('Саморезы ГКЛ', 3, 'пачка', 3000),
+            ],
+        },
+        (80, 4): {
+            'totals': {'economy': 313700, 'comfort': 708450, 'business': 1073950},
+            'materials': [
+                ('Гипсокартон стеновой 12.5 мм', 30, 'лист', 4500),
+                ('Профиль UW усиленный', 38, 'шт', 1900),
+                ('Профиль CW усиленный', 74, 'шт', 2300),
+                ('Шумоизоляция Knauf Acoustic', 84, 'м²', 3200),
+                ('Демпферная лента', 105, 'м', 350),
+                ('Дюбель-гвоздь', 300, 'шт', 35),
+                ('Саморезы ГКЛ', 5, 'пачка', 3000),
+            ],
+        },
+    },
+    'partition': {
+        (30, 2): {
+            'totals': {'economy': 216520, 'comfort': 443280, 'business': 627000},
+            'materials': [
+                ('Гипсокартон 2 слоя с одной стороны', 33, 'лист', 4500),
+                ('Профиль UW усиленный', 16, 'шт', 2800),
+                ('Профиль CW усиленный', 33, 'шт', 3400),
+                ('Шумоизоляция Knauf Acoustic', 33, 'м²', 3200),
+                ('Демпферная лента', 46, 'м', 350),
+                ('Дюбель-гвоздь 8×60', 124, 'шт', 45),
+                ('Саморезы ГКЛ', 3, 'пачка', 3500),
+            ],
+        },
+        (50, 3): {
+            'totals': {'economy': 361600, 'comfort': 748060, 'business': 1050500},
+            'materials': [
+                ('Гипсокартон 2 слоя с одной стороны', 57, 'лист', 4500),
+                ('Профиль UW усиленный', 25, 'шт', 2800),
+                ('Профиль CW усиленный', 56, 'шт', 3400),
+                ('Шумоизоляция Knauf Acoustic', 56, 'м²', 3200),
+                ('Демпферная лента', 73, 'м', 350),
+                ('Дюбель-гвоздь 8×60', 198, 'шт', 45),
+                ('Саморезы ГКЛ', 5, 'пачка', 3500),
+            ],
+        },
+        (80, 4): {
+            'totals': {'economy': 572600, 'comfort': 1172550, 'business': 1654900},
+            'materials': [
+                ('Гипсокартон 2 слоя с одной стороны', 90, 'лист', 4500),
+                ('Профиль UW усиленный', 38, 'шт', 2800),
+                ('Профиль CW усиленный', 88, 'шт', 3400),
+                ('Шумоизоляция Knauf Acoustic', 88, 'м²', 3200),
+                ('Демпферная лента', 111, 'м', 350),
+                ('Дюбель-гвоздь 8×60', 300, 'шт', 45),
+                ('Саморезы ГКЛ', 8, 'пачка', 3500),
+            ],
+        },
+    },
+}
+
+DRYWALL_AREA_DEPENDENT = {
+    'Гипсокартон потолочный 2 слоя', 'Профиль CD усиленный', 'Подвес усиленный',
+    'Краб усиленный', 'Соединитель CD профиля', 'Соединитель двухуровневый CD 60×27',
+    'Гипсокартон стеновой 12.5 мм', 'Профиль CW усиленный', 'Шумоизоляция Knauf Acoustic',
+    'Гипсокартон 2 слоя с одной стороны', 'Саморезы ГКЛ', 'Саморезы-клопы'
+}
+DRYWALL_ROOM_DEPENDENT = {'Профиль UD усиленный', 'Профиль UW усиленный', 'Демпферная лента', 'Дюбель-гвоздь', 'Дюбель-гвоздь 8×60'}
+
+
 def _calculate_gipsokarton(calculator, form_data):
     area = to_float(form_data.get('area'), 0)
     rooms = max(1, int(to_float(form_data.get('rooms'), 1)))
     construction_type = form_data.get('construction_type', 'ceiling')
-    room_factor = 1 + max(rooms - 1, 0) * 0.08
-    ceiling = construction_type == 'ceiling'
-    partition = construction_type == 'partition'
-    box = construction_type == 'box'
-    sheet_factor = 0.38 if ceiling else 0.76 if partition else 0.55
-    materials = [
-        _row_by_title(calculator, 'Гипсокартон стеновой 12.5 мм', 0 if ceiling else area * sheet_factor),
-        _row_by_title(calculator, 'Гипсокартон потолочный 9.5 мм', area * sheet_factor if ceiling else 0),
-        _row_by_title(calculator, 'Гипсокартон влагостойкий', area * 0.12 if partition else 0),
-        _row_by_title(calculator, 'Профиль CD 60×27', area * (1.4 if ceiling or box else 0.4) * room_factor),
-        _row_by_title(calculator, 'Профиль UD 27×28', area * (0.45 if ceiling or box else 0.15) * room_factor),
-        _row_by_title(calculator, 'Профиль UW 50×40', area * (0.5 if partition else 0)),
-        _row_by_title(calculator, 'Профиль CW 50×50', area * (1.2 if partition else 0)),
-        _row_by_title(calculator, 'Профиль UW 75×40', area * (0.25 if partition else 0)),
-        _row_by_title(calculator, 'Профиль CW 75×50', area * (0.6 if partition else 0)),
-        _row_by_title(calculator, 'Подвес прямой', area * (0.8 if ceiling else 0.35) * room_factor),
-        _row_by_title(calculator, 'Краб одноуровневый', area * (0.45 if ceiling else 0.15)),
-        _row_by_title(calculator, 'Соединитель CD профиля', area * 0.18),
-        _row_by_title(calculator, 'Соединитель двухуровневый CD 60×27', area * (0.12 if ceiling else 0.04)),
-        _row_by_title(calculator, 'Дюбель-гвоздь', area * 1.8 * room_factor),
-        _row_by_title(calculator, 'Саморезы ГКЛ', area * 18 * room_factor),
-        _row_by_title(calculator, 'Саморезы-клопы', area * 8 * room_factor),
-        _row_by_title(calculator, 'Шумоизоляция', area if partition else 0),
-        _row_by_title(calculator, 'Демпферная лента', max(1, area * 0.45 * room_factor)),
+    if construction_type not in DRYWALL_REFERENCE_MATRIX:
+        construction_type = 'ceiling'
+    selected_variant = form_data.get('selected_variant', 'comfort')
+    perimeter = _drywall_perimeter(area, rooms)
+
+    reference_key, reference = _drywall_reference(construction_type, area, rooms)
+    quantities = _drywall_quantities(reference['materials'], area, rooms, reference_key)
+    comfort_materials = [
+        _variant_row(title, quantities[title], unit, price)
+        for title, _quantity, unit, price in reference['materials']
     ]
-    return _build_result(calculator, materials, form_data, area, rooms, 1, 'comfort', _plain_segment(), f"{calculator['title']} · {area:g} м² · {rooms} комн. · {construction_type}")
+    comfort_total = sum(material['reference_total'] for material in comfort_materials)
+
+    exact_key = (round(area), rooms)
+    is_exact_reference = exact_key in DRYWALL_REFERENCE_MATRIX[construction_type]
+    area_ratio = area / reference_key[0] if reference_key[0] else 1
+    total_ratio = 1 if is_exact_reference else area_ratio
+    economy_total = round(reference['totals']['economy'] * total_ratio)
+    business_total = round(reference['totals']['business'] * total_ratio)
+
+    variants = {
+        'economy': _drywall_variant_from_comfort('economy', 'Эконом', DRYWALL_VARIANT_DESCRIPTIONS['economy'], comfort_materials, economy_total, comfort_total),
+        'comfort': _variant('comfort', 'Комфорт', DRYWALL_VARIANT_DESCRIPTIONS['comfort'], comfort_materials),
+        'business': _drywall_variant_from_comfort('business', 'Бизнес', DRYWALL_VARIANT_DESCRIPTIONS['business'], comfort_materials, business_total, comfort_total),
+    }
+    if is_exact_reference:
+        variants['comfort']['total'] = reference['totals']['comfort']
+        variants['comfort']['reference_total'] = reference['totals']['comfort']
+
+    gipsokarton_form_data = {
+        **form_data,
+        'construction_type': construction_type,
+        '_metrics': [
+            {'label': 'Тип конструкции', 'value': DRYWALL_CONSTRUCTION_LABELS[construction_type], 'unit': ''},
+            {'label': 'Площадь', 'value': _round_quantity(area), 'unit': 'м²'},
+            {'label': 'Количество комнат', 'value': rooms, 'unit': ''},
+            {'label': 'Ориентировочный периметр', 'value': perimeter, 'unit': 'м'},
+        ],
+        '_price_note': 'Цены ориентировочные по Казахстану',
+    }
+    return _build_variant_result(
+        calculator,
+        variants,
+        selected_variant,
+        gipsokarton_form_data,
+        area,
+        rooms,
+        1,
+        f"{calculator['title']} · {area:g} м² · {rooms} комн. · {DRYWALL_CONSTRUCTION_LABELS[construction_type]}",
+    )
+
+
+def _drywall_perimeter(area, rooms):
+    key = (round(area), rooms)
+    return DRYWALL_PERIMETER_OVERRIDES.get(key, round(area * 1.15 + rooms * 3.5))
+
+
+def _drywall_reference(construction_type, area, rooms):
+    references = DRYWALL_REFERENCE_MATRIX[construction_type]
+    key = min(references, key=lambda item: abs(item[0] - area) + abs(item[1] - rooms) * 12)
+    return key, references[key]
+
+
+def _drywall_quantities(reference_materials, area, rooms, reference_key):
+    reference_area, reference_rooms = reference_key
+    area_ratio = area / reference_area if reference_area else 1
+    room_ratio = rooms / reference_rooms if reference_rooms else 1
+    quantities = {}
+    for title, quantity, _unit, _price in reference_materials:
+        if title in DRYWALL_ROOM_DEPENDENT:
+            ratio = (area_ratio + room_ratio) / 2
+            quantities[title] = ceil(quantity * ratio)
+        elif title in DRYWALL_AREA_DEPENDENT:
+            quantities[title] = ceil(quantity * area_ratio)
+        else:
+            quantities[title] = quantity
+    return quantities
+
+
+def _drywall_variant_from_comfort(key, title, description, comfort_materials, target_total, comfort_total):
+    ratio = target_total / comfort_total if comfort_total else 1
+    materials = []
+    running_total = 0
+    for index, material in enumerate(comfort_materials):
+        quantity = material['quantity']
+        price = round(material['reference_price'] * ratio)
+        row_total = round(quantity * price)
+        if index == len(comfort_materials) - 1:
+            row_total = target_total - running_total
+            price = round(row_total / quantity, 2) if quantity else 0
+        running_total += row_total
+        materials.append({
+            'title': material['title'],
+            'quantity': quantity,
+            'unit': material['unit'],
+            'reference_price': price,
+            'reference_total': row_total,
+            'price': price,
+            'total': row_total,
+        })
+    return _variant(key, title, description, materials)
 
 
 def _calculate_nalivnoy_pol(calculator, form_data):
@@ -754,6 +998,8 @@ def _build_variant_result(calculator, variants_by_key, selected_key, form_data, 
         'copy_text': copy_text,
         'warning': calculator.get('warning'),
         'master_template_items': calculator.get('master_template_items', []),
+        'metrics': form_data.get('_metrics', []),
+        'price_note': form_data.get('_price_note', 'Цены ориентировочные по Казахстану'),
         'variants': ordered_variants,
         'variants_by_key': variants_by_key,
         'selected_variant': selected_key,
