@@ -1145,51 +1145,139 @@ def _calculate_dveri(calculator, form_data):
     )
 
 
+WARM_FLOOR_TYPE_LABELS = {
+    'electric_mat': 'Электрический мат',
+    'electric_cable': 'Кабельный тёплый пол',
+    'water': 'Водяной тёплый пол',
+}
+
+WARM_FLOOR_REFERENCE_TOTALS = {
+    'electric_mat': {
+        20: {'economy': 161300, 'comfort': 247050, 'business': 441250},
+        40: {'economy': 307100, 'comfort': 464600, 'business': 810500},
+        70: {'economy': 529340, 'comfort': 796200, 'business': 1373300},
+    },
+    'electric_cable': {
+        20: {'economy': 146800, 'comfort': 241050, 'business': 422250},
+        40: {'economy': 278100, 'comfort': 452600, 'business': 772500},
+        70: {'economy': 475590, 'comfort': 770950, 'business': 1299800},
+    },
+    'water': {
+        20: {'economy': 128880, 'comfort': 288400, 'business': 561100},
+        40: {'economy': 187760, 'comfort': 411800, 'business': 772200},
+        70: {'economy': 276530, 'comfort': 597800, 'business': 1090600},
+    },
+}
+
+WARM_FLOOR_VARIANT_DESCRIPTIONS = {
+    'economy': 'Базовые материалы и простая комплектация.',
+    'comfort': 'Оптимальные материалы, надёжнее и удобнее в эксплуатации.',
+    'business': 'Премиальные материалы, Wi-Fi/автоматика или усиленная водяная система.',
+}
+
+WARM_FLOOR_VARIANT_QUANTITY_COEFFICIENTS = {
+    'economy': 0.78,
+    'comfort': 1.0,
+    'business': 1.22,
+}
+
+
 def _calculate_teplyy_pol(calculator, form_data):
     area = to_float(form_data.get('area'), 0)
-    floor_type = form_data.get('type', 'mat')
-    if floor_type == 'cable':
-        materials = [
-            _row_by_title(calculator, 'Нагревательный кабель', area * 9),
-            _row_by_title(calculator, 'Монтажная лента для кабеля', area * 1.5),
-            _row_by_title(calculator, 'Терморегулятор', 1),
-            _row_by_title(calculator, 'Wi-Fi терморегулятор', 1),
-            _row_by_title(calculator, 'Датчик температуры пола', 1),
-            _row_by_title(calculator, 'Гофра под датчик', max(2, area * 0.25)),
-            _row_by_title(calculator, 'Теплоизоляция под тёплый пол', area * 1.05),
-        ]
-    elif floor_type == 'water':
-        contours = max(1, area / 15)
-        materials = [
-            _row_by_title(calculator, 'Труба PE-RT / PEX 16 мм', area * 6),
-            _row_by_title(calculator, 'Теплоизоляция под тёплый пол', area * 1.05),
-            _row_by_title(calculator, 'Демпферная лента', area * 0.8),
-            _row_by_title(calculator, 'Скобы / крепёж трубы', area * 4),
-            _row_by_title(calculator, 'Коллектор', contours),
-            _row_by_title(calculator, 'Коллекторный шкаф', 1),
-            _row_by_title(calculator, 'Фитинги и соединители', contours),
-            _row_by_title(calculator, 'Смесительный узел', 1),
-        ]
-    else:
-        materials = [
-            _row_by_title(calculator, 'Нагревательный мат', area * 1.05),
-            _row_by_title(calculator, 'Терморегулятор', 1),
-            _row_by_title(calculator, 'Wi-Fi терморегулятор', 1),
-            _row_by_title(calculator, 'Датчик температуры пола', 1),
-            _row_by_title(calculator, 'Гофра под датчик', max(2, area * 0.25)),
-            _row_by_title(calculator, 'Теплоизоляция под тёплый пол', area * 1.05),
-        ]
-    return _build_result(
+    floor_type = form_data.get('type', 'electric_mat')
+    floor_type = {'mat': 'electric_mat', 'cable': 'electric_cable'}.get(floor_type, floor_type)
+    if floor_type not in WARM_FLOOR_TYPE_LABELS:
+        floor_type = 'electric_mat'
+    selected_variant = form_data.get('selected_variant', 'comfort')
+    reserve_area = ceil(area * 1.05)
+    contours = ceil(area / 15) if area > 0 else 0
+
+    comfort_materials = _warm_floor_comfort_materials(floor_type, area, reserve_area, contours)
+    reference_area, reference_totals = _warm_floor_reference(floor_type, area)
+    exact_area = round(area)
+    is_exact_reference = exact_area in WARM_FLOOR_REFERENCE_TOTALS[floor_type]
+    area_ratio = area / reference_area if reference_area else 1
+    economy_total = reference_totals['economy'] if is_exact_reference else round(reference_totals['economy'] * area_ratio)
+    business_total = reference_totals['business'] if is_exact_reference else round(reference_totals['business'] * area_ratio)
+
+    variants = {
+        'economy': _warm_floor_variant_from_comfort('economy', 'Эконом', comfort_materials, economy_total),
+        'comfort': _variant('comfort', 'Комфорт', WARM_FLOOR_VARIANT_DESCRIPTIONS['comfort'], comfort_materials),
+        'business': _warm_floor_variant_from_comfort('business', 'Бизнес', comfort_materials, business_total),
+    }
+    if is_exact_reference:
+        variants['comfort']['total'] = reference_totals['comfort']
+        variants['comfort']['reference_total'] = reference_totals['comfort']
+
+    metrics = [
+        {'label': 'Тип системы', 'value': WARM_FLOOR_TYPE_LABELS[floor_type], 'unit': ''},
+        {'label': 'Площадь', 'value': _round_quantity(area), 'unit': 'м²'},
+        {'label': 'Площадь с запасом', 'value': reserve_area, 'unit': 'м²'},
+    ]
+    if floor_type == 'water':
+        metrics.append({'label': 'Контуры', 'value': contours, 'unit': 'шт'})
+
+    warm_floor_form_data = {
+        **form_data,
+        'type': floor_type,
+        '_metrics': metrics,
+        '_price_note': 'Цены ориентировочные по Казахстану, только материалы',
+    }
+    return _build_variant_result(
         calculator,
-        materials,
-        form_data,
+        variants,
+        selected_variant,
+        warm_floor_form_data,
         area,
         1,
         1,
-        'comfort',
-        _plain_segment(),
-        f"{calculator['title']} · {area:g} м² · {floor_type}",
+        f"{calculator['title']} · {WARM_FLOOR_TYPE_LABELS[floor_type]} · {area:g} м²",
     )
+
+
+def _warm_floor_comfort_materials(floor_type, area, reserve_area, contours):
+    if floor_type == 'electric_cable':
+        return [
+            _variant_row('Нагревательный кабель комфорт', area * 9, 'м', 900),
+            _variant_row('Монтажная лента усиленная', ceil(area * 1.5), 'м', 350),
+            _variant_row('Терморегулятор сенсорный', 1, 'шт', 25000),
+            _variant_row('Датчик температуры пола', 1, 'шт', 4500),
+            _variant_row('Гофра под датчик', ceil(area / 4), 'м', 250),
+            _variant_row('Теплоизоляция плотная', reserve_area, 'м²', 1800),
+        ]
+    if floor_type == 'water':
+        return [
+            _variant_row('Труба PE-RT / PEX 16 мм с кислородным барьером', area * 6, 'м', 650),
+            _variant_row('Маты / теплоизоляция плотная', reserve_area, 'м²', 1800),
+            _variant_row('Демпферная лента', ceil(area * 0.8), 'м', 250),
+            _variant_row('Скобы / крепёж трубы', area * 4, 'шт', 45),
+            _variant_row('Коллектор с расходомерами', 1, 'компл.', 85000),
+            _variant_row('Коллекторный шкаф', 1, 'шт', 35000),
+            _variant_row('Фитинги и соединители', 1, 'компл.', 45000),
+        ]
+    return [
+        _variant_row('Нагревательный мат комфорт', reserve_area, 'м²', 8500),
+        _variant_row('Терморегулятор сенсорный', 1, 'шт', 25000),
+        _variant_row('Датчик температуры пола', 1, 'шт', 4500),
+        _variant_row('Гофра под датчик', ceil(area / 4), 'м', 250),
+        _variant_row('Теплоизоляция плотная', reserve_area, 'м²', 1800),
+    ]
+
+
+def _warm_floor_reference(floor_type, area):
+    references = WARM_FLOOR_REFERENCE_TOTALS[floor_type]
+    reference_area = min(references, key=lambda item: abs(item - area))
+    return reference_area, references[reference_area]
+
+
+def _warm_floor_variant_from_comfort(key, title, comfort_materials, target_total):
+    coefficient = WARM_FLOOR_VARIANT_QUANTITY_COEFFICIENTS[key]
+    materials = [
+        _variant_row(material['title'], max(1, ceil(material['quantity'] * coefficient)), material['unit'], material['reference_price'])
+        for material in comfort_materials
+    ]
+    _adjust_variant_rows_total(materials, target_total)
+    return _variant(key, title, WARM_FLOOR_VARIANT_DESCRIPTIONS[key], materials)
 
 
 
