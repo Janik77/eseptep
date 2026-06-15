@@ -872,38 +872,151 @@ def _calculate_laminat_spc_parket(calculator, form_data):
     return _build_result(calculator, materials, {**form_data, 'reserve_area': reserve_area}, area, 1, 1, 'comfort', _plain_segment(), f"{calculator['title']} · {area:g} м² · {flooring_type} / {layout}")
 
 
+PAINTING_TYPE_LABELS = {
+    'wallpaper': 'Малярка под обои',
+    'paint': 'Малярка под покраску',
+}
+
+PAINTING_VARIANT_DESCRIPTIONS = {
+    'economy': 'Минимальный набор материалов для базовой подготовки стен.',
+    'comfort': 'Оптимальная комплектация под выбранный тип малярки.',
+    'business': 'Расширенный запас материалов и более дорогой уровень отделки.',
+}
+
+PAINTING_VARIANT_QUANTITY_COEFFICIENTS = {
+    'economy': 0.72,
+    'comfort': 1.0,
+    'business': 1.25,
+}
+
+PAINTING_REFERENCE_MATRIX = {
+    'wallpaper': {
+        10: {
+            'totals': {'economy': 32150, 'comfort': 69000, 'business': 148000},
+            'comfort_materials': [
+                ('Грунтовка 1 слой', 1, 'шт', 400),
+                ('Базовая шпаклёвка 2 слоя', 4, 'мешок', 3500),
+                ('Шкурка / сетка P100/P120', 2, 'шт', 300),
+                ('Обойный клей Metylan / аналог', 2, 'пачка', 3000),
+                ('Обои комфорт-класс', 4, 'рулон', 12000),
+            ],
+        },
+        30: {
+            'totals': {'economy': 96450, 'comfort': 182700, 'business': 381100},
+            'comfort_materials': [
+                ('Грунтовка 1 слой', 1, 'шт', 400),
+                ('Базовая шпаклёвка 2 слоя', 4, 'мешок', 3500),
+                ('Шкурка / сетка P100/P120', 1, 'шт', 300),
+                ('Обойный клей Metylan / аналог', 4, 'пачка', 3000),
+                ('Обои комфорт-класс', 13, 'рулон', 12000),
+            ],
+        },
+        50: {
+            'totals': {'economy': 155500, 'comfort': 289200, 'business': 613300},
+            'comfort_materials': [
+                ('Грунтовка 1 слой', 2, 'шт', 400),
+                ('Базовая шпаклёвка 2 слоя', 5, 'мешок', 3500),
+                ('Шкурка / сетка P100/P120', 3, 'шт', 300),
+                ('Обойный клей Metylan / аналог', 2, 'пачка', 3000),
+                ('Обои комфорт-класс', 22, 'рулон', 12000),
+            ],
+        },
+    },
+    'paint': {
+        30: {
+            'totals': {'economy': 89950, 'comfort': 134200, 'business': 430750},
+            'comfort_materials': [
+                ('Грунтовка 1 слой', 2, 'шт', 400),
+                ('Базовая шпаклёвка 2 слоя', 8, 'мешок', 3500),
+                ('Финишная полимерная шпаклёвка 2 слоя', 5, 'мешок', 5000),
+                ('Шкурка / сетка P120/P180', 4, 'шт', 300),
+                ('Краска среднего сегмента 2 слоя', 36, 'л', 2200),
+            ],
+        },
+        50: {
+            'totals': {'economy': 147850, 'comfort': 218000, 'business': 707800},
+            'comfort_materials': [
+                ('Грунтовка 1 слой', 2, 'шт', 400),
+                ('Базовая шпаклёвка 2 слоя', 14, 'мешок', 3500),
+                ('Финишная полимерная шпаклёвка 2 слоя', 8, 'мешок', 5000),
+                ('Шкурка / сетка P120/P180', 2, 'шт', 300),
+                ('Краска среднего сегмента 2 слоя', 58, 'л', 2200),
+            ],
+        },
+    },
+}
+
+
 def _calculate_malyarka(calculator, form_data):
     floor_area = to_float(form_data.get('floor_area'), 0)
     finish_type = form_data.get('type', 'paint')
-    wall_area = floor_area * 3 * 0.9
-    materials = [
-        _row_by_title(calculator, 'Базовая шпаклёвка 25 кг', wall_area * 0.12),
-        _row_by_title(calculator, 'Финишная шпаклёвка 20 кг', wall_area * 0.08),
-        _row_by_title(calculator, 'Финишная полимерная шпаклёвка 25 кг', wall_area * 0.06),
-        _row_by_title(calculator, 'Грунтовка', wall_area * 0.16),
-        _row_by_title(calculator, 'Бумажный малярный скотч', max(1, wall_area / 25)),
-        _row_by_title(calculator, 'Шкурка / сетка P80', max(1, wall_area / 45)),
-        _row_by_title(calculator, 'Шкурка / сетка P120', max(1, wall_area / 45)),
-        _row_by_title(calculator, 'Шкурка / сетка P180', max(1, wall_area / 45)),
-        _row_by_title(calculator, 'Валик', 1),
-        _row_by_title(calculator, 'Кисть', 1),
-        _row_by_title(calculator, 'Лоток для краски', 1),
-        _row_by_title(calculator, 'Плёнка защитная', floor_area * 1.05),
-        _row_by_title(calculator, 'Мусорные мешки', floor_area / 5),
-    ]
-    if finish_type == 'wallpaper':
-        materials.extend([
-            _row_by_title(calculator, 'Обои', wall_area / 5),
-            _row_by_title(calculator, 'Обойный клей', max(1, wall_area / 25)),
-        ])
-    else:
-        materials.extend([
-            _row_by_title(calculator, 'Стеклохолст 1×50 м', wall_area * 1.05),
-            _row_by_title(calculator, 'Клей для стеклохолста', wall_area * 0.18),
-            _row_by_title(calculator, 'Краска', wall_area * 0.22),
-            _row_by_title(calculator, 'Грунт-краска', wall_area * 0.18),
-        ])
-    return _build_result(calculator, materials, {**form_data, 'wall_area': wall_area, 'ceiling_included': False}, floor_area, 1, 1, 'comfort', _plain_segment(), f"{calculator['title']} · стены {wall_area:g} м² · потолок не включён")
+    if finish_type not in PAINTING_REFERENCE_MATRIX:
+        finish_type = 'paint'
+    selected_variant = form_data.get('selected_variant', 'comfort')
+
+    wall_area_before = floor_area * 3
+    opening_loss = wall_area_before * 0.10
+    wall_area = wall_area_before * 0.9
+    reference_area, reference = _painting_reference(finish_type, floor_area)
+    area_ratio = floor_area / reference_area if reference_area else 1
+    is_exact_reference = round(floor_area) in PAINTING_REFERENCE_MATRIX[finish_type]
+
+    variants = {}
+    for key, title in (('economy', 'Эконом'), ('comfort', 'Комфорт'), ('business', 'Бизнес')):
+        coefficient = PAINTING_VARIANT_QUANTITY_COEFFICIENTS[key]
+        target_total = reference['totals'][key] if is_exact_reference else round(reference['totals'][key] * area_ratio)
+        materials = _painting_materials(reference['comfort_materials'], area_ratio, coefficient, target_total)
+        variants[key] = _variant(key, title, PAINTING_VARIANT_DESCRIPTIONS[key], materials)
+
+    painting_form_data = {
+        **form_data,
+        'type': finish_type,
+        '_metrics': [
+            {'label': 'Тип', 'value': PAINTING_TYPE_LABELS[finish_type], 'unit': ''},
+            {'label': 'Площадь пола', 'value': _round_quantity(floor_area), 'unit': 'м²'},
+            {'label': 'Площадь стен до вычета', 'value': _round_quantity(wall_area_before), 'unit': 'м²'},
+            {'label': 'Минус окна и двери', 'value': _round_quantity(opening_loss), 'unit': 'м²'},
+            {'label': 'Расчётная площадь стен', 'value': _round_quantity(wall_area), 'unit': 'м²'},
+        ],
+        '_price_note': 'Цены ориентировочные',
+    }
+    return _build_variant_result(
+        calculator,
+        variants,
+        selected_variant,
+        painting_form_data,
+        floor_area,
+        1,
+        1,
+        f"{calculator['title']} · {PAINTING_TYPE_LABELS[finish_type]} · стены {wall_area:g} м²",
+    )
+
+
+def _painting_reference(finish_type, floor_area):
+    references = PAINTING_REFERENCE_MATRIX[finish_type]
+    reference_area = min(references, key=lambda area: abs(area - floor_area))
+    return reference_area, references[reference_area]
+
+
+def _painting_materials(reference_materials, area_ratio, variant_coefficient, target_total):
+    materials = []
+    for title, quantity, unit, price in reference_materials:
+        scaled_quantity = max(1, ceil(quantity * area_ratio * variant_coefficient))
+        materials.append(_variant_row(title, scaled_quantity, unit, price))
+    _adjust_variant_rows_total(materials, target_total)
+    return materials
+
+
+def _adjust_variant_rows_total(materials, target_total):
+    current_total = sum(material['reference_total'] for material in materials)
+    delta = target_total - current_total
+    if delta == 0 or not materials:
+        return
+    adjustable = next((material for material in materials if material['quantity'] == 1), materials[0])
+    adjustable['reference_total'] += delta
+    adjustable['total'] = adjustable['reference_total']
+    adjustable['reference_price'] = round(adjustable['reference_total'] / adjustable['quantity'], 2) if adjustable['quantity'] else 0
+    adjustable['price'] = adjustable['reference_price']
 
 
 def _calculate_natyazhnoy_potolok(calculator, form_data):

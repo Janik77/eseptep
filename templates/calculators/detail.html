@@ -76,7 +76,7 @@
                         <div class="variant-result" data-variant-result>
                             <div class="variant-result__head">
                                 <div>
-                                    <span>Варианты расчёта</span>
+                                    <span>{% if calculator.slug == 'malyarka' %}Варианты малярки{% else %}Варианты расчёта{% endif %}</span>
                                     <h3>{{ result.variant_heading|default:"Базовый / Оптимальный / Максимальный" }}</h3>
                                 </div>
                                 <small>Активен: <b data-active-variant-label>{{ result.selected_variant_label }}</b></small>
