@@ -132,6 +132,16 @@
                             {% endfor %}
                         </div>
                         <div class="grand-total grand-total--secondary"><span>{{ result.price_note|default:"Справочно по материалам" }}</span><strong class="count-up" data-count-up="{{ result.reference_total }}" data-count-prefix="₸ ">₸ {{ result.reference_total }}</strong></div>
+                        {% if calculator.slug == 'nalivnoy-pol' %}
+                            <textarea class="master-template__text" data-single-copy-source aria-label="Список материалов без цен">ESEPTEP.KZ
+{{ calculator.title }}
+
+{% for material in result.materials %}{% if material.quantity > 0 %}{{ forloop.counter }}. {{ material.title }} — {{ material.quantity }} {{ material.unit }}
+{% endif %}{% endfor %}
+Список составлен через ESEPTEP.KZ</textarea>
+                            <button class="btn btn--secondary" type="button" data-copy-single>Скопировать список материалов без цен</button>
+                            <div class="copy-toast" role="status" aria-live="polite" data-single-copy-toast>Список скопирован</div>
+                        {% endif %}
                     {% endif %}
                     {% if result.warning %}<p class="result-warning">{{ result.warning }}</p>{% endif %}
 

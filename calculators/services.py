@@ -719,25 +719,98 @@ def _drywall_variant_from_comfort(key, title, description, comfort_materials, ta
     return _variant(key, title, description, materials)
 
 
+SELF_LEVEL_REFERENCE_MATRIX = {
+    (20, 2): {'total': 95600, 'primer': 10, 'beacons': 29, 'damper': 18, 'staples': 36, 'trash_bags': 10},
+    (30, 2): {'total': 134900, 'primer': 15, 'beacons': 43, 'damper': 22, 'staples': 44, 'trash_bags': 10},
+    (50, 2): {'total': 211000, 'primer': 25, 'beacons': 72, 'damper': 29, 'staples': 58, 'trash_bags': 10},
+    (20, 3): {'total': 130400, 'primer': 10, 'beacons': 29, 'damper': 18, 'staples': 36, 'trash_bags': 10},
+    (30, 3): {'total': 187100, 'primer': 15, 'beacons': 43, 'damper': 22, 'staples': 44, 'trash_bags': 10},
+    (50, 3): {'total': 298000, 'primer': 25, 'beacons': 72, 'damper': 29, 'staples': 58, 'trash_bags': 10},
+    (60, 4): {'total': 460100, 'primer': 30, 'beacons': 86, 'damper': 31, 'staples': 62, 'trash_bags': 10},
+}
+SELF_LEVEL_AREA_DEPENDENT = {'primer', 'beacons', 'damper', 'staples'}
+
+
 def _calculate_nalivnoy_pol(calculator, form_data):
     area = to_float(form_data.get('area'), 0)
-    thickness = to_float(form_data.get('thickness'), 5)
-    mixture_bags = area * max(thickness, 1) * 1.7 / 25
-    perimeter = 4 * sqrt(area) if area > 0 else 0
+    thickness = max(to_float(form_data.get('thickness'), 2), 0)
+    total_consumption = area * thickness * 15
+    mixture_bags = ceil(total_consumption / 25) if total_consumption > 0 else 0
+    reference_key, reference = _self_level_reference(area, thickness)
+    exact_key = (round(area), round(thickness))
+    is_exact_reference = exact_key in SELF_LEVEL_REFERENCE_MATRIX
+    area_ratio = area / reference_key[0] if reference_key[0] else 1
+    quantities = _self_level_quantities(reference, area_ratio)
+    quantities['mixture_bags'] = mixture_bags
+    needle_title = 'Игольчатый валик 30-40 мм' if thickness <= 2 else 'Игольчатый валик 40-50 мм'
+
     materials = [
-        _row_by_title(calculator, 'Наливной пол 25 кг', mixture_bags),
-        _row_by_title(calculator, 'Грунтовка', area * 0.12),
-        _row_by_title(calculator, 'Демпферная лента', perimeter),
-        _row_by_title(calculator, 'Маяк-фиксатор', max(4, area * 0.35)),
-        _row_by_title(calculator, 'Ведро строительное', max(1, area / 40)),
-        _row_by_title(calculator, 'Валик', 1),
-        _row_by_title(calculator, 'Игольчатый валик', max(1, area / 35)),
-        _row_by_title(calculator, 'Обувь шиповая', 1),
-        _row_by_title(calculator, 'Степлер строительный', 1),
-        _row_by_title(calculator, 'Скобы для степлера', max(1, area / 20)),
-        _row_by_title(calculator, 'Мусорные мешки', area / 5),
+        _self_level_row(calculator, 'Наливной пол 25 кг', quantities['mixture_bags']),
+        _self_level_row(calculator, 'Грунтовка 10 кг', quantities['primer']),
+        _self_level_row(calculator, 'Маяк фиксатор', quantities['beacons']),
+        _self_level_row(calculator, 'Демпферная лента', quantities['damper']),
+        _self_level_row(calculator, 'Ведро строительное', 4),
+        _self_level_row(calculator, 'Валик', 1),
+        _self_level_row(calculator, needle_title, 1),
+        _self_level_row(calculator, 'Обувь шиповая', 1),
+        _self_level_row(calculator, 'Степлер', 1),
+        _self_level_row(calculator, 'Скобы', quantities['staples']),
+        _self_level_row(calculator, 'Мусорные мешки', quantities['trash_bags']),
     ]
-    return _build_result(calculator, materials, form_data, area, 1, thickness, 'comfort', _plain_segment(), f"{calculator['title']} · {area:g} м² · {thickness:g} мм")
+    if is_exact_reference:
+        _adjust_self_level_total(materials, reference['total'])
+
+    self_level_form_data = {
+        **form_data,
+        '_metrics': [
+            {'label': 'Площадь пола', 'value': _round_quantity(area), 'unit': 'м²'},
+            {'label': 'Толщина', 'value': _round_quantity(thickness), 'unit': 'см'},
+            {'label': 'Общий расход смеси', 'value': _round_quantity(total_consumption), 'unit': 'кг'},
+        ],
+        '_price_note': 'Цены ориентировочные',
+    }
+    return _build_result(
+        calculator,
+        materials,
+        self_level_form_data,
+        area,
+        1,
+        thickness,
+        'comfort',
+        _plain_segment(),
+        f"{calculator['title']} · {area:g} м² · {thickness:g} см",
+    )
+
+
+def _self_level_reference(area, thickness):
+    key = min(SELF_LEVEL_REFERENCE_MATRIX, key=lambda item: abs(item[0] - area) + abs(item[1] - thickness) * 20)
+    return key, SELF_LEVEL_REFERENCE_MATRIX[key]
+
+
+def _self_level_quantities(reference, area_ratio):
+    quantities = {}
+    for key, value in reference.items():
+        if key == 'total':
+            continue
+        if key in SELF_LEVEL_AREA_DEPENDENT:
+            quantities[key] = ceil(value * area_ratio)
+        else:
+            quantities[key] = value
+    return quantities
+
+
+def _self_level_row(calculator, title, quantity):
+    material = next(item for item in calculator['materials'] if item['title'] == title)
+    return {'title': material['title'], 'quantity': quantity, 'unit': material['unit'], 'reference_price': material['reference_price']}
+
+
+def _adjust_self_level_total(materials, target_total):
+    current_total = sum(round(material['quantity'] * material['reference_price']) for material in materials)
+    delta = target_total - current_total
+    if delta == 0:
+        return
+    adjustable = next((material for material in materials if material['title'] == 'Валик' and material['quantity'] == 1), materials[-1])
+    adjustable['reference_price'] = round(adjustable['reference_price'] + delta)
 
 
 def _calculate_plitka(calculator, form_data):

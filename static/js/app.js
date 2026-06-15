@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initCountUp(prefersReducedMotion);
     initMasterTemplate();
     initVariantResults();
+    initSingleResultCopy();
 });
 
 function initReveal(prefersReducedMotion) {
@@ -400,5 +401,35 @@ function initVariantResults() {
         if (activeKey) {
             setActive(activeKey);
         }
+    });
+}
+
+
+function initSingleResultCopy() {
+    document.querySelectorAll('[data-copy-single]').forEach((button) => {
+        const root = button.closest('.result-card') || document;
+        const source = root.querySelector('[data-single-copy-source]');
+        const toast = root.querySelector('[data-single-copy-toast]');
+
+        button.addEventListener('click', async () => {
+            const text = source?.value || '';
+            if (!text.trim()) {
+                return;
+            }
+
+            try {
+                await navigator.clipboard.writeText(text);
+            } catch (error) {
+                source.select();
+                document.execCommand('copy');
+            }
+
+            button.textContent = 'Скопировано';
+            toast?.classList.add('is-visible');
+            window.setTimeout(() => {
+                button.textContent = 'Скопировать список материалов без цен';
+                toast?.classList.remove('is-visible');
+            }, 1800);
+        });
     });
 }
