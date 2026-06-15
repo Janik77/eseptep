@@ -74,6 +74,7 @@ def save_calculation_for_user(user, slug, result):
             'segment_label': result['segment_label'],
             'warning': result['warning'],
             'input': result['meta'].get('input', {}),
+            'metrics': result.get('metrics', []),
         },
     )
     return project, calculation
@@ -407,26 +408,39 @@ def _calculate_santehnika(calculator, form_data):
 
 def _calculate_shtukaturka(calculator, form_data):
     area = to_float(form_data.get('area'), 0)
-    thickness = to_float(form_data.get('thickness'), 2)
-    thickness_factor = max(thickness, 0.5) / 2
+    thickness = max(to_float(form_data.get('thickness'), 2), 0)
+
+    wall_area = area * 3
+    opening_loss = wall_area * 0.10
+    net_area = wall_area - opening_loss
+
     materials = [
-        _row_by_title(calculator, 'Штукатурка гипсовая 30 кг', area * 0.95 * thickness_factor),
-        _row_by_title(calculator, 'Грунтовка 10 кг', max(1, area * 0.018)),
-        _row_by_title(calculator, 'Бетоноконтакт 15 кг', max(1, area * 0.012)),
-        _row_by_title(calculator, 'Армировочная сетка', area * 1.05),
-        _row_by_title(calculator, 'Маяк железный 3 м', area * 0.22),
-        _row_by_title(calculator, 'Алюминиевый уголок 90°', max(4, area * 0.08)),
-        _row_by_title(calculator, 'Правило 1,5 м', 1),
-        _row_by_title(calculator, 'Правило 3 м', 1),
-        _row_by_title(calculator, 'Шпатель 15 см', 2),
-        _row_by_title(calculator, 'Валик', 1),
-        _row_by_title(calculator, 'Ведро строительное', max(2, area / 40)),
-        _row_by_title(calculator, 'Бумажный малярный скотч', max(1, area / 25)),
-        _row_by_title(calculator, 'Плёнка защитная', area * 1.05),
-        _row_by_title(calculator, 'Монтажная пена', max(1, area / 50)),
-        _row_by_title(calculator, 'Мусорные мешки', area / 5),
+        _row_by_title(calculator, 'Штукатурка 30 кг', ceil(net_area * thickness * 0.30)),
+        _row_by_title(calculator, 'Грунтовка 10 кг', max(1, int(net_area / 18))),
+        _row_by_title(calculator, 'Бетоноконтакт 15 кг', 1),
+        _row_by_title(calculator, 'Маяк железный 3 м', ceil(wall_area * 0.30)),
+        _row_by_title(calculator, 'Армировочная сетка 10 м', ceil(net_area / 32.5)),
+        _row_by_title(calculator, 'Алюминиевый уголок 90°', 1),
+        _row_by_title(calculator, 'Правило 1,5 м', 2),
+        _row_by_title(calculator, 'Правило 3 м', 2),
+        _row_by_title(calculator, 'Шпатель 15 см', 4),
+        _row_by_title(calculator, 'Валик', 2),
+        _row_by_title(calculator, 'Ведро строительное', 4),
+        _row_by_title(calculator, 'Бумажный малярный скотч', 2),
+        _row_by_title(calculator, 'Плёнка защитная', round(net_area * 0.153)),
+        _row_by_title(calculator, 'Монтажная пена', 2),
+        _row_by_title(calculator, 'Мусорные мешки', 20),
     ]
-    return _build_result(calculator, materials, form_data, area, 1, thickness, 'comfort', _plain_segment(), f"{calculator['title']} · {area:g} м² · {thickness:g} см")
+    plaster_form_data = {
+        **form_data,
+        '_metrics': [
+            {'label': 'Площадь стен', 'value': _round_quantity(wall_area), 'unit': 'м²'},
+            {'label': 'Минус окна/двери', 'value': _round_quantity(opening_loss), 'unit': 'м²'},
+            {'label': 'Чистая площадь', 'value': _round_quantity(net_area), 'unit': 'м²'},
+        ],
+        '_price_note': 'Цены ориентировочные',
+    }
+    return _build_result(calculator, materials, plaster_form_data, area, 1, thickness, 'comfort', _plain_segment(), f"{calculator['title']} · {area:g} м² · {thickness:g} см")
 
 
 def _calculate_gipsokarton(calculator, form_data):
@@ -795,6 +809,8 @@ def _build_result(calculator, materials, form_data, area, rooms, thickness, segm
         'whatsapp_text': f"ESEPTEP: {summary}. Материалы:\n{saved_list}\nЦены уточняются у поставщиков.",
         'warning': calculator.get('warning'),
         'master_template_items': calculator.get('master_template_items', []),
+        'metrics': form_data.get('_metrics', []),
+        'price_note': form_data.get('_price_note', 'Справочно по материалам'),
         'meta': {
             'area': area,
             'thickness': thickness,

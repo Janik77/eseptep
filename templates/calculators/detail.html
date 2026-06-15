@@ -67,6 +67,9 @@
                         {% for field in form_fields %}
                             <span><b>{{ field.label }}</b>{{ field.display_value|default:field.value }}{% if field.unit %} {{ field.unit }}{% endif %}</span>
                         {% endfor %}
+                        {% for metric in result.metrics %}
+                            <span><b>{{ metric.label }}</b>{{ metric.value }}{% if metric.unit %} {{ metric.unit }}{% endif %}</span>
+                        {% endfor %}
                     </div>
 
                     {% if result.variants %}
@@ -128,7 +131,7 @@
                                 </div>
                             {% endfor %}
                         </div>
-                        <div class="grand-total grand-total--secondary"><span>Справочно по материалам</span><strong class="count-up" data-count-up="{{ result.reference_total }}" data-count-prefix="₸ ">₸ {{ result.reference_total }}</strong></div>
+                        <div class="grand-total grand-total--secondary"><span>{{ result.price_note|default:"Справочно по материалам" }}</span><strong class="count-up" data-count-up="{{ result.reference_total }}" data-count-prefix="₸ ">₸ {{ result.reference_total }}</strong></div>
                     {% endif %}
                     {% if result.warning %}<p class="result-warning">{{ result.warning }}</p>{% endif %}
 
