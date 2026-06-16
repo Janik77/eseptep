@@ -127,17 +127,16 @@
                             {% for material in result.materials %}
                                 <div class="materials-table__row">
                                     <div><b>{{ material.title }}</b><small>Справочно ₸ {{ material.reference_price }} за {{ material.unit }}</small></div>
-                                    <strong>{{ material.quantity }} {{ material.unit }}</strong>
-                                    {% if calculator.slug == 'laminat-spc-parket' %}<small class="material-line-total">₸ {{ material.reference_total }}</small>{% endif %}
+                                    <strong>{% if calculator.slug == 'laminat-spc-parket' and material.title == 'Порог' %}1–2{% else %}{{ material.quantity }}{% endif %} {{ material.unit }}</strong>
                                 </div>
                             {% endfor %}
                         </div>
-                        <div class="grand-total grand-total--secondary"><span>{{ result.price_note|default:"Справочно по материалам" }}</span><strong class="count-up" data-count-up="{{ result.reference_total }}" data-count-prefix="₸ ">₸ {{ result.reference_total }}</strong></div>
+                        <div class="grand-total grand-total--secondary"><span>{{ result.price_note|default:"Справочно по материалам" }}</span><strong class="count-up" data-count-up="{{ result.reference_total }}" data-count-prefix="₸ ">{% if calculator.slug == 'laminat-spc-parket' %}Итог от: {% endif %}₸ {{ result.reference_total }}</strong></div>
                         {% if calculator.slug == 'nalivnoy-pol' or calculator.slug == 'laminat-spc-parket' %}
                             <textarea class="master-template__text" data-single-copy-source aria-label="Список материалов без цен">ESEPTEP.KZ
 {{ calculator.title }}
 
-{% for material in result.materials %}{% if material.quantity > 0 %}{{ forloop.counter }}. {{ material.title }} — {{ material.quantity }} {{ material.unit }}
+{% for material in result.materials %}{% if material.quantity > 0 %}{{ forloop.counter }}. {{ material.title }} — {% if calculator.slug == 'laminat-spc-parket' and material.title == 'Порог' %}1–2{% else %}{{ material.quantity }}{% endif %} {{ material.unit }}
 {% endif %}{% endfor %}
 Список составлен через ESEPTEP.KZ</textarea>
                             <button class="btn btn--secondary" type="button" data-copy-single>Скопировать список материалов без цен</button>

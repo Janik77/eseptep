@@ -856,7 +856,7 @@ def _calculate_laminat_spc_parket(calculator, form_data):
     trash_bags = ceil(area / 5)
 
     materials = _flooring_materials(covering_type, direct_area, plinth, trash_bags)
-    exact_total = FLOORING_REFERENCE_TOTALS.get(covering_type, {}).get(round(area))
+    reference_total = _flooring_reference_total(covering_type, area)
     result = _build_flooring_result(
         calculator,
         materials,
@@ -873,7 +873,7 @@ def _calculate_laminat_spc_parket(calculator, form_data):
         area,
         f"{calculator['title']} · {FLOORING_COVERING_LABELS[covering_type]} · {area:g} м²",
         FLOORING_WARNINGS[covering_type],
-        exact_total,
+        reference_total,
     )
     return result
 
@@ -893,14 +893,24 @@ FLOORING_WARNINGS = {
 FLOORING_PLINTH_OVERRIDES = {
     20: 19,
     40: 28,
+    60: 33,
     70: 36,
 }
 
 FLOORING_REFERENCE_TOTALS = {
-    'laminate': {20: 123900, 40: 232800, 70: 393600},
+    'laminate': {20: 123900, 40: 232800, 60: 338100, 70: 393600},
     'spc': {20: 166300, 40: 313600, 70: 531200},
     'parquet': {20: 371300, 40: 727600, 70: 1261000},
 }
+
+
+def _flooring_reference_total(covering_type, area):
+    references = FLOORING_REFERENCE_TOTALS[covering_type]
+    rounded_area = round(area)
+    if rounded_area in references:
+        return references[rounded_area]
+    reference_area = min(references, key=lambda item: abs(item - area))
+    return round(references[reference_area] * area / reference_area) if reference_area else 0
 
 
 def _flooring_materials(covering_type, direct_area, plinth, trash_bags):
