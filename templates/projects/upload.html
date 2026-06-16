@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+
+{% block title %}Загрузить проект — ESEPTEP{% endblock %}
+
+{% block content %}
+<section class="page-hero page-hero--compact project-upload-hero">
+    <span class="hero__badge">Загрузить проект</span>
+    <h1>Загрузите план квартиры</h1>
+    <p>Загрузите планировку, PDF или изображение. На MVP-этапе система подготовит демо-анализ и предварительную структуру расчёта.</p>
+</section>
+
+<section class="project-upload-layout" aria-label="Загрузка проекта">
+    <form class="calc-form project-upload-form" method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="upload">
+        <label>
+            <span>Файл проекта</span>
+            <input type="file" name="file" accept="{{ allowed_upload_extensions }}" required>
+            <small>PDF, JPG, JPEG, PNG, WEBP, DWG</small>
+        </label>
+        <label>
+            <span>Комментарий</span>
+            <textarea name="comment" rows="4" placeholder="Например: нужна смета для ремонта под ключ"></textarea>
+        </label>
+        <button class="btn btn--primary" type="submit">Загрузить и проанализировать</button>
+    </form>
+
+    <aside class="project-demo-note">
+        <b>AI_ANALYSIS_MODE = "{{ ai_analysis_mode }}"</b>
+        <p>Реальный ИИ пока не подключён. Сейчас работает честный demo-mode: файл сохраняется, а система показывает демо-структуру анализа.</p>
+        {% if show_auth_save_cta %}
+            <div class="auth-soft-cta auth-soft-cta--compact">
+                <p>Войдите или зарегистрируйтесь, чтобы привязать загрузку к личному кабинету.</p>
+                <div class="result-actions">
+                    <a class="btn btn--primary" href="{% url 'accounts:login' %}?next={{ request.path|urlencode }}">Войти</a>
+                    <a class="btn btn--secondary" href="{% url 'accounts:register' %}">Регистрация</a>
+                </div>
+            </div>
+        {% endif %}
+    </aside>
+</section>
+
+{% if upload %}
+<section class="project-analysis-card" aria-label="Демо-анализ проекта">
+    <div class="success-state success-state--compact">
+        <span>Файл принят ✅</span>
+        <h2>{{ upload.file.name }}</h2>
+        <p>Demo-анализ сформирован. Статус: {{ upload.ai_status }}</p>
+    </div>
+
+    <div class="analysis-grid">
+        <div><span>Тип объекта</span><b>{{ ai_summary.object_type }}</b></div>
+        <div><span>Статус</span><b>{{ ai_summary.status }}</b></div>
+    </div>
+
+    <div class="analysis-sections">
+        <h3>Обнаружены разделы для расчёта</h3>
+        <div>
+            {% for section in ai_summary.sections %}
+                <span>{{ section }}</span>
+            {% endfor %}
+        </div>
+    </div>
+
+    <p class="result-warning"><b>Следующий шаг:</b> {{ ai_summary.next_step }}</p>
+
+    <form class="calc-form project-estimate-form" method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="estimate">
+        <input type="hidden" name="upload_id" value="{{ upload.id }}">
+        <label>
+            <span>Площадь квартиры</span>
+            <input type="number" name="area" min="1" step="0.1" value="{{ upload.area|default:'' }}" required>
+        </label>
+        <label>
+            <span>Уровень ремонта</span>
+            <select name="repair_level">
+                {% for value,label in repair_levels %}
+                    <option value="{{ value }}" {% if upload.repair_level == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <button class="btn btn--primary" type="submit">Получить предварительный расчёт</button>
+    </form>
+
+    {% if estimate %}
+        <div class="grand-total project-estimate-total"><span>{{ estimate.repair_level }} · {{ estimate.area }} м²</span><strong>₸ {{ estimate.total }}</strong></div>
+    {% endif %}
+</section>
+{% endif %}
+{% endblock %}
