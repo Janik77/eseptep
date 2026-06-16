@@ -1,10 +1,6 @@
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
-
-admin.site.site_header = 'ESEPTEP Admin'
-admin.site.site_title = 'ESEPTEP'
-admin.site.index_title = 'Панель управления'
 from django.urls import include, path
 from marketplace.views import marketplace_home
 
