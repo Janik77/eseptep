@@ -848,34 +848,168 @@ def _adjust_self_level_total(materials, target_total):
     adjustable['reference_price'] = round(adjustable['reference_price'] + delta)
 
 
+TILE_ZONE_LABELS = {
+    'floor': 'Пол',
+    'walls': 'Стены',
+    'bathroom': 'Санузел полностью',
+    'backsplash': 'Кухонный фартук',
+}
+
+TILE_FORMAT_LABELS = {
+    '60x60': '60×60',
+    'large': '120×60 / крупный формат',
+}
+
+TILE_VARIANT_DESCRIPTIONS = {
+    'economy': 'Плитка от 7000 ₸/м², эконом-клей, обычная фуга, СВП.',
+    'comfort': 'Керамогранит, усиленный клей, улучшенная фуга, СВП.',
+    'business': 'Премиальный керамогранит, дорогой клей, эпоксидная фуга, усиленная СВП.',
+}
+
+TILE_REFERENCE_MATRIX = {
+    (20, 'floor', '60x60'): {
+        'totals': {'economy': 189600, 'comfort': 324900, 'business': 718500},
+        'materials': [
+            ('Плитка комфорт', 23, 'м²', 12000),
+            ('Грунтовка', 5, 'кг', 500),
+            ('Усиленный плиточный клей', 4, 'меш', 4500),
+            ('Фуга улучшенная', 8, 'кг', 1800),
+            ('СВП', 700, 'шт', 20),
+        ],
+    },
+    (20, 'walls', '60x60'): {
+        'totals': {'economy': 189600, 'comfort': 324900, 'business': 718500},
+        'materials': [
+            ('Плитка комфорт', 23, 'м²', 12000),
+            ('Грунтовка', 5, 'кг', 500),
+            ('Усиленный плиточный клей', 4, 'меш', 4500),
+            ('Фуга улучшенная', 8, 'кг', 1800),
+            ('СВП', 700, 'шт', 20),
+        ],
+    },
+    (20, 'bathroom', '60x60'): {
+        'totals': {'economy': 227800, 'comfort': 368100, 'business': 807300},
+        'materials': [
+            ('Плитка комфорт', 23, 'м²', 12000),
+            ('Грунтовка', 5, 'кг', 500),
+            ('Гидроизоляция эластичная 2 слоя', 24, 'кг', 1800),
+            ('Усиленный плиточный клей', 4, 'меш', 4500),
+            ('Фуга улучшенная', 8, 'кг', 1800),
+            ('СВП', 700, 'шт', 20),
+        ],
+    },
+    (20, 'backsplash', '60x60'): {
+        'totals': {'economy': 196600, 'comfort': 324900, 'business': 718500},
+        'materials': [
+            ('Плитка комфорт', 23, 'м²', 12000),
+            ('Грунтовка', 5, 'кг', 500),
+            ('Усиленный плиточный клей', 4, 'меш', 4500),
+            ('Фуга улучшенная', 8, 'кг', 1800),
+            ('СВП', 700, 'шт', 20),
+        ],
+    },
+    (20, 'backsplash', 'large'): {
+        'totals': {'economy': 203600, 'comfort': 341400, 'business': 759500},
+        'materials': [
+            ('Плитка комфорт', 24, 'м²', 12000),
+            ('Грунтовка', 5, 'кг', 500),
+            ('Усиленный плиточный клей', 5, 'меш', 4500),
+            ('Фуга улучшенная', 8, 'кг', 1800),
+            ('СВП', 700, 'шт', 20),
+        ],
+    },
+    (50, 'floor', '60x60'): {
+        'totals': {'economy': 476200, 'comfort': 802000, 'business': 1808600},
+        'materials': [
+            ('Плитка комфорт', 57, 'м²', 12000),
+            ('Грунтовка', 13, 'кг', 500),
+            ('Усиленный плиточный клей', 9, 'меш', 4500),
+            ('Фуга улучшенная', 20, 'кг', 1800),
+            ('СВП', 1750, 'шт', 20),
+        ],
+    },
+    (50, 'walls', 'large'): {
+        'totals': {'economy': 488200, 'comfort': 823000, 'business': 1858100},
+        'materials': [
+            ('Плитка комфорт', 58, 'м²', 12000),
+            ('Грунтовка', 13, 'кг', 500),
+            ('Усиленный плиточный клей', 11, 'меш', 4500),
+            ('Фуга улучшенная', 20, 'кг', 1800),
+            ('СВП', 1750, 'шт', 20),
+        ],
+    },
+}
+
+
 def _calculate_plitka(calculator, form_data):
     area = to_float(form_data.get('area'), 0)
-    zone_type = form_data.get('zone_type', 'floor')
+    zone = form_data.get('zone') or form_data.get('zone_type', 'floor')
     tile_format = form_data.get('tile_format', '60x60')
-    reserve_factor = {'floor': 1.07, 'walls': 1.1, 'bathroom': 1.12, 'backsplash': 1.15}.get(zone_type, 1.08)
-    is_large_format = tile_format == '120x120'
-    tile_area = area * reserve_factor
-    edge_length = 4 * sqrt(area) if area > 0 else 0
-    wet_zone = zone_type == 'bathroom'
-    backsplash = zone_type == 'backsplash'
-    materials = [
-        _row_by_title(calculator, 'Плитка / кафель', 0 if is_large_format else tile_area),
-        _row_by_title(calculator, 'Керамогранит', tile_area if is_large_format else 0),
-        _row_by_title(calculator, 'Гидроизоляция', area * 1.05 if wet_zone else 0),
-        _row_by_title(calculator, 'Клей плиточный 25 кг', 0 if is_large_format else area * 0.32),
-        _row_by_title(calculator, 'Клей для крупного формата 25 кг', area * 0.38 if is_large_format else 0),
-        _row_by_title(calculator, 'Грунтовка', area * 0.12),
-        _row_by_title(calculator, 'Фуга', 0 if wet_zone else area * (0.06 if backsplash else 0.08)),
-        _row_by_title(calculator, 'Эпоксидная фуга', area * 0.08 if wet_zone else 0),
-        _row_by_title(calculator, 'СВП', max(1, area * (0.08 if is_large_format else 0.04))),
-        _row_by_title(calculator, 'Крестики', 0 if is_large_format else max(1, area * 0.04)),
-        _row_by_title(calculator, 'Профиль / уголок для плитки', max(1, edge_length * (0.35 if backsplash else 0.2))),
-        _row_by_title(calculator, 'Силикон санитарный', max(1, area / 20) if wet_zone or backsplash else 1),
-        _row_by_title(calculator, 'Плиткорезный диск', max(1, area / 35)),
-        _row_by_title(calculator, 'Губка / ведро / мелкие расходники', max(1, area / 30)),
-        _row_by_title(calculator, 'Мусорные мешки', area / 5),
-    ]
-    return _build_result(calculator, materials, form_data, area, 1, 1, 'comfort', _plain_segment(), f"{calculator['title']} · {area:g} м² · {zone_type} · {tile_format}")
+    tile_format = {'120x120': 'large', '120x60': 'large'}.get(tile_format, tile_format)
+    if zone not in TILE_ZONE_LABELS:
+        zone = 'floor'
+    if tile_format not in TILE_FORMAT_LABELS:
+        tile_format = '60x60'
+    selected_variant = form_data.get('selected_variant', 'comfort')
+
+    reference_key, reference = _tile_reference(area, zone, tile_format)
+    area_ratio = area / reference_key[0] if reference_key[0] else 1
+    exact_key = (round(area), zone, tile_format)
+    is_exact_reference = exact_key in TILE_REFERENCE_MATRIX
+    comfort_materials = _tile_comfort_materials(reference['materials'], area_ratio, is_exact_reference)
+    comfort_total = sum(material['reference_total'] for material in comfort_materials)
+    total_ratio = 1 if is_exact_reference else area_ratio
+    economy_total = round(reference['totals']['economy'] * total_ratio)
+    business_total = round(reference['totals']['business'] * total_ratio)
+
+    variants = {
+        'economy': _drywall_variant_from_comfort('economy', 'Эконом', TILE_VARIANT_DESCRIPTIONS['economy'], comfort_materials, economy_total, comfort_total),
+        'comfort': _variant('comfort', 'Комфорт', TILE_VARIANT_DESCRIPTIONS['comfort'], comfort_materials),
+        'business': _drywall_variant_from_comfort('business', 'Бизнес', TILE_VARIANT_DESCRIPTIONS['business'], comfort_materials, business_total, comfort_total),
+    }
+    if is_exact_reference:
+        variants['comfort']['total'] = reference['totals']['comfort']
+        variants['comfort']['reference_total'] = reference['totals']['comfort']
+
+    tile_form_data = {
+        **form_data,
+        'zone': zone,
+        'tile_format': tile_format,
+        '_metrics': [
+            {'label': 'Зона', 'value': TILE_ZONE_LABELS[zone], 'unit': ''},
+            {'label': 'Формат плитки', 'value': TILE_FORMAT_LABELS[tile_format], 'unit': ''},
+            {'label': 'Площадь укладки', 'value': _round_quantity(area), 'unit': 'м²'},
+            {'label': 'Грунтовка', 'value': '250 г/м² на 1 слой', 'unit': ''},
+            {'label': 'Клей', 'value': '5–6.5 кг/м²' if tile_format == 'large' else '4–5 кг/м²', 'unit': ''},
+        ],
+        '_price_note': 'Цены ориентировочные',
+    }
+    return _build_variant_result(
+        calculator,
+        variants,
+        selected_variant,
+        tile_form_data,
+        area,
+        1,
+        1,
+        f"{calculator['title']} · {TILE_ZONE_LABELS[zone]} · {TILE_FORMAT_LABELS[tile_format]} · {area:g} м²",
+    )
+
+
+def _tile_reference(area, zone, tile_format):
+    key = min(
+        TILE_REFERENCE_MATRIX,
+        key=lambda item: abs(item[0] - area) + (0 if item[1] == zone else 100) + (0 if item[2] == tile_format else 50),
+    )
+    return key, TILE_REFERENCE_MATRIX[key]
+
+
+def _tile_comfort_materials(reference_materials, area_ratio, exact):
+    materials = []
+    for title, quantity, unit, price in reference_materials:
+        scaled_quantity = quantity if exact else ceil(quantity * area_ratio)
+        materials.append(_variant_row(title, scaled_quantity, unit, price))
+    return materials
 
 
 def _calculate_laminat_spc_parket(calculator, form_data):
