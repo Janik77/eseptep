@@ -91,30 +91,20 @@ TILE_FIELDS = [
 ]
 
 FLOORING_FIELDS = [
-    {'name': 'area', 'label': 'Площадь пола', 'type': 'number', 'unit': 'м²', 'min': 1, 'step': 0.1, 'default': 42},
+    {'name': 'area', 'label': 'Площадь пола (м²)', 'type': 'number', 'unit': '', 'min': 1, 'step': 0.1, 'default': 20},
     {
-        'name': 'type',
-        'label': 'Тип покрытия',
+        'name': 'covering_type',
+        'label': 'Покрытие',
         'type': 'select',
         'default': 'laminate',
         'options': [
             {'value': 'laminate', 'label': 'Ламинат'},
-            {'value': 'spc', 'label': 'SPC'},
+            {'value': 'spc', 'label': 'SPC покрытие'},
             {'value': 'parquet', 'label': 'Паркет / инженерная доска'},
         ],
     },
-    {
-        'name': 'layout',
-        'label': 'Тип укладки',
-        'type': 'select',
-        'default': 'straight',
-        'options': [
-            {'value': 'straight', 'label': 'Прямая'},
-            {'value': 'diagonal', 'label': 'Диагональная'},
-            {'value': 'herringbone', 'label': 'Ёлочка'},
-        ],
-    },
 ]
+
 
 PAINTING_FIELDS = [
     {'name': 'floor_area', 'label': 'Площадь пола (м²)', 'type': 'number', 'unit': '', 'min': 1, 'step': 0.1, 'default': 30},
@@ -215,6 +205,35 @@ def _definition(slug, title, description, icon, unit, materials, fields, legacy_
         'base_materials': [(material['title'], material['ratio'], material['reference_price']) for material in materials],
     }
 
+
+
+FLOORING_MASTER_TEMPLATE_GROUPS = {
+    'laminate': [
+        {'title': 'Ламинат', 'unit': 'м²'},
+        {'title': 'Подложка', 'unit': 'м²'},
+        {'title': 'Плинтус', 'unit': 'м'},
+        {'title': 'Уголки/соединители/заглушки', 'unit': 'комплект'},
+        {'title': 'Порог', 'unit': 'шт'},
+        {'title': 'Мусорные мешки', 'unit': 'шт'},
+    ],
+    'spc': [
+        {'title': 'SPC покрытие', 'unit': 'м²'},
+        {'title': 'Подложка, если требуется', 'unit': 'м²'},
+        {'title': 'Плинтус', 'unit': 'м'},
+        {'title': 'Уголки/соединители/заглушки', 'unit': 'комплект'},
+        {'title': 'Порог', 'unit': 'шт'},
+        {'title': 'Мусорные мешки', 'unit': 'шт'},
+    ],
+    'parquet': [
+        {'title': 'Паркет / инженерная доска', 'unit': 'м²'},
+        {'title': 'Клей для паркета', 'unit': 'кг'},
+        {'title': 'Грунтовка', 'unit': 'кг'},
+        {'title': 'Плинтус', 'unit': 'м'},
+        {'title': 'Уголки/соединители/заглушки', 'unit': 'комплект'},
+        {'title': 'Порог', 'unit': 'шт'},
+        {'title': 'Мусорные мешки', 'unit': 'шт'},
+    ],
+}
 
 CALCULATORS = [
     _definition('demontazh', 'Демонтаж', 'Расчёт включает расходники и вывоз мусора: мешки, защитную плёнку, бумажный скотч, перчатки, диски и транспорт. Работа мастеров не считается.', 'demolition', 'м²', [
@@ -347,21 +366,18 @@ CALCULATORS = [
         _material('Губка / ведро / мелкие расходники', 0.04, 'комплект', 3500),
         _material('Мусорные мешки', 0.2, 'шт', 120),
     ], TILE_FIELDS, legacy_slugs=['plitka']),
-    _definition('laminat-spc-parket', 'Ламинат-Spc-Паркет', 'Покрытие, подложка, плинтус и расходники по типу покрытия и укладки.', 'laminate', 'м²', [
-        _material('Ламинат', 1.05, 'м²', 7200),
-        _material('SPC покрытие', 1.05, 'м²', 9200),
-        _material('Паркет / инженерная доска', 1.18, 'м²', 18500),
-        _material('Подложка', 1.05, 'м²', 900),
-        _material('Плинтус', 1.0, 'м', 1800),
-        _material('Угол внутренний', 0.04, 'шт', 900),
-        _material('Угол наружный', 0.03, 'шт', 900),
-        _material('Соединитель плинтуса', 0.04, 'шт', 700),
-        _material('Заглушка плинтуса', 0.04, 'шт', 700),
-        _material('Порог', 0.04, 'шт', 5500),
-        _material('Клей для паркета', 0.25, 'кг', 2600),
-        _material('Грунтовка', 0.12, 'л', 650),
-        _material('Плёнка защитная', 1.05, 'м²', 280),
-        _material('Мусорные мешки', 0.2, 'шт', 120),
+    _definition('laminat-spc-parket', 'Напольное покрытие', 'Ламинат, SPC или паркет: покрытие, подложка, плинтус и расходники. Работа не включена — только материалы.', 'laminate', 'м²', [
+        _material('Ламинат', 1.0, 'м²', 4500),
+        _material('SPC покрытие', 1.0, 'м²', 6500),
+        _material('Паркет / инженерная доска', 1.0, 'м²', 14500),
+        _material('Подложка', 1.0, 'м²', 700),
+        _material('Подложка, если требуется', 1.0, 'м²', 700),
+        _material('Плинтус', 1.0, 'м', 1200),
+        _material('Уголки/соединители/заглушки', 1.0, 'комплект', 5000),
+        _material('Порог', 1.0, 'шт', 2500),
+        _material('Клей для паркета', 1.0, 'кг', 2500),
+        _material('Грунтовка', 1.0, 'кг', 1200),
+        _material('Мусорные мешки', 1.0, 'шт', 500),
     ], FLOORING_FIELDS),
     _definition('malyarka', 'Малярка', 'Предварительный расчёт стен под обои или покраску без потолка.', 'paint', 'м²', [
         _material('Грунтовка 1 слой', 1.0, 'шт', 400),
@@ -419,6 +435,7 @@ CALCULATORS = [
 
 CALCULATORS_BY_SLUG = {item['slug']: item for item in CALCULATORS}
 CALCULATORS_BY_SLUG['gipsokarton-potolok']['master_template_groups'] = DRYWALL_MASTER_TEMPLATE_GROUPS
+CALCULATORS_BY_SLUG['laminat-spc-parket']['master_template_groups'] = FLOORING_MASTER_TEMPLATE_GROUPS
 for item in CALCULATORS:
     for legacy_slug in item.get('legacy_slugs', []):
         CALCULATORS_BY_SLUG[legacy_slug] = item

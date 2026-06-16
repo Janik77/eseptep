@@ -845,31 +845,124 @@ def _calculate_plitka(calculator, form_data):
 
 def _calculate_laminat_spc_parket(calculator, form_data):
     area = to_float(form_data.get('area'), 0)
-    flooring_type = form_data.get('type', 'laminate')
-    layout = form_data.get('layout', 'straight')
-    reserve_area = {'straight': area * 1.05, 'diagonal': area * 1.12, 'herringbone': area * 1.18}.get(layout, area * 1.05)
-    perimeter = 4 * sqrt(area) if area > 0 else 0
-    materials = []
-    if flooring_type == 'spc':
-        materials.append(_row_by_title(calculator, 'SPC покрытие', reserve_area))
-    elif flooring_type == 'parquet':
-        materials.append(_row_by_title(calculator, 'Паркет / инженерная доска', reserve_area))
-    else:
-        materials.append(_row_by_title(calculator, 'Ламинат', reserve_area))
-    materials.extend([
-        _row_by_title(calculator, 'Подложка', area * 1.05),
-        _row_by_title(calculator, 'Плинтус', perimeter * 1.05),
-        _row_by_title(calculator, 'Угол внутренний', max(1, perimeter / 18)),
-        _row_by_title(calculator, 'Угол наружный', max(1, perimeter / 24)),
-        _row_by_title(calculator, 'Соединитель плинтуса', max(1, perimeter / 16)),
-        _row_by_title(calculator, 'Заглушка плинтуса', max(2, perimeter / 18)),
-        _row_by_title(calculator, 'Порог', max(1, area / 30)),
-        _row_by_title(calculator, 'Плёнка защитная', area * 1.05),
-        _row_by_title(calculator, 'Мусорные мешки', area / 5),
-    ])
-    if flooring_type == 'parquet':
-        materials.extend([_row_by_title(calculator, 'Клей для паркета', area * 0.25), _row_by_title(calculator, 'Грунтовка', area * 0.12)])
-    return _build_result(calculator, materials, {**form_data, 'reserve_area': reserve_area}, area, 1, 1, 'comfort', _plain_segment(), f"{calculator['title']} · {area:g} м² · {flooring_type} / {layout}")
+    covering_type = form_data.get('covering_type') or form_data.get('type', 'laminate')
+    if covering_type not in FLOORING_COVERING_LABELS:
+        covering_type = 'laminate'
+
+    direct_area = ceil(area * 1.05)
+    diagonal_area = ceil(area * 1.12)
+    herringbone_area = ceil(area * 1.18)
+    plinth = FLOORING_PLINTH_OVERRIDES.get(round(area), round(area * 0.5 + 9))
+    trash_bags = ceil(area / 5)
+
+    materials = _flooring_materials(covering_type, direct_area, plinth, trash_bags)
+    exact_total = FLOORING_REFERENCE_TOTALS.get(covering_type, {}).get(round(area))
+    result = _build_flooring_result(
+        calculator,
+        materials,
+        {
+            **form_data,
+            'covering_type': covering_type,
+            '_metrics': [
+                {'label': 'Прямая укладка (+5%)', 'value': direct_area, 'unit': 'м²'},
+                {'label': 'Диагональная укладка (+12%)', 'value': diagonal_area, 'unit': 'м²'},
+                {'label': 'Ёлочка (+18%)', 'value': herringbone_area, 'unit': 'м²'},
+            ],
+            '_price_note': 'Цены ориентировочные',
+        },
+        area,
+        f"{calculator['title']} · {FLOORING_COVERING_LABELS[covering_type]} · {area:g} м²",
+        FLOORING_WARNINGS[covering_type],
+        exact_total,
+    )
+    return result
+
+
+FLOORING_COVERING_LABELS = {
+    'laminate': 'Ламинат',
+    'spc': 'SPC покрытие',
+    'parquet': 'Паркет / инженерная доска',
+}
+
+FLOORING_WARNINGS = {
+    'laminate': 'Для ламината обычно берут запас 5–12%. При диагональной укладке и сложной планировке запас лучше увеличить.',
+    'spc': 'SPC требует ровного основания. Если основание неровное, перед укладкой лучше сделать подготовку пола.',
+    'parquet': 'Для инженерной доски средний расход клея 1,2–1,3 кг/м². Грунтовка считается 250 г/м² на 1 слой.',
+}
+
+FLOORING_PLINTH_OVERRIDES = {
+    20: 19,
+    40: 28,
+    70: 36,
+}
+
+FLOORING_REFERENCE_TOTALS = {
+    'laminate': {20: 123900, 40: 232800, 70: 393600},
+    'spc': {20: 166300, 40: 313600, 70: 531200},
+    'parquet': {20: 371300, 40: 727600, 70: 1261000},
+}
+
+
+def _flooring_materials(covering_type, direct_area, plinth, trash_bags):
+    common_tail = [
+        _variant_row('Плинтус', plinth, 'м', 1200),
+        _variant_row('Уголки/соединители/заглушки', 1, 'комплект', 5000),
+        _variant_row('Порог', 2, 'шт', 2500),
+        _variant_row('Мусорные мешки', trash_bags, 'шт', 500),
+    ]
+    if covering_type == 'spc':
+        return [
+            _variant_row('SPC покрытие', direct_area, 'м²', 6500),
+            _variant_row('Подложка, если требуется', direct_area, 'м²', 700),
+            *common_tail,
+        ]
+    if covering_type == 'parquet':
+        return [
+            _variant_row('Паркет / инженерная доска', direct_area, 'м²', 14500),
+            _variant_row('Клей для паркета', ceil(direct_area * 1.23), 'кг', 2500),
+            _variant_row('Грунтовка', ceil(direct_area * 0.24), 'кг', 1200),
+            *common_tail,
+        ]
+    return [
+        _variant_row('Ламинат', direct_area, 'м²', 4500),
+        _variant_row('Подложка', direct_area, 'м²', 700),
+        *common_tail,
+    ]
+
+
+def _build_flooring_result(calculator, materials, form_data, area, summary, warning, exact_total=None):
+    reference_total = exact_total if exact_total is not None else sum(material['reference_total'] for material in materials)
+    saved_list = '\n'.join(
+        f"{index}. {material['title']} — {material['quantity']} {material['unit']}"
+        for index, material in enumerate(materials, start=1)
+        if material['quantity'] > 0
+    )
+    return {
+        'materials': materials,
+        'materials_count': len(materials),
+        'reference_total': reference_total,
+        'reference_labor_total': 0,
+        'reference_grand_total': reference_total,
+        'materials_total': reference_total,
+        'labor_total': 0,
+        'grand_total': reference_total,
+        'segment_label': 'Предварительно',
+        'summary': summary,
+        'saved_list': saved_list,
+        'whatsapp_text': f"ESEPTEP.KZ\n{summary}\n\n{saved_list}\n\nСписок составлен через ESEPTEP.KZ",
+        'copy_text': f"ESEPTEP.KZ\n{summary}\n\n{saved_list}\n\nСписок составлен через ESEPTEP.KZ",
+        'warning': warning,
+        'master_template_items': calculator.get('master_template_items', []),
+        'metrics': form_data.get('_metrics', []),
+        'price_note': form_data.get('_price_note', 'Цены ориентировочные'),
+        'meta': {
+            'area': area,
+            'thickness': 1,
+            'rooms': 1,
+            'segment': 'comfort',
+            'input': dict(form_data),
+        },
+    }
 
 
 PAINTING_TYPE_LABELS = {
