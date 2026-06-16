@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+{% block title %}Кабинет клиента — ESEPTEP{% endblock %}
+{% block breadcrumbs %}<nav class="breadcrumbs"><a href="{% url 'core:home' %}">Главная</a><span>›</span><b>Кабинет клиента</b></nav>{% endblock %}
+
+{% block content %}
+<section class="dashboard">
+  <div class="dashboard-card">
+    <h1>Здравствуйте, {{ request.user.first_name|default:request.user.username }}!</h1>
+    <p>Город: <b>{{ profile.city|default:'—' }}</b> · Роль: <b>{{ profile.get_role_display }}</b></p>
+  </div>
+
+  <div class="dashboard-actions dashboard-card">
+    <a class="btn btn--primary" href="{% url 'calculators:home' %}">Новый расчёт</a>
+    <a class="btn btn--secondary" href="{% url 'projects:home' %}">Загрузить проект</a>
+    <a class="btn btn--secondary" href="{% url 'marketplace:home' %}">Найти мастера</a>
+    <a class="btn btn--secondary" href="{% url 'accounts:client_project_create' %}">Создать проект</a>
+  </div>
+
+  <div class="dashboard-card">
+    <h2>Мои проекты</h2>
+    <div class="dashboard-list">
+      {% for project in projects %}
+      <article class="dashboard-item">
+        <b>{{ project.title }}</b>
+        <p>{{ project.area_m2 }} м² · {{ project.rooms }} комн. · {{ project.get_status_display }}</p>
+        <small>{{ project.created_at|date:'d.m.Y' }}</small>
+      </article>
+      {% empty %}<div class="empty-state">Проектов пока нет.</div>{% endfor %}
+    </div>
+  </div>
+
+  <div class="dashboard-card">
+    <h2>Мои сметы</h2>
+    <div class="dashboard-list">
+      {% for calc in calculations %}
+      <article class="dashboard-item">
+        <b>{{ calc.calculator_slug }}</b>
+        <p>Материалы: {{ calc.materials_total }} ₸ · Работы: {{ calc.works_total }} ₸</p>
+        <strong>Итог: {{ calc.grand_total }} ₸</strong>
+      </article>
+      {% empty %}<div class="empty-state">Смет пока нет.</div>{% endfor %}
+    </div>
+  </div>
+
+  <div class="dashboard-card">
+    <h2>Мои заявки</h2>
+    <div class="dashboard-list">
+      {% for req in service_requests %}
+      <article class="dashboard-item">
+        <b>{{ req.get_request_type_display }}</b>
+        <p>
+          <span class="status-badge status-badge--{{ req.status }}">{{ req.get_status_display }}</span>
+          · {{ req.created_at|date:'d.m.Y' }}
+        </p>
+        <small>Ответов мастеров: {{ req.master_responses_count }} · поставщиков: {{ req.supplier_responses_count }}</small>
+      </article>
+      {% empty %}<div class="empty-state">Заявок пока нет.</div>{% endfor %}
+    </div>
+  </div>
+
+  <div class="dashboard-card">
+    <h2>Ответы по моим заявкам</h2>
+
+    <h3>Ответы мастеров</h3>
+    <div class="dashboard-list">
+      {% for response in master_responses %}
+      <article class="dashboard-item">
+        <b>{{ response.master.full_name }}</b>
+        <p>{{ response.master.specialization }} · ⭐ {{ response.master.rating }}</p>
+        <p>Цена от: ₸ {{ response.price_from }}</p>
+        <small>{{ response.message|default:'Без сообщения' }}</small>
+        <p><span class="status-badge status-badge--{{ response.request.status }}">{{ response.get_status_display }}</span></p>
+        <div class="response-actions">
+          <form method="post">{% csrf_token %}<input type="hidden" name="response_type" value="master"><input type="hidden" name="response_id" value="{{ response.id }}"><button class="btn btn--primary" name="response_action" value="accept" type="submit">Принять</button></form>
+          <form method="post">{% csrf_token %}<input type="hidden" name="response_type" value="master"><input type="hidden" name="response_id" value="{{ response.id }}"><button class="btn btn--secondary" name="response_action" value="reject" type="submit">Отклонить</button></form>
+        </div>
+      </article>
+      {% empty %}<div class="empty-state">Ответов мастеров пока нет.</div>{% endfor %}
+    </div>
+
+    <h3>Ответы поставщиков</h3>
+    <div class="dashboard-list">
+      {% for response in supplier_responses %}
+      <article class="dashboard-item">
+        <b>{{ response.supplier.company_name }}</b>
+        <p>Итоговая цена: ₸ {{ response.total_price }}</p>
+        <small>{{ response.message|default:'Без сообщения' }}</small>
+        <p>Срок доставки: {{ response.delivery_time_label }}</p>
+        <p><span class="status-badge status-badge--{{ response.request.status }}">{{ response.get_status_display }}</span></p>
+        <div class="response-actions">
+          <form method="post">{% csrf_token %}<input type="hidden" name="response_type" value="supplier"><input type="hidden" name="response_id" value="{{ response.id }}"><button class="btn btn--primary" name="response_action" value="accept" type="submit">Принять</button></form>
+          <form method="post">{% csrf_token %}<input type="hidden" name="response_type" value="supplier"><input type="hidden" name="response_id" value="{{ response.id }}"><button class="btn btn--secondary" name="response_action" value="reject" type="submit">Отклонить</button></form>
+        </div>
+      </article>
+      {% empty %}<div class="empty-state">Ответов поставщиков пока нет.</div>{% endfor %}
+    </div>
+  </div>
+</section>
+{% endblock %}
