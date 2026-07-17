@@ -36,6 +36,13 @@
             <form class="calc-form calc-form--panel" method="post" data-calc-form>
                 {% csrf_token %}
                 <div class="form-step-label">Параметры расчёта</div>
+                {% if form_errors %}
+                    <div class="form-errors" role="alert">
+                        {% for error in form_errors %}
+                            <p>{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
                 {% for field in form_fields %}
                     <label>
                         <span>{{ field.label }}{% if field.unit %} <small>{{ field.unit }}</small>{% endif %}</span>
@@ -45,8 +52,10 @@
                                     <option value="{{ option.value }}" {% if field.value == option.value %}selected{% endif %}>{{ option.label }}</option>
                                 {% endfor %}
                             </select>
+                        {% elif field.decimal_field %}
+                            <input type="text" name="{{ field.name }}" value="{{ field.value }}" inputmode="decimal" autocomplete="{{ field.autocomplete|default:'off' }}" data-decimal-field="true" required>
                         {% else %}
-                            <input type="{{ field.type }}" name="{{ field.name }}" min="{{ field.min }}" step="{{ field.step }}" value="{{ field.value }}" {% if field.inputmode %}inputmode="{{ field.inputmode }}"{% endif %} {% if field.normalize_decimal %}data-normalize-decimal{% endif %} required>
+                            <input type="{{ field.type }}" name="{{ field.name }}" {% if field.min is not None %}min="{{ field.min }}"{% endif %} {% if field.step is not None %}step="{{ field.step }}"{% endif %} value="{{ field.value }}" required>
                         {% endif %}
                     </label>
                 {% endfor %}

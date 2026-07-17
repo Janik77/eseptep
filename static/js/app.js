@@ -118,16 +118,12 @@ function initCalculatorForm() {
         return;
     }
 
-    const decimalInputs = [...form.querySelectorAll('[data-normalize-decimal]')];
+    const decimalInputs = [...form.querySelectorAll('[data-decimal-field="true"]')];
     const normalizeDecimalInputs = () => {
         decimalInputs.forEach((input) => {
-            input.value = input.value.replace(/,/g, '.');
+            input.value = input.value.trim().replace(',', '.');
         });
     };
-
-    decimalInputs.forEach((input) => {
-        input.addEventListener('input', normalizeDecimalInputs);
-    });
 
     form.addEventListener('submit', () => {
         normalizeDecimalInputs();

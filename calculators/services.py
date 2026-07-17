@@ -13,7 +13,7 @@ PLAIN_REFERENCE = {'label': 'Предварительно', 'material': 1.0, 'la
 def to_float(value, default):
     """Convert form values to float while supporting comma decimals."""
     try:
-        return float(str(value).replace(',', '.'))
+        return float(str(value).strip().replace(',', '.'))
     except (TypeError, ValueError):
         return default
 

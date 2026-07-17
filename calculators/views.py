@@ -111,10 +111,11 @@ def calculator_detail(request, slug):
     form_data = _get_form_data(calculator, request.POST if request.method == 'POST' else None)
     if request.method == 'POST' and request.POST.get('selected_variant'):
         form_data['selected_variant'] = request.POST.get('selected_variant')
+    form_errors = _validate_decimal_fields(calculator, form_data) if request.method == 'POST' else []
     form_fields = _get_form_fields(calculator, form_data)
     result = None
 
-    if request.method == 'POST':
+    if request.method == 'POST' and not form_errors:
         result = calculate_materials(calculator, form_data)
         action = request.POST.get('action')
 
@@ -152,6 +153,7 @@ def calculator_detail(request, slug):
             'form_fields': form_fields,
             'segments': SEGMENT_MULTIPLIERS,
             'result': result,
+            'form_errors': form_errors,
             'calculators': CALCULATORS,
             'recommended_masters': RECOMMENDED_MASTERS,
             'material_sellers': MATERIAL_SELLERS,
@@ -179,3 +181,22 @@ def _get_form_fields(calculator, form_data):
             )
         fields.append(prepared)
     return fields
+
+
+def _validate_decimal_fields(calculator, form_data):
+    errors = []
+    for field in calculator.get('fields', []):
+        if not field.get('decimal_field'):
+            continue
+        raw_value = str(form_data.get(field['name'], '')).strip()
+        normalized_value = raw_value.replace(',', '.')
+        try:
+            parsed_value = float(normalized_value)
+        except ValueError:
+            errors.append('Введите толщину числом, например 2.5')
+            continue
+        if parsed_value <= 0 or parsed_value > field.get('max', 20):
+            errors.append('Введите толщину числом, например 2.5')
+            continue
+        form_data[field['name']] = normalized_value
+    return errors
