@@ -40,7 +40,7 @@ PLUMBING_FIELDS = [
 
 PLASTER_FIELDS = [
     {'name': 'area', 'label': 'Площадь помещения (м²)', 'type': 'number', 'unit': '', 'min': 1, 'step': 0.1, 'default': 42},
-    {'name': 'thickness', 'label': 'Толщина штукатурки (см)', 'type': 'number', 'unit': '', 'min': 0.5, 'step': 0.1, 'default': 2},
+    {'name': 'thickness', 'label': 'Толщина штукатурки (см)', 'type': 'number', 'unit': '', 'min': 0.5, 'step': 0.1, 'inputmode': 'decimal', 'normalize_decimal': True, 'default': 2},
 ]
 
 DRYWALL_FIELDS = [
@@ -61,7 +61,7 @@ DRYWALL_FIELDS = [
 
 SELF_LEVEL_FIELDS = [
     {'name': 'area', 'label': 'Площадь пола (м²)', 'type': 'number', 'unit': '', 'min': 1, 'step': 0.1, 'default': 30},
-    {'name': 'thickness', 'label': 'Толщина (см)', 'type': 'number', 'unit': '', 'min': 1, 'step': 0.1, 'default': 2},
+    {'name': 'thickness', 'label': 'Толщина (см)', 'type': 'number', 'unit': '', 'min': 1, 'step': 0.1, 'inputmode': 'decimal', 'normalize_decimal': True, 'default': 2},
 ]
 
 TILE_FIELDS = [

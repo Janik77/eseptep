@@ -46,7 +46,7 @@
                                 {% endfor %}
                             </select>
                         {% else %}
-                            <input type="{{ field.type }}" name="{{ field.name }}" min="{{ field.min }}" step="{{ field.step }}" value="{{ field.value }}" required>
+                            <input type="{{ field.type }}" name="{{ field.name }}" min="{{ field.min }}" step="{{ field.step }}" value="{{ field.value }}" {% if field.inputmode %}inputmode="{{ field.inputmode }}"{% endif %} {% if field.normalize_decimal %}data-normalize-decimal{% endif %} required>
                         {% endif %}
                     </label>
                 {% endfor %}

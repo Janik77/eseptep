@@ -772,8 +772,7 @@ def _calculate_nalivnoy_pol(calculator, form_data):
     total_consumption = area * thickness * 15
     mixture_bags = ceil(total_consumption / 25) if total_consumption > 0 else 0
     reference_key, reference = _self_level_reference(area, thickness)
-    exact_key = (round(area), round(thickness))
-    is_exact_reference = exact_key in SELF_LEVEL_REFERENCE_MATRIX
+    is_exact_reference = reference_key in SELF_LEVEL_REFERENCE_MATRIX and area == reference_key[0] and thickness == reference_key[1]
     area_ratio = area / reference_key[0] if reference_key[0] else 1
     quantities = _self_level_quantities(reference, area_ratio)
     quantities['mixture_bags'] = mixture_bags

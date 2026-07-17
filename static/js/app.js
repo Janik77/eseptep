@@ -118,7 +118,20 @@ function initCalculatorForm() {
         return;
     }
 
+    const decimalInputs = [...form.querySelectorAll('[data-normalize-decimal]')];
+    const normalizeDecimalInputs = () => {
+        decimalInputs.forEach((input) => {
+            input.value = input.value.replace(/,/g, '.');
+        });
+    };
+
+    decimalInputs.forEach((input) => {
+        input.addEventListener('input', normalizeDecimalInputs);
+    });
+
     form.addEventListener('submit', () => {
+        normalizeDecimalInputs();
+
         const button = form.querySelector('[type="submit"]');
         form.classList.add('is-calculating');
 
