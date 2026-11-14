@@ -12,6 +12,7 @@
     <link rel="stylesheet" href="{% static 'css/app.css' %}">
 </head>
 <body>
+    <a class="skip-link" href="#main-content">К содержимому</a>
     <div class="app-shell">
         <header class="site-header" aria-label="Главная навигация">
             <a class="brand" href="{% url 'core:home' %}" aria-label="ESEPTEP на главную">
@@ -20,11 +21,12 @@
             </a>
             <nav class="site-nav" aria-label="Разделы">
                 <a href="{% url 'calculators:home' %}">Калькуляторы</a>
-                <a href="{% url 'marketplace:home' %}">Мастера</a>
+                <a href="{% url 'marketplace:home' %}">Ремонт под ключ</a>
                 <a href="{% url 'projects:home' %}">Проекты</a>
             </nav>
             {% if request.user.is_authenticated %}
-            <a class="header-action" href="{% url 'accounts:logout' %}">Выйти</a>
+            <a class="header-action" href="{% if request.user.profile.role == 'master' %}{% url 'accounts:dashboard_master' %}{% elif request.user.profile.role == 'supplier' %}{% url 'accounts:dashboard_supplier' %}{% else %}{% url 'accounts:dashboard_client' %}{% endif %}">Кабинет</a>
+            <form method="post" action="{% url 'accounts:logout' %}">{% csrf_token %}<button class="header-action" type="submit">Выйти</button></form>
             {% else %}
             <a class="header-action" href="{% url 'accounts:login' %}">Войти</a>
             {% endif %}
@@ -41,12 +43,12 @@
 
         {% block breadcrumbs %}{% endblock %}
 
-        <main>
+        <main id="main-content">
             {% block content %}{% endblock %}
         </main>
     </div>
 
-    <a class="floating-whatsapp" href="https://wa.me/?text=ESEPTEP%20-%20нужна%20консультация%20по%20ремонту" aria-label="Написать в WhatsApp">WA</a>
+    <a class="floating-whatsapp" href="https://wa.me/?text=ESEPTEP%20-%20нужна%20консультация%20по%20ремонту" aria-label="Поделиться в WhatsApp">WA</a>
 
     <nav class="mobile-bottom-cta" aria-label="Быстрые действия">
         <a class="mobile-bottom-cta__item" href="{% url 'core:home' %}">

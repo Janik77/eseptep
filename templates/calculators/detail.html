@@ -154,33 +154,30 @@
                     {% endif %}
                     {% if result.warning %}<p class="result-warning">{{ result.warning }}</p>{% endif %}
 
-                    {% if request.user.is_authenticated %}
-                    <div class="result-actions result-actions--backend result-actions--primary">
-                        <form method="post">
-                            {% csrf_token %}
-                            {% for field in form_fields %}
-                                <input type="hidden" name="{{ field.name }}" value="{{ field.value }}">
-                            {% endfor %}
-                            {% if result.variants %}<input type="hidden" name="selected_variant" value="{{ result.selected_variant }}" data-selected-variant-input>{% endif %}
-                            <button class="btn btn--secondary" type="submit" name="action" value="save_estimate">Сохранить в кабинет</button>
-                        </form>
-                        <form method="post">
-                            {% csrf_token %}
-                            {% for field in form_fields %}
-                                <input type="hidden" name="{{ field.name }}" value="{{ field.value }}">
-                            {% endfor %}
-                            {% if result.variants %}<input type="hidden" name="selected_variant" value="{{ result.selected_variant }}" data-selected-variant-input>{% endif %}
-                            <button class="btn btn--primary" type="submit" name="action" value="request_master">Отправить заявку мастерам</button>
-                        </form>
-                        <form method="post">
-                            {% csrf_token %}
-                            {% for field in form_fields %}
-                                <input type="hidden" name="{{ field.name }}" value="{{ field.value }}">
-                            {% endfor %}
-                            {% if result.variants %}<input type="hidden" name="selected_variant" value="{{ result.selected_variant }}" data-selected-variant-input>{% endif %}
-                            <button class="btn btn--secondary" type="submit" name="action" value="request_supplier">Отправить запрос поставщикам</button>
-                        </form>
-                    </div>
+                    {% if can_save_calculation %}
+                    <form method="post" class="result-actions result-actions--backend result-actions--primary">
+                        {% csrf_token %}
+                        {% for field in form_fields %}<input type="hidden" name="{{ field.name }}" value="{{ field.value }}">{% endfor %}
+                        {% if result.variants %}<input type="hidden" name="selected_variant" value="{{ result.selected_variant }}" data-selected-variant-input>{% endif %}
+                        {% if client_projects %}
+                        <label>Проект для сметы
+                            <select name="project_id" required>
+                                <option value="">Выберите проект</option>
+                                {% for project in client_projects %}
+                                <option value="{{ project.pk }}" {% if selected_project_id == project.pk|stringformat:"s" %}selected{% endif %}>{{ project.title }}</option>
+                                {% endfor %}
+                            </select>
+                        </label>
+                        <button class="btn btn--secondary" type="submit" name="action" value="save_estimate">Сохранить в выбранный проект</button>
+                        <button class="btn btn--primary" type="submit" name="action" value="request_master">Отправить заявку мастерам</button>
+                        <button class="btn btn--secondary" type="submit" name="action" value="request_supplier">Отправить запрос поставщикам</button>
+                        {% else %}
+                        <p>Сначала создайте проект в кабинете. Расчёт не будет привязан автоматически.</p>
+                        <a class="btn btn--secondary" href="{% url 'accounts:client_project_create' %}" target="_blank" rel="noopener">Создать проект в новой вкладке</a>
+                        {% endif %}
+                    </form>
+                    {% elif request.user.is_authenticated %}
+                    <p>Сохранение сметы и отправка заявок доступны в кабинете клиента.</p>
                     {% else %}
                     <div class="auth-soft-cta">
                         <p>Войдите, чтобы сохранить смету и получить ответы мастеров.</p>

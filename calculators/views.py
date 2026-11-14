@@ -1,8 +1,9 @@
 from django.contrib import messages
 from django.http import Http404
+from django.core.exceptions import ValidationError
 from django.shortcuts import redirect, render
 
-from accounts.models import ServiceRequest
+from accounts.models import ClientProject, ServiceRequest, UserProfile
 
 from .definitions import CALCULATORS, CALCULATORS_BY_SLUG, SEGMENT_MULTIPLIERS
 from .services import calculate_materials, save_calculation_for_user
@@ -119,31 +120,35 @@ def calculator_detail(request, slug):
         result = calculate_materials(calculator, form_data)
         action = request.POST.get('action')
 
-        if request.user.is_authenticated and action in {'save_estimate', 'request_master', 'request_supplier'}:
-            project, calculation = save_calculation_for_user(request.user, slug, result)
-            if action == 'request_master':
-                ServiceRequest.objects.create(
-                    client=request.user,
-                    project=project,
-                    calculation=calculation,
-                    request_type=ServiceRequest.RequestType.MASTER,
-                    status=ServiceRequest.Status.NEW,
-                    comment=f'Заявка после расчёта: {calculator["title"]}',
-                )
-                messages.success(request, 'Смета сохранена и заявка мастерам отправлена.')
-            elif action == 'request_supplier':
-                ServiceRequest.objects.create(
-                    client=request.user,
-                    project=project,
-                    calculation=calculation,
-                    request_type=ServiceRequest.RequestType.SUPPLIER,
-                    status=ServiceRequest.Status.NEW,
-                    comment=f'Запрос поставщикам после расчёта: {calculator["title"]}',
-                )
-                messages.success(request, 'Смета сохранена и запрос поставщикам отправлен.')
+        if action in {'save_estimate', 'request_master', 'request_supplier'}:
+            try:
+                project, calculation = save_calculation_for_user(request.user, slug, result, request.POST.get('project_id'))
+            except ValidationError as error:
+                form_errors.extend(error.messages)
             else:
-                messages.success(request, 'Смета сохранена в личный кабинет.')
-            return redirect('calculators:detail', slug=slug)
+                if action == 'request_master':
+                    ServiceRequest.objects.create(
+                        client=request.user,
+                        project=project,
+                        calculation=calculation,
+                        request_type=ServiceRequest.RequestType.MASTER,
+                        status=ServiceRequest.Status.NEW,
+                        comment=f'Заявка после расчёта: {calculator["title"]}',
+                    )
+                    messages.success(request, 'Смета сохранена и заявка мастерам отправлена.')
+                elif action == 'request_supplier':
+                    ServiceRequest.objects.create(
+                        client=request.user,
+                        project=project,
+                        calculation=calculation,
+                        request_type=ServiceRequest.RequestType.SUPPLIER,
+                        status=ServiceRequest.Status.NEW,
+                        comment=f'Запрос поставщикам после расчёта: {calculator["title"]}',
+                    )
+                    messages.success(request, 'Смета сохранена и запрос поставщикам отправлен.')
+                else:
+                    messages.success(request, 'Смета сохранена в личный кабинет.')
+                return redirect('calculators:detail', slug=slug)
     return render(
         request,
         'calculators/detail.html',
@@ -157,6 +162,9 @@ def calculator_detail(request, slug):
             'calculators': CALCULATORS,
             'recommended_masters': RECOMMENDED_MASTERS,
             'material_sellers': MATERIAL_SELLERS,
+            'client_projects': ClientProject.objects.filter(user=request.user, status__in=['draft', 'calculated']) if request.user.is_authenticated else ClientProject.objects.none(),
+            'can_save_calculation': request.user.is_authenticated and getattr(getattr(request.user, 'profile', None), 'role', None) == UserProfile.Role.CLIENT,
+            'selected_project_id': request.POST.get('project_id', ''),
             'show_auth_save_cta': not request.user.is_authenticated,
         },
     )
