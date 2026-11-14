@@ -85,3 +85,89 @@ class CalculatorValidationTests(TestCase):
                 saved = Calculation.objects.latest('pk')
                 saved.full_clean()
         self.assertEqual(Calculation.objects.count(), 12)
+
+
+class CalculatorArithmeticTests(TestCase):
+    def assert_result_consistent(self, result):
+        variants = result.get('variants', [result])
+        for variant in variants:
+            rows = variant['materials']
+            for row in rows:
+                self.assertGreaterEqual(row['quantity'], 0)
+                self.assertGreaterEqual(row['reference_price'], 0)
+                self.assertEqual(row['reference_total'], round(row['quantity'] * row['reference_price']))
+                self.assertEqual(row['total'], row['reference_total'])
+            material_sum = sum(row['reference_total'] for row in rows)
+            self.assertEqual(variant['materials_total'], material_sum)
+            if 'key' in variant:
+                self.assertEqual(variant['total'], material_sum + variant['extra'])
+        self.assertEqual(result['materials_total'], sum(row['total'] for row in result['materials']))
+        self.assertEqual(result['grand_total'], result['materials_total'] + result['labor_total'] + result.get('additional_total', 0))
+
+    def test_all_calculators_choices_boundaries_and_reference_neighbors(self):
+        from itertools import product
+        for calculator in CALCULATORS:
+            choice_fields = [field for field in calculator['fields'] if field['type'] == 'select']
+            choices = product(*[[option['value'] for option in field['options']] for field in choice_fields])
+            for chosen in choices:
+                for area in ('1', '19.99', '20', '20.01', '42', '60', '10000'):
+                    for count in ('1', '2', '100'):
+                        data = defaults(calculator)
+                        data.update(zip([field['name'] for field in choice_fields], chosen))
+                        for field in calculator['fields']:
+                            if field['name'] == 'area':
+                                data['area'] = area
+                            elif field.get('step') == 1:
+                                data[field['name']] = count
+                        with self.subTest(slug=calculator['slug'], data=data):
+                            self.assert_result_consistent(calculate_materials(calculator, data))
+
+    def test_ceiling_negative_niche_regression(self):
+        from .definitions import CALCULATORS_BY_SLUG
+        result = calculate_materials(CALCULATORS_BY_SLUG['natyazhnoy-potolok'], {'area': '20', 'rooms': '1', 'selected_variant': 'economy'})
+        niche = next(row for row in result['materials'] if row['title'] == 'Скрытый карниз / ниша')
+        self.assertEqual(niche['reference_total'], 6000)
+        self.assertEqual(result['materials_total'], 103600)
+        self.assert_result_consistent(result)
+
+    def test_legacy_budget_helpers_never_mutate_rows(self):
+        from copy import deepcopy
+        from .services import _adjust_variant_rows_total, _adjust_self_level_total
+        rows = [{'quantity': 1, 'reference_price': 6000, 'reference_total': 6000, 'total': 6000}]
+        original = deepcopy(rows)
+        self.assertEqual(_adjust_variant_rows_total(rows, 10), -5990)
+        self.assertEqual(_adjust_self_level_total(rows, 10), -5990)
+        self.assertEqual(rows, original)
+
+    def test_all_variants_render_and_persist_matching_rows_totals_and_copy(self):
+        user = get_user_model().objects.create_user(username='synthetic-variants')
+        UserProfile.objects.get_or_create(user=user)
+        self.client.force_login(user)
+        for calculator in CALCULATORS:
+            initial = calculate_materials(calculator, defaults(calculator))
+            for variant in initial.get('variants', []):
+                data = {**defaults(calculator), 'selected_variant': variant['key']}
+                with self.subTest(slug=calculator['slug'], variant=variant['key']):
+                    response = self.client.post(reverse('calculators:detail', args=[calculator['slug']]), data)
+                    result = response.context['result']
+                    self.assertEqual(result['selected_variant_label'], variant['title'])
+                    self.assertEqual(result['materials'], variant['materials'])
+                    self.assertIn(variant['title'], result['copy_text'])
+                    self.assert_result_consistent(result)
+                    response = self.client.post(reverse('calculators:detail', args=[calculator['slug']]), {**data, 'action': 'save_estimate'})
+                    self.assertEqual(response.status_code, 302)
+                    saved = Calculation.objects.latest('pk')
+                    saved.full_clean()
+                    self.assertEqual(saved.materials_total, result['materials_total'])
+                    self.assertEqual(saved.grand_total, result['grand_total'])
+                    self.assertEqual(saved.result_data['selected_variant'], variant['key'])
+                    self.assertEqual(saved.result_data['materials'], result['materials'])
+
+    def test_plumbing_surcharge_is_separate_and_visible(self):
+        from .definitions import CALCULATORS_BY_SLUG
+        calculator = CALCULATORS_BY_SLUG['santehnika']
+        response = self.client.post(reverse('calculators:detail', args=[calculator['slug']]), {**defaults(calculator), 'selected_variant': 'business'})
+        result = response.context['result']
+        self.assertEqual(result['additional_total'], 150000)
+        self.assertContains(response, 'Дополнительная сумма пакета (состав не указан)')
+        self.assert_result_consistent(result)
