@@ -2,7 +2,8 @@
 
 from math import ceil, sqrt
 
-from accounts.models import Calculation, ClientProject
+from accounts.models import Calculation, ClientProject, UserProfile
+from django.core.exceptions import PermissionDenied, ValidationError
 
 from .definitions import SEGMENTS
 
@@ -38,19 +39,18 @@ def calculate_materials(calculator, form_data):
     return calculator_func(calculator, form_data)
 
 
-def save_calculation_for_user(user, slug, result):
-    """Persist a server-calculated estimate for the authenticated client."""
-    project = user.client_projects.order_by('-created_at').first()
+def save_calculation_for_user(user, slug, result, project_id=None):
+    """Save only to an explicitly selected, owned, editable client project."""
+    if not user.is_authenticated or getattr(getattr(user, 'profile', None), 'role', None) != UserProfile.Role.CLIENT:
+        raise PermissionDenied('Сохранять расчёты может только клиент.')
+    if not str(project_id or '').isascii() or not str(project_id or '').isdecimal():
+        raise ValidationError('Выберите проект для сохранения расчёта.')
+    project = ClientProject.objects.filter(
+        pk=project_id, user=user,
+        status__in=[ClientProject.Status.DRAFT, ClientProject.Status.CALCULATED],
+    ).first()
     if project is None:
-        project = ClientProject.objects.create(
-            user=user,
-            title=f'Проект {slug}',
-            city=getattr(user.profile, 'city', '') or 'Не указан',
-            area_m2=result['meta']['area'],
-            rooms=result['meta']['rooms'],
-            repair_segment=result['meta']['segment'],
-            status=ClientProject.Status.CALCULATED,
-        )
+        raise ValidationError('Выберите доступный проект: черновик или рассчитанный проект.')
 
     calculation = Calculation.objects.create(
         project=project,
