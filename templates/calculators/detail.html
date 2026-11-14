@@ -48,6 +48,7 @@
                         <span>{{ field.label }}{% if field.unit %} <small>{{ field.unit }}</small>{% endif %}</span>
                         {% if field.type == 'select' %}
                             <select name="{{ field.name }}">
+                                {% if field.error %}<option value="{{ field.value }}" selected>{{ field.value|default:"Выберите значение" }}</option>{% endif %}
                                 {% for option in field.options %}
                                     <option value="{{ option.value }}" {% if field.value == option.value %}selected{% endif %}>{{ option.label }}</option>
                                 {% endfor %}
@@ -55,8 +56,9 @@
                         {% elif field.decimal_field %}
                             <input type="text" name="{{ field.name }}" value="{{ field.value }}" inputmode="decimal" autocomplete="{{ field.autocomplete|default:'off' }}" data-decimal-field="true" required>
                         {% else %}
-                            <input type="{{ field.type }}" name="{{ field.name }}" {% if field.min is not None %}min="{{ field.min }}"{% endif %} {% if field.step is not None %}step="{{ field.step }}"{% endif %} value="{{ field.value }}" required>
+                            <input type="text" inputmode="decimal" name="{{ field.name }}" {% if field.min is not None %}min="{{ field.min }}"{% endif %} {% if field.step is not None %}step="{{ field.step }}"{% endif %} value="{{ field.value }}" required>
                         {% endif %}
+                        {% if field.error %}<small role="alert">{{ field.error }}</small>{% endif %}
                     </label>
                 {% endfor %}
                 <button class="btn btn--primary" type="submit">Рассчитать материалы</button>
@@ -68,9 +70,9 @@
                         <div>
                             <span>Ваш расчёт готов ✅</span>
                             <h2>{{ result.summary }}</h2>
-                            <p>{% if result.variants %}{{ result.selected_variant_label }} · {% elif result.segment_label != 'Предварительно' %}{{ result.segment_label }} · {% endif %}{{ result.materials_count }} позиций · цены справочно</p>
+                            <p data-summary-variant>{% if result.variants %}{{ result.selected_variant_label }} · {% elif result.segment_label != 'Предварительно' %}{{ result.segment_label }} · {% endif %}{{ result.materials_count }} позиций · цены справочно</p>
                         </div>
-                        <strong>₸ {{ result.grand_total }}</strong>
+                        <strong data-summary-total>₸ {{ result.grand_total }}</strong>
                     </div>
                     <div class="result-params" aria-label="Введённые параметры">
                         {% for field in form_fields %}
@@ -92,7 +94,7 @@
                             </div>
                             <div class="variant-cards" role="tablist" aria-label="Варианты расчёта">
                                 {% for variant in result.variants %}
-                                    <button class="variant-card{% if variant.key == result.selected_variant %} is-active{% endif %}" type="button" data-variant-button="{{ variant.key }}" role="tab" aria-selected="{% if variant.key == result.selected_variant %}true{% else %}false{% endif %}">
+                                    <button class="variant-card{% if variant.key == result.selected_variant %} is-active{% endif %}" type="button" data-variant-button="{{ variant.key }}" data-variant-total="{{ variant.total }}" data-variant-count="{{ variant.materials_count }}" role="tab" aria-selected="{% if variant.key == result.selected_variant %}true{% else %}false{% endif %}">
                                         <b>{{ variant.title }}</b>
                                         <span>{{ variant.description }}</span>
                                         <strong>от ₸ {{ variant.total }}</strong>
@@ -115,6 +117,8 @@
                                             </div>
                                         {% endfor %}
                                     </div>
+                                    <div class="grand-total grand-total--secondary"><span>Материалы по строкам</span><strong>₸ {{ variant.materials_total }}</strong></div>
+                                    {% if variant.extra %}<p>{{ variant.extra_label }}: ₸ {{ variant.extra }}</p>{% endif %}
                                     <div class="grand-total grand-total--secondary"><span>{{ result.price_note|default:"Цены ориентировочные по Казахстану" }}</span><strong>Итог: ₸ {{ variant.total }}</strong></div>
                                     <textarea class="master-template__text" data-variant-copy-source="{{ variant.key }}" aria-label="Список {{ variant.title }} без цен">ESEPTEP.KZ
 {{ calculator.title }} — {{ variant.title }}
@@ -136,7 +140,8 @@
                             {% for material in result.materials %}
                                 <div class="materials-table__row">
                                     <div><b>{{ material.title }}</b><small>Справочно ₸ {{ material.reference_price }} за {{ material.unit }}</small></div>
-                                    <strong>{% if calculator.slug == 'laminat-spc-parket' and material.title == 'Порог' %}1–2{% else %}{{ material.quantity }}{% endif %} {{ material.unit }}</strong>
+                                    <strong>{{ material.quantity }} {{ material.unit }}</strong>
+                                    <small class="material-line-total">₸ {{ material.reference_total }}</small>
                                 </div>
                             {% endfor %}
                         </div>
@@ -145,7 +150,7 @@
                             <textarea class="master-template__text" data-single-copy-source aria-label="Список материалов без цен">ESEPTEP.KZ
 {{ calculator.title }}
 
-{% for material in result.materials %}{% if material.quantity > 0 %}{{ forloop.counter }}. {{ material.title }} — {% if calculator.slug == 'laminat-spc-parket' and material.title == 'Порог' %}1–2{% else %}{{ material.quantity }}{% endif %} {{ material.unit }}
+{% for material in result.materials %}{% if material.quantity > 0 %}{{ forloop.counter }}. {{ material.title }} — {{ material.quantity }} {{ material.unit }}
 {% endif %}{% endfor %}
 Список составлен через ESEPTEP.KZ</textarea>
                             <button class="btn btn--secondary" type="button" data-copy-single>Скопировать список материалов без цен</button>
@@ -154,33 +159,30 @@
                     {% endif %}
                     {% if result.warning %}<p class="result-warning">{{ result.warning }}</p>{% endif %}
 
-                    {% if request.user.is_authenticated %}
-                    <div class="result-actions result-actions--backend result-actions--primary">
-                        <form method="post">
-                            {% csrf_token %}
-                            {% for field in form_fields %}
-                                <input type="hidden" name="{{ field.name }}" value="{{ field.value }}">
-                            {% endfor %}
-                            {% if result.variants %}<input type="hidden" name="selected_variant" value="{{ result.selected_variant }}" data-selected-variant-input>{% endif %}
-                            <button class="btn btn--secondary" type="submit" name="action" value="save_estimate">Сохранить в кабинет</button>
-                        </form>
-                        <form method="post">
-                            {% csrf_token %}
-                            {% for field in form_fields %}
-                                <input type="hidden" name="{{ field.name }}" value="{{ field.value }}">
-                            {% endfor %}
-                            {% if result.variants %}<input type="hidden" name="selected_variant" value="{{ result.selected_variant }}" data-selected-variant-input>{% endif %}
-                            <button class="btn btn--primary" type="submit" name="action" value="request_master">Отправить заявку мастерам</button>
-                        </form>
-                        <form method="post">
-                            {% csrf_token %}
-                            {% for field in form_fields %}
-                                <input type="hidden" name="{{ field.name }}" value="{{ field.value }}">
-                            {% endfor %}
-                            {% if result.variants %}<input type="hidden" name="selected_variant" value="{{ result.selected_variant }}" data-selected-variant-input>{% endif %}
-                            <button class="btn btn--secondary" type="submit" name="action" value="request_supplier">Отправить запрос поставщикам</button>
-                        </form>
-                    </div>
+                    {% if can_save_calculation %}
+                    <form method="post" class="result-actions result-actions--backend result-actions--primary">
+                        {% csrf_token %}
+                        {% for field in form_fields %}<input type="hidden" name="{{ field.name }}" value="{{ field.value }}">{% endfor %}
+                        {% if result.variants %}<input type="hidden" name="selected_variant" value="{{ result.selected_variant }}" data-selected-variant-input>{% endif %}
+                        {% if client_projects %}
+                        <label>Проект для сметы
+                            <select name="project_id" required>
+                                <option value="">Выберите проект</option>
+                                {% for project in client_projects %}
+                                <option value="{{ project.pk }}" {% if selected_project_id == project.pk|stringformat:"s" %}selected{% endif %}>{{ project.title }}</option>
+                                {% endfor %}
+                            </select>
+                        </label>
+                        <button class="btn btn--secondary" type="submit" name="action" value="save_estimate">Сохранить в выбранный проект</button>
+                        <button class="btn btn--primary" type="submit" name="action" value="request_master">Отправить заявку мастерам</button>
+                        <button class="btn btn--secondary" type="submit" name="action" value="request_supplier">Отправить запрос поставщикам</button>
+                        {% else %}
+                        <p>Сначала создайте проект в кабинете. Расчёт не будет привязан автоматически.</p>
+                        <a class="btn btn--secondary" href="{% url 'accounts:client_project_create' %}" target="_blank" rel="noopener">Создать проект в новой вкладке</a>
+                        {% endif %}
+                    </form>
+                    {% elif request.user.is_authenticated %}
+                    <p>Сохранение сметы и отправка заявок доступны в кабинете клиента.</p>
                     {% else %}
                     <div class="auth-soft-cta">
                         <p>Войдите, чтобы сохранить смету и получить ответы мастеров.</p>
@@ -342,26 +344,27 @@
 </section>
 
 {% if result %}
-<section class="post-flow-grid" aria-label="Следующие действия после расчёта">
+<p class="result-warning">Примеры ниже демонстрируют интерфейс. Профили, опыт, адреса, цены, наличие и доставка не подтверждены. Это не предложения реальных исполнителей или магазинов.</p>
+<section class="post-flow-grid" aria-label="Демонстрационные примеры">
     <div class="recommendation-panel recommendation-panel--masters">
         <div class="section-heading section-heading--inline">
             <div>
                 <p class="section-heading__eyebrow">Рекомендации</p>
-                <h2>Рекомендуемые мастера</h2>
+                <h2>Демонстрационные профили</h2>
             </div>
-            <span class="trust-badge">Проверенные профили</span>
+            <span class="trust-badge">Не реальные рекомендации</span>
         </div>
-        <div class="recommendation-list recommendation-list--masters" aria-label="Рекомендуемые мастера">
+        <div class="recommendation-list recommendation-list--masters" aria-label="Демонстрационные профили">
             {% for master in recommended_masters %}
                 <article class="master-card-v2">
                     <div class="master-card-v2__photo-wrap">
                         <img src="{{ master.photo }}" alt="{{ master.name }}" class="master-card-v2__photo" loading="lazy">
-                        <span class="master-status">{{ master.status }}</span>
+                        <span class="master-status">Демо-профиль</span>
                     </div>
                     <div class="master-card-v2__body">
                         <div class="master-card-v2__head">
                             <h3>{{ master.name }}</h3>
-                            <span class="master-rating">★ {{ master.rating }}</span>
+                            <span class="master-rating">Демо</span>
                         </div>
                         <p>{{ master.specialization }}</p>
                         <div class="master-meta-grid">
@@ -378,9 +381,9 @@
         <div class="section-heading section-heading--inline">
             <div>
                 <p class="section-heading__eyebrow">Материалы</p>
-                <h2>Где купить материалы</h2>
+                <h2>Пример предложений магазинов</h2>
             </div>
-            <span class="trust-badge trust-badge--orange">Астана</span>
+            <span class="trust-badge trust-badge--orange">Демонстрация</span>
         </div>
         <div class="store-list" aria-label="Магазины материалов в Астане">
             {% for seller in material_sellers %}
@@ -398,7 +401,7 @@
                         <div><span>Наличие</span><b>{{ seller.availability }}</b></div>
                     </div>
                     <div class="store-actions">
-                        <a class="card-button" href="{{ seller.whatsapp }}">Заказать</a>
+                        <small>Демонстрационный пример. Заказ недоступен.</small>
                     </div>
                 </article>
             {% endfor %}

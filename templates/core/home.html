@@ -1,48 +1,29 @@
 {% extends 'base.html' %}
-
 {% block content %}
-<section class="hero hero--renovation hero--compact-home" aria-labelledby="hero-title">
-    <div class="hero__photo" data-parallax-bg aria-hidden="true"></div>
-    <div class="hero__overlay" aria-hidden="true"></div>
-    <div class="hero__content">
-        <h1 id="hero-title">Рассчитайте ремонт квартиры за 1 минуту</h1>
-        <p class="hero__lead">Материалы, мастера и ремонт под ключ в одном сервисе</p>
-    </div>
+<section class="home-intro" aria-labelledby="hero-title">
+  <div class="home-intro__copy">
+    <p class="section-heading__eyebrow">ESEPTEP · Планирование ремонта</p>
+    <h1 id="hero-title">Сначала расчёт.<br>Потом ремонт.</h1>
+    <p class="home-intro__lead">Узнайте, какие материалы понадобятся, соберите список и подготовьтесь к разговору с мастером.</p>
+    <div class="hero__actions"><a class="btn btn--primary" href="{% url 'calculators:home' %}">Начать расчёт <span aria-hidden="true">→</span></a><a class="text-link" href="{% url 'projects:home' %}">Загрузить план проекта →</a></div>
+    <p class="home-intro__note">Без регистрации для расчёта. Цены справочные, не коммерческое предложение.</p>
+  </div>
+  <aside class="home-guide" aria-label="Как устроен расчёт">
+    <div class="home-guide__heading"><span class="brand__mark" aria-hidden="true">E</span><span>От параметров<br><b>к списку материалов</b></span></div>
+    <ol class="home-guide__steps">
+      <li><span>01</span><div><h2>Выберите работы</h2><p>Пол, стены, потолок или инженерные системы.</p></div></li>
+      <li><span>02</span><div><h2>Укажите размеры</h2><p>Площадь, количество комнат и другие параметры.</p></div></li>
+      <li><span>03</span><div><h2>Получите список</h2><p>Материалы, количество и ориентир по стоимости.</p></div></li>
+    </ol>
+    <p class="home-guide__footer">Проверьте объёмы и условия с мастером до закупки.</p>
+  </aside>
 </section>
-
-<section id="mvp-cards" class="feature-section" aria-labelledby="feature-title">
-    <div class="section-heading">
-        <p class="section-heading__eyebrow">Главные возможности</p>
-        <h2 id="feature-title">Выберите первый шаг</h2>
-    </div>
-
-    <div class="cards-slider" data-slider>
-        <div class="cards-track" data-slider-track tabindex="0" aria-label="Сценарии ESEPTEP">
-            {% for card in feature_cards %}
-                <article class="feature-card">
-                    <div class="feature-card__icon feature-card__icon--{{ card.icon }}" aria-hidden="true"></div>
-                    <div class="feature-card__topline">
-                        <span>{{ forloop.counter|stringformat:'02d' }}</span>
-                        <small>{{ card.eyebrow }}</small>
-                    </div>
-                    <h3>{{ card.title }}</h3>
-                    <p>{{ card.description }}</p>
-                    <a class="feature-card__link" href="{{ card.url }}">{{ card.cta }}</a>
-                </article>
-            {% endfor %}
-        </div>
-        <div class="slider-dots" aria-hidden="true">
-            {% for card in feature_cards %}
-                <button class="slider-dot{% if forloop.first %} is-active{% endif %}" type="button" data-slide-dot="{{ forloop.counter0 }}"></button>
-            {% endfor %}
-        </div>
-    </div>
-</section>
-
-<section class="skeleton-section" aria-label="Будущие API-разделы">
-    <div class="skeleton-section__head">
-        <span class="skeleton-title">Скоро: цены поставщиков</span>
-        <span class="skeleton-status">Отдельный этап после расчёта материалов</span>
-    </div>
+<section class="home-routes" aria-labelledby="routes-title">
+  <div class="section-heading"><p class="section-heading__eyebrow">Следующий шаг</p><h2 id="routes-title">Всё начинается с понятного плана</h2></div>
+  <div class="home-routes__grid">
+    <article><span class="route-number">01 / Материалы</span><h3>Расчёт по виду работ</h3><p>Выберите калькулятор, введите параметры и скопируйте готовый список.</p><a class="text-link" href="{% url 'calculators:home' %}">Выбрать калькулятор →</a></article>
+    <article><span class="route-number">02 / Планировка</span><h3>Загрузка проекта</h3><p>Сохраните план и подготовьте предварительный расчёт. Анализ файла пока демонстрационный.</p><a class="text-link" href="{% url 'projects:home' %}">Перейти к загрузке →</a></article>
+    <article><span class="route-number">03 / Бюджет</span><h3>Ремонт под ключ</h3><p>Сравните варианты предварительного бюджета. Итог согласуется отдельно с исполнителем.</p><a class="text-link" href="{% url 'marketplace:home' %}">Оценить бюджет →</a></article>
+  </div>
 </section>
 {% endblock %}

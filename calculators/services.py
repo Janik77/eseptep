@@ -2,9 +2,11 @@
 
 from math import ceil, sqrt
 
-from accounts.models import Calculation, ClientProject
+from accounts.models import Calculation, ClientProject, UserProfile
+from django.core.exceptions import PermissionDenied, ValidationError
 
 from .definitions import SEGMENTS
+from .validation import validate_calculator_input
 
 SEGMENT_ALIASES = {'econom': 'economy'}
 PLAIN_REFERENCE = {'label': 'Предварительно', 'material': 1.0, 'labor': 0}
@@ -20,6 +22,7 @@ def to_float(value, default):
 
 def calculate_materials(calculator, form_data):
     """Calculate material quantities on the server."""
+    form_data = validate_calculator_input(calculator, form_data)
     calculators = {
         'demontazh': _calculate_demontazh,
         'elektrika': _calculate_elektrika,
@@ -38,19 +41,18 @@ def calculate_materials(calculator, form_data):
     return calculator_func(calculator, form_data)
 
 
-def save_calculation_for_user(user, slug, result):
-    """Persist a server-calculated estimate for the authenticated client."""
-    project = user.client_projects.order_by('-created_at').first()
+def save_calculation_for_user(user, slug, result, project_id=None):
+    """Save only to an explicitly selected, owned, editable client project."""
+    if not user.is_authenticated or getattr(getattr(user, 'profile', None), 'role', None) != UserProfile.Role.CLIENT:
+        raise PermissionDenied('Сохранять расчёты может только клиент.')
+    if not str(project_id or '').isascii() or not str(project_id or '').isdecimal():
+        raise ValidationError('Выберите проект для сохранения расчёта.')
+    project = ClientProject.objects.filter(
+        pk=project_id, user=user,
+        status__in=[ClientProject.Status.DRAFT, ClientProject.Status.CALCULATED],
+    ).first()
     if project is None:
-        project = ClientProject.objects.create(
-            user=user,
-            title=f'Проект {slug}',
-            city=getattr(user.profile, 'city', '') or 'Не указан',
-            area_m2=result['meta']['area'],
-            rooms=result['meta']['rooms'],
-            repair_segment=result['meta']['segment'],
-            status=ClientProject.Status.CALCULATED,
-        )
+        raise ValidationError('Выберите доступный проект: черновик или рассчитанный проект.')
 
     calculation = Calculation.objects.create(
         project=project,
@@ -323,8 +325,6 @@ def _calculate_elektrika(calculator, form_data):
     for key, settings in variant_settings.items():
         rows = _electric_rows(calculator, quantities, settings['price'])
         variant = _variant(key, settings['title'], settings['description'], rows)
-        if exact_match:
-            variant['total'] = variant['reference_total'] = variant_totals[key]
         variants[key] = variant
 
     return _build_variant_result(calculator, variants, selected_variant, form_data, area, rooms, 1, f"{calculator['title']} · {area:g} м² · {rooms} комн.")
@@ -677,9 +677,6 @@ def _calculate_gipsokarton(calculator, form_data):
         'comfort': _variant('comfort', 'Комфорт', DRYWALL_VARIANT_DESCRIPTIONS['comfort'], comfort_materials),
         'business': _drywall_variant_from_comfort('business', 'Бизнес', DRYWALL_VARIANT_DESCRIPTIONS['business'], comfort_materials, business_total, comfort_total),
     }
-    if is_exact_reference:
-        variants['comfort']['total'] = reference['totals']['comfort']
-        variants['comfort']['reference_total'] = reference['totals']['comfort']
 
     gipsokarton_form_data = {
         **form_data,
@@ -733,15 +730,10 @@ def _drywall_quantities(reference_materials, area, perimeter, reference_key, ref
 def _drywall_variant_from_comfort(key, title, description, comfort_materials, target_total, comfort_total):
     ratio = target_total / comfort_total if comfort_total else 1
     materials = []
-    running_total = 0
-    for index, material in enumerate(comfort_materials):
+    for material in comfort_materials:
         quantity = material['quantity']
         price = round(material['reference_price'] * ratio)
         row_total = round(quantity * price)
-        if index == len(comfort_materials) - 1:
-            row_total = target_total - running_total
-            price = round(row_total / quantity, 2) if quantity else 0
-        running_total += row_total
         materials.append({
             'title': material['title'],
             'quantity': quantity,
@@ -791,8 +783,6 @@ def _calculate_nalivnoy_pol(calculator, form_data):
         _self_level_row(calculator, 'Скобы', quantities['staples']),
         _self_level_row(calculator, 'Мусорные мешки', quantities['trash_bags']),
     ]
-    if is_exact_reference:
-        _adjust_self_level_total(materials, reference['total'])
 
     self_level_form_data = {
         **form_data,
@@ -839,12 +829,8 @@ def _self_level_row(calculator, title, quantity):
 
 
 def _adjust_self_level_total(materials, target_total):
-    current_total = sum(round(material['quantity'] * material['reference_price']) for material in materials)
-    delta = target_total - current_total
-    if delta == 0:
-        return
-    adjustable = next((material for material in materials if material['title'] == 'Валик' and material['quantity'] == 1), materials[-1])
-    adjustable['reference_price'] = round(adjustable['reference_price'] + delta)
+    """Report legacy budget difference without disguising it as a material price."""
+    return target_total - sum(round(row['quantity'] * row['reference_price']) for row in materials)
 
 
 TILE_ZONE_LABELS = {
@@ -966,9 +952,6 @@ def _calculate_plitka(calculator, form_data):
         'comfort': _variant('comfort', 'Комфорт', TILE_VARIANT_DESCRIPTIONS['comfort'], comfort_materials),
         'business': _drywall_variant_from_comfort('business', 'Бизнес', TILE_VARIANT_DESCRIPTIONS['business'], comfort_materials, business_total, comfort_total),
     }
-    if is_exact_reference:
-        variants['comfort']['total'] = reference['totals']['comfort']
-        variants['comfort']['reference_total'] = reference['totals']['comfort']
 
     tile_form_data = {
         **form_data,
@@ -1109,7 +1092,7 @@ def _flooring_materials(covering_type, direct_area, plinth, trash_bags):
 
 
 def _build_flooring_result(calculator, materials, form_data, area, summary, warning, exact_total=None):
-    reference_total = exact_total if exact_total is not None else sum(material['reference_total'] for material in materials)
+    reference_total = sum(material['reference_total'] for material in materials)
     saved_list = '\n'.join(
         f"{index}. {material['title']} — {material['quantity']} {material['unit']}"
         for index, material in enumerate(materials, start=1)
@@ -1274,20 +1257,16 @@ def _painting_materials(reference_materials, area_ratio, variant_coefficient, ta
     for title, quantity, unit, price in reference_materials:
         scaled_quantity = max(1, ceil(quantity * area_ratio * variant_coefficient))
         materials.append(_variant_row(title, scaled_quantity, unit, price))
-    _adjust_variant_rows_total(materials, target_total)
     return materials
 
 
 def _adjust_variant_rows_total(materials, target_total):
-    current_total = sum(material['reference_total'] for material in materials)
-    delta = target_total - current_total
-    if delta == 0 or not materials:
-        return
-    adjustable = next((material for material in materials if material['quantity'] == 1), materials[0])
-    adjustable['reference_total'] += delta
-    adjustable['total'] = adjustable['reference_total']
-    adjustable['reference_price'] = round(adjustable['reference_total'] / adjustable['quantity'], 2) if adjustable['quantity'] else 0
-    adjustable['price'] = adjustable['reference_price']
+    """Report a legacy budget difference; never modify quantities or prices.
+
+    Preserved for callers auditing old reference totals. A target budget does not
+    establish a material price, discount, or construction norm.
+    """
+    return target_total - sum(material['reference_total'] for material in materials)
 
 
 CEILING_REFERENCE_TOTALS = {
@@ -1345,9 +1324,6 @@ def _calculate_natyazhnoy_potolok(calculator, form_data):
         'comfort': _variant('comfort', 'Комфорт', CEILING_VARIANT_DESCRIPTIONS['comfort'], comfort_materials),
         'business': _ceiling_variant_from_comfort('business', 'Бизнес', comfort_materials, business_total),
     }
-    if is_exact_reference:
-        variants['comfort']['total'] = reference_totals['comfort']
-        variants['comfort']['reference_total'] = reference_totals['comfort']
 
     ceiling_form_data = {
         **form_data,
@@ -1382,7 +1358,6 @@ def _ceiling_variant_from_comfort(key, title, comfort_materials, target_total):
         _variant_row(material['title'], max(1, ceil(material['quantity'] * coefficient)), material['unit'], material['reference_price'])
         for material in comfort_materials
     ]
-    _adjust_variant_rows_total(materials, target_total)
     return _variant(key, title, CEILING_VARIANT_DESCRIPTIONS[key], materials)
 
 
@@ -1476,9 +1451,6 @@ def _calculate_teplyy_pol(calculator, form_data):
         'comfort': _variant('comfort', 'Комфорт', WARM_FLOOR_VARIANT_DESCRIPTIONS['comfort'], comfort_materials),
         'business': _warm_floor_variant_from_comfort('business', 'Бизнес', comfort_materials, business_total),
     }
-    if is_exact_reference:
-        variants['comfort']['total'] = reference_totals['comfort']
-        variants['comfort']['reference_total'] = reference_totals['comfort']
 
     metrics = [
         {'label': 'Тип системы', 'value': WARM_FLOOR_TYPE_LABELS[floor_type], 'unit': ''},
@@ -1547,7 +1519,6 @@ def _warm_floor_variant_from_comfort(key, title, comfort_materials, target_total
         _variant_row(material['title'], max(1, ceil(material['quantity'] * coefficient)), material['unit'], material['reference_price'])
         for material in comfort_materials
     ]
-    _adjust_variant_rows_total(materials, target_total)
     return _variant(key, title, WARM_FLOOR_VARIANT_DESCRIPTIONS[key], materials)
 
 
@@ -1580,6 +1551,8 @@ def _variant(key, title, description, materials, extra=0):
         'total': total,
         'reference_total': total,
         'extra': extra_total,
+        'materials_total': total - extra_total,
+        'extra_label': 'Дополнительная сумма пакета (состав не указан)',
     }
 
 
@@ -1598,11 +1571,12 @@ def _build_variant_result(calculator, variants_by_key, selected_key, form_data, 
     return {
         'materials': materials,
         'materials_count': len(materials),
-        'reference_total': selected['total'],
+        'reference_total': selected['materials_total'],
         'reference_labor_total': 0,
         'reference_grand_total': selected['total'],
-        'materials_total': selected['total'],
+        'materials_total': selected['materials_total'],
         'labor_total': 0,
+        'additional_total': selected['extra'],
         'grand_total': selected['total'],
         'segment_label': 'Предварительно',
         'summary': summary,
@@ -1620,8 +1594,9 @@ def _build_variant_result(calculator, variants_by_key, selected_key, form_data, 
         'selected_variant_description': selected['description'],
         'variant_heading': ' / '.join(variant['title'] for variant in ordered_variants),
         'totals': {
-            'materials_total': selected['total'],
+            'materials_total': selected['materials_total'],
             'grand_total': selected['total'],
+            'additional_total': selected['extra'],
         },
         'meta': {
             'area': area,

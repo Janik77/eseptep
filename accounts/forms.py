@@ -71,10 +71,11 @@ class ClientProjectCreateForm(forms.ModelForm):
 class MasterProfileForm(forms.ModelForm):
     class Meta:
         model = MasterProfile
-        fields = ('full_name', 'photo', 'city', 'specialization', 'experience_years', 'rating', 'is_available', 'whatsapp', 'description')
+        fields = ('full_name', 'photo', 'city', 'specialization', 'experience_years', 'is_available', 'whatsapp', 'description')
 
 
 class MasterResponseForm(forms.ModelForm):
+    price_from = forms.DecimalField(min_value=0, max_digits=12, decimal_places=2, label="Цена от")
     class Meta:
         model = MasterResponse
         fields = ('price_from', 'message')
@@ -97,12 +98,14 @@ class SupplierProfileForm(forms.ModelForm):
 
 
 class SupplierMaterialForm(forms.ModelForm):
+    price = forms.DecimalField(min_value=0, max_digits=12, decimal_places=2, label="Цена")
     class Meta:
         model = SupplierMaterial
         fields = ('name', 'category', 'unit', 'price', 'stock_status', 'delivery_time')
 
 
 class SupplierResponseForm(forms.ModelForm):
+    total_price = forms.DecimalField(min_value=0, max_digits=12, decimal_places=2, label="Итоговая цена")
     delivery_time = forms.CharField(label='Срок поставки', required=False)
 
     class Meta:

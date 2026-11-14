@@ -1,4 +1,5 @@
 from django.db import models
+from .storage import private_storage
 
 
 class RenovationProject(models.Model):
@@ -38,7 +39,8 @@ class ProjectUpload(models.Model):
     AI_ANALYSIS_MODE = 'demo'
 
     user = models.ForeignKey('auth.User', verbose_name='Пользователь', on_delete=models.SET_NULL, null=True, blank=True, related_name='project_uploads')
-    file = models.FileField('Файл', upload_to='project_uploads/')
+    file = models.FileField('Файл', upload_to='project_uploads/', storage=private_storage)
+    guest_session_key = models.CharField(max_length=40, blank=True, editable=False, db_index=True)
     comment = models.TextField('Комментарий', blank=True)
     area = models.DecimalField('Площадь квартиры', max_digits=8, decimal_places=2, null=True, blank=True)
     repair_level = models.CharField('Уровень ремонта', max_length=20, choices=RepairLevel.choices, blank=True)
