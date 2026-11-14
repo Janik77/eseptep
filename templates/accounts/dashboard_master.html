@@ -14,7 +14,7 @@
       <div>
         <h1>{{ master_profile.full_name }}</h1>
         <p>{{ master_profile.city }} · {{ master_profile.specialization }}</p>
-        <p>Опыт: {{ master_profile.experience_years }} лет · Рейтинг: {{ master_profile.rating }} · {% if master_profile.is_available %}Свободен{% else %}Занят{% endif %}</p>
+        <p>Опыт: {{ master_profile.experience_years }} лет · Отзывы пока не подтверждены · {% if master_profile.is_available %}Свободен{% else %}Занят{% endif %}</p>
       </div>
     </div>
     <a class="btn btn--secondary" href="{% url 'accounts:master_profile_edit' %}">Редактировать профиль</a>
