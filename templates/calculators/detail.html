@@ -342,26 +342,27 @@
 </section>
 
 {% if result %}
-<section class="post-flow-grid" aria-label="Следующие действия после расчёта">
+<p class="result-warning">Примеры ниже демонстрируют интерфейс. Профили, опыт, адреса, цены, наличие и доставка не подтверждены. Это не предложения реальных исполнителей или магазинов.</p>
+<section class="post-flow-grid" aria-label="Демонстрационные примеры">
     <div class="recommendation-panel recommendation-panel--masters">
         <div class="section-heading section-heading--inline">
             <div>
                 <p class="section-heading__eyebrow">Рекомендации</p>
-                <h2>Рекомендуемые мастера</h2>
+                <h2>Демонстрационные профили</h2>
             </div>
-            <span class="trust-badge">Проверенные профили</span>
+            <span class="trust-badge">Не реальные рекомендации</span>
         </div>
-        <div class="recommendation-list recommendation-list--masters" aria-label="Рекомендуемые мастера">
+        <div class="recommendation-list recommendation-list--masters" aria-label="Демонстрационные профили">
             {% for master in recommended_masters %}
                 <article class="master-card-v2">
                     <div class="master-card-v2__photo-wrap">
                         <img src="{{ master.photo }}" alt="{{ master.name }}" class="master-card-v2__photo" loading="lazy">
-                        <span class="master-status">{{ master.status }}</span>
+                        <span class="master-status">Демо-профиль</span>
                     </div>
                     <div class="master-card-v2__body">
                         <div class="master-card-v2__head">
                             <h3>{{ master.name }}</h3>
-                            <span class="master-rating">★ {{ master.rating }}</span>
+                            <span class="master-rating">Демо</span>
                         </div>
                         <p>{{ master.specialization }}</p>
                         <div class="master-meta-grid">
@@ -378,9 +379,9 @@
         <div class="section-heading section-heading--inline">
             <div>
                 <p class="section-heading__eyebrow">Материалы</p>
-                <h2>Где купить материалы</h2>
+                <h2>Пример предложений магазинов</h2>
             </div>
-            <span class="trust-badge trust-badge--orange">Астана</span>
+            <span class="trust-badge trust-badge--orange">Демонстрация</span>
         </div>
         <div class="store-list" aria-label="Магазины материалов в Астане">
             {% for seller in material_sellers %}
@@ -398,7 +399,7 @@
                         <div><span>Наличие</span><b>{{ seller.availability }}</b></div>
                     </div>
                     <div class="store-actions">
-                        <a class="card-button" href="{{ seller.whatsapp }}">Заказать</a>
+                        <small>Демонстрационный пример. Заказ недоступен.</small>
                     </div>
                 </article>
             {% endfor %}
