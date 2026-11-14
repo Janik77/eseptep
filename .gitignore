@@ -8,3 +8,5 @@ staticfiles/
 .idea/
 .vscode/
 .DS_Store
+.env
+private_media/
