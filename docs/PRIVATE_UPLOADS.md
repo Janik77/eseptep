@@ -36,5 +36,7 @@ production intake. Application upload limits do not replace proxy request limits
    before use. RenovationProject files have no ownership model and remain blocked,
    not exposed by the new download route.
 
-The Django development route also blocks historical private directories before its
-public media helper. This does not protect a VPS nginx alias by itself.
+The Django development route serves only public avatars/masters namespaces,
+rejects traversal/encoded leftovers and resolves paths before containment checks.
+No generic development media helper remains. PDF validation also rejects file
+attachment annotations, associated files and embedded file specifications. This does not protect a VPS nginx alias by itself.

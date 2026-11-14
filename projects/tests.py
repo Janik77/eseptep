@@ -127,3 +127,43 @@ class PrivateUploadTests(TestCase):
         response = self.client.get(reverse('projects:download', args=[item.pk]))
         self.assertEqual(response.status_code, 200)
         response.close()
+
+    @override_settings(DEBUG=True)
+    def test_media_traversal_cannot_reach_existing_legacy_file(self):
+        root = Path(self.directory.name) / 'public'
+        (root / 'project_uploads').mkdir(parents=True)
+        (root / 'project_uploads/legacy.html').write_text('<html>synthetic legacy</html>')
+        (root / 'avatars').mkdir()
+        (root / 'avatars/public.png').write_bytes(image_file().read())
+        for path in ['/media/project_uploads/legacy.html',
+                     '/media/x/../project_uploads/legacy.html',
+                     '/media/x/%2e%2e/project_uploads/legacy.html',
+                     '/media/avatars/../project_uploads/legacy.html',
+                     '/media/avatars/%2e%2e/project_uploads/legacy.html',
+                     '/media/avatars/%252e%252e/project_uploads/legacy.html']:
+            with self.subTest(path=path):
+                self.assertEqual(self.client.get(path).status_code, 404)
+        response = self.client.get('/media/avatars/public.png')
+        self.assertEqual(response.status_code, 200)
+        response.close()
+
+    def test_pdf_file_attachment_annotation_rejected(self):
+        from pypdf.generic import DictionaryObject, NameObject, TextStringObject, ArrayObject, NumberObject, DecodedStreamObject
+        writer = PdfWriter()
+        page = writer.add_blank_page(width=72, height=72)
+        stream = DecodedStreamObject()
+        stream.set_data(b'synthetic attachment, not malware')
+        stream[NameObject('/Type')] = NameObject('/EmbeddedFile')
+        specification = DictionaryObject({NameObject('/Type'): NameObject('/Filespec'),
+            NameObject('/F'): TextStringObject('test.txt'),
+            NameObject('/EF'): DictionaryObject({NameObject('/F'): writer._add_object(stream)})})
+        annotation = DictionaryObject({NameObject('/Type'): NameObject('/Annot'),
+            NameObject('/Subtype'): NameObject('/FileAttachment'),
+            NameObject('/Rect'): ArrayObject([NumberObject(0)] * 4),
+            NameObject('/FS'): writer._add_object(specification)})
+        page[NameObject('/Annots')] = ArrayObject([writer._add_object(annotation)])
+        data = BytesIO()
+        writer.write(data)
+        form = ProjectUploadForm({}, {'file': SimpleUploadedFile('attachment.pdf', data.getvalue())})
+        self.assertFalse(form.is_valid())
+        self.assertIn('file', form.errors)

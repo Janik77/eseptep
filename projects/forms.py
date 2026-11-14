@@ -48,7 +48,10 @@ class ProjectUploadForm(forms.Form):
             if reader.is_encrypted or not 1 <= len(reader.pages) <= 100:
                 raise ValueError('Unsupported PDF')
             # Reject active/embedded content, including escaped PDF names resolved by parser.
-            forbidden = {'/JS', '/JavaScript', '/OpenAction', '/AA', '/Launch', '/EmbeddedFiles', '/RichMedia', '/XFA'}
+            forbidden = {'/JS', '/JavaScript', '/OpenAction', '/AA', '/Launch', '/EmbeddedFiles', '/RichMedia', '/XFA', '/EF', '/FS', '/AF'}
+            forbidden_values = {'/EmbeddedFile', '/FileAttachment', '/Filespec', '/JavaScript',
+                                '/Launch', '/GoToR', '/GoToE', '/SubmitForm', '/ImportData',
+                                '/Rendition', '/Movie', '/Sound', '/RichMedia', '/URI'}
             visited = set()
             def inspect(obj, depth=0):
                 if depth > 100:
@@ -64,6 +67,8 @@ class ProjectUploadForm(forms.Form):
                         raise ValueError('Active PDF')
                     for value in obj.values():
                         inspect(value, depth + 1)
+                elif isinstance(obj, str) and obj in forbidden_values:
+                    raise ValueError('Embedded file or active PDF action')
                 elif isinstance(obj, (list, tuple)):
                     for value in obj:
                         inspect(value, depth + 1)
