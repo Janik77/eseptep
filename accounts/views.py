@@ -1,3 +1,4 @@
+from .identifiers import parse_positive_id
 from functools import wraps
 
 from django.contrib import messages
@@ -92,8 +93,8 @@ def client_dashboard(request):
     if request.method == 'POST':
         action = request.POST.get('response_action')
         response_type = request.POST.get('response_type')
-        response_id = request.POST.get('response_id', '')
-        if not response_id.isdecimal():
+        response_id = parse_positive_id(request.POST.get('response_id'))
+        if response_id is None:
             return HttpResponseBadRequest('Некорректный отклик.')
 
         response_models = {'master': MasterResponse, 'supplier': SupplierResponse}
@@ -172,8 +173,8 @@ def master_dashboard(request):
 
     if request.method == 'POST':
         form = MasterResponseForm(request.POST)
-        request_id = request.POST.get('request_id', '')
-        if not request_id.isdecimal():
+        request_id = parse_positive_id(request.POST.get('request_id'))
+        if request_id is None:
             return HttpResponseBadRequest('Некорректная заявка.')
         service_request = get_object_or_404(
             ServiceRequest.objects.filter(project__user=F('client')).exclude(client=request.user).select_related('project', 'calculation'),
@@ -249,8 +250,8 @@ def supplier_dashboard(request):
 
     if request.method == 'POST':
         form = SupplierResponseForm(request.POST)
-        request_id = request.POST.get('request_id', '')
-        if not request_id.isdecimal():
+        request_id = parse_positive_id(request.POST.get('request_id'))
+        if request_id is None:
             return HttpResponseBadRequest('Некорректная заявка.')
         service_request = get_object_or_404(ServiceRequest.objects.filter(project__user=F('client')).exclude(client=request.user).select_related('project', 'calculation'), id=request_id,
             request_type__in=[ServiceRequest.RequestType.SUPPLIER, ServiceRequest.RequestType.FULL_REPAIR],

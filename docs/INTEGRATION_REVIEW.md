@@ -45,7 +45,7 @@ server, not public hosting. See SECURE_CONFIGURATION.md and PRIVATE_UPLOADS.md
 before planning a production deployment.
 
 ## Automated verification
-- Combined Django suite: 43 tests passed on a temporary test database.
+- Combined Django suite: 45 tests passed on a temporary test database.
 - JavaScript variant regression: 1 test passed (synthetic DOM, not browser proof).
 - Django system check: passed.
 - Migration drift check: no changes detected.
@@ -72,3 +72,15 @@ before planning a production deployment.
 last. Alternatively review this combined branch as one candidate. Do not merge
 both the aggregate and equivalent individual patches twice. Owner approval is
 required for any merge to main or deployment.
+
+## Integration review follow-up
+Untrusted project_id, request_id and response_id now use a shared positive signed
+64-bit parser before ORM access. Oversized, malformed, zero and non-ASCII values
+produce existing validation errors (project save) or HTTP 400 (workflow actions),
+not integer-conversion HTTP 500 errors. Regression coverage includes 5000 digits.
+
+The client cabinet currently lists saved projects/calculations but has no
+project-detail or saved-calculation-detail endpoint in accounts/urls.py. No fake
+open/detail links were added. Saving redirects to the calculator's clean GET,
+which resets visible inputs; the saved variant remains in result_data. A detail
+view and post-save continuity need a separate implementation.

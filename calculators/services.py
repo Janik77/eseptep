@@ -1,3 +1,4 @@
+from accounts.identifiers import parse_positive_id
 """Server-side calculator services for ESEPTEP."""
 
 from math import ceil, sqrt
@@ -45,7 +46,8 @@ def save_calculation_for_user(user, slug, result, project_id=None):
     """Save only to an explicitly selected, owned, editable client project."""
     if not user.is_authenticated or getattr(getattr(user, 'profile', None), 'role', None) != UserProfile.Role.CLIENT:
         raise PermissionDenied('Сохранять расчёты может только клиент.')
-    if not str(project_id or '').isascii() or not str(project_id or '').isdecimal():
+    project_id = parse_positive_id(project_id)
+    if project_id is None:
         raise ValidationError('Выберите проект для сохранения расчёта.')
     project = ClientProject.objects.filter(
         pk=project_id, user=user,

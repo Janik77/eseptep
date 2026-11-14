@@ -86,3 +86,15 @@ class AccountWorkflowTests(TestCase):
     def test_unknown_action_is_bad_request(self):
         self.client.force_login(self.owner)
         self.assertEqual(self.client.post(reverse('accounts:dashboard_client'), {'response_action': 'invented'}).status_code, 400)
+
+    def test_unbounded_or_invalid_workflow_ids_are_bad_requests(self):
+        for value in ['9' * 5000, str(2**63), '0', '-1', '１２', '', '1.5']:
+            with self.subTest(value=value[:25]):
+                for user, dashboard in [(self.master, 'master'), (self.supplier, 'supplier')]:
+                    self.assertEqual(self.post_offer(user, dashboard, request_id=value).status_code, 400)
+                self.client.force_login(self.owner)
+                response = self.client.post(reverse('accounts:dashboard_client'), {
+                    'response_id': value, 'response_type': 'master', 'response_action': 'accept'})
+                self.assertEqual(response.status_code, 400)
+        self.assertFalse(MasterResponse.objects.exists())
+        self.assertFalse(SupplierResponse.objects.exists())

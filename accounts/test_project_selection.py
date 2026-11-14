@@ -50,3 +50,15 @@ class ProjectSelectionTests(TestCase):
         response = self.client.post(reverse('calculators:detail', args=[self.slug]), {'area': '60', 'demolition_type': 'partial', 'action': 'save_estimate', 'project_id': self.project.pk})
         self.assertEqual(response.status_code, 302)
         self.assertEqual(Calculation.objects.get().project_id, self.project.pk)
+
+    def test_unbounded_or_invalid_project_id_is_field_error(self):
+        self.client.force_login(self.owner)
+        for value in ['9' * 5000, str(2**63), '0', '-1', '１２', '', '1.5']:
+            with self.subTest(value=value[:25]):
+                response = self.client.post(reverse('calculators:detail', args=[self.slug]), {
+                    'area': '60', 'demolition_type': 'partial',
+                    'action': 'save_estimate', 'project_id': value})
+                self.assertEqual(response.status_code, 200)
+                self.assertContains(response, 'Выберите проект')
+                self.assertIsNotNone(response.context['result'])
+        self.assertFalse(Calculation.objects.exists())
