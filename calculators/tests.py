@@ -163,6 +163,8 @@ class CalculatorArithmeticTests(TestCase):
                     self.assertEqual(saved.materials_total, result['materials_total'])
                     self.assertEqual(saved.grand_total, result['grand_total'])
                     self.assertEqual(saved.result_data['selected_variant'], variant['key'])
+                    if variant['key'] in {'economy', 'comfort', 'business'}:
+                        self.assertEqual(saved.segment, variant['key'])
                     self.assertEqual(saved.result_data['materials'], result['materials'])
 
     def test_plumbing_surcharge_is_separate_and_visible(self):

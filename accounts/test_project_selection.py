@@ -62,3 +62,31 @@ class ProjectSelectionTests(TestCase):
                 self.assertContains(response, 'Выберите проект')
                 self.assertIsNotNone(response.context['result'])
         self.assertFalse(Calculation.objects.exists())
+
+    def test_saved_detail_retains_snapshot_without_recalculation(self):
+        from unittest.mock import patch
+        self.client.force_login(self.owner)
+        payload = {'area': '20.5', 'rooms': '1', 'selected_variant': 'economy',
+                   'action': 'save_estimate', 'project_id': self.project.pk}
+        response = self.client.post(reverse('calculators:detail', args=['natyazhnoy-potolok']), payload)
+        saved = Calculation.objects.get()
+        self.assertEqual(saved.segment, 'economy')
+        self.assertEqual(saved.result_data['selected_variant'], 'economy')
+        url = reverse('accounts:calculation_detail', args=[saved.pk])
+        self.assertRedirects(response, url)
+        with patch('calculators.services.calculate_materials', side_effect=AssertionError('No recalculation')):
+            for _ in range(2):
+                page = self.client.get(url)
+                self.assertContains(page, '20.5')
+                self.assertContains(page, 'Эконом')
+                self.assertContains(page, self.project.title)
+                self.assertEqual(page.context['calculation'].grand_total, saved.grand_total)
+        self.assertEqual(Calculation.objects.count(), 1)
+        self.client.force_login(self.other)
+        self.assertEqual(self.client.get(url).status_code, 404)
+        self.client.force_login(self.master)
+        self.assertEqual(self.client.get(url).status_code, 403)
+        self.client.logout()
+        self.assertEqual(self.client.get(url).status_code, 302)
+        self.client.force_login(self.owner)
+        self.assertEqual(self.client.get(reverse('accounts:calculation_detail', args=['9' * 5000])).status_code, 404)

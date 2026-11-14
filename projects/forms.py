@@ -12,8 +12,8 @@ from .models import ProjectUpload
 
 
 class ProjectUploadForm(forms.Form):
-    file = forms.FileField()
-    comment = forms.CharField(required=False, max_length=4000, widget=forms.Textarea)
+    file = forms.FileField(label='Файл проекта')
+    comment = forms.CharField(label='Комментарий', required=False, max_length=4000, widget=forms.Textarea)
 
     def clean_file(self):
         uploaded = self.cleaned_data['file']

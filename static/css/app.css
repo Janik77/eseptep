@@ -1338,3 +1338,13 @@ textarea {
     transition: none !important;
   }
 }
+
+/* Keep narrow dashboard actions readable without breaking words. */
+.dashboard .btn { white-space: normal; overflow-wrap: normal; word-break: normal; }
+@media (max-width: 480px) { .dashboard-actions .btn { width: 100%; } }
+
+.saved-estimate .table-wrap { overflow-x: auto; }
+.saved-estimate table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+.saved-estimate th, .saved-estimate td { padding: .7rem .4rem; border-bottom: 1px solid var(--border, #dde1dc); text-align: left; vertical-align: top; }
+.saved-estimate td:first-child { min-width: 130px; }
+.saved-estimate th:not(:first-child), .saved-estimate td:not(:first-child) { text-align: right; }

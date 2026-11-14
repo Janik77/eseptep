@@ -45,7 +45,7 @@ server, not public hosting. See SECURE_CONFIGURATION.md and PRIVATE_UPLOADS.md
 before planning a production deployment.
 
 ## Automated verification
-- Combined Django suite: 45 tests passed on a temporary test database.
+- Combined Django suite: 46 tests passed on a temporary test database.
 - JavaScript variant regression: 1 test passed (synthetic DOM, not browser proof).
 - Django system check: passed.
 - Migration drift check: no changes detected.
@@ -79,8 +79,22 @@ Untrusted project_id, request_id and response_id now use a shared positive signe
 produce existing validation errors (project save) or HTTP 400 (workflow actions),
 not integer-conversion HTTP 500 errors. Regression coverage includes 5000 digits.
 
-The client cabinet currently lists saved projects/calculations but has no
-project-detail or saved-calculation-detail endpoint in accounts/urls.py. No fake
-open/detail links were added. Saving redirects to the calculator's clean GET,
-which resets visible inputs; the saved variant remains in result_data. A detail
-view and post-save continuity need a separate implementation.
+## Saved-calculation continuity
+New saves redirect to an owner-only saved snapshot page, not a fresh calculator.
+The cabinet links to it and shows the project and selected variant. Reloading
+does not create another calculation. The detail page reads stored rows, totals
+and inputs without recalculating against current prices; a separate action
+starts a new calculation. Missing old input metadata is labelled unavailable.
+
+A variant builder previously hardcoded meta.segment=comfort. New Economy,
+Comfort and Business saves now store their actual selected segment. Other
+calculator variant names (such as demolition optimal) keep the existing
+classification; no construction formula or coefficient was changed. Existing
+stored records are not silently rewritten; selected_variant in result_data is
+displayed as the authoritative saved variant. A reviewed data repair, if needed
+for an existing deployment, remains separate.
+
+Upload labels are Russian. Narrow dashboard buttons wrap on word boundaries.
+The new snapshot endpoint enforces client role, ownership and bounded IDs.
+Tests cover snapshot persistence, refresh without duplicate saves, guest and
+foreign-owner rejection, and segment consistency for every existing tier.

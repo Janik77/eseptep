@@ -35,6 +35,8 @@
       {% for calc in calculations %}
       <article class="dashboard-item">
         <b>{{ calc.calculator_slug }}</b>
+        <p>Проект: {{ calc.project.title }}{% if calc.result_data.selected_variant %} · Вариант: {{ calc.result_data.selected_variant_label|default:calc.result_data.selected_variant }}{% endif %}</p>
+        <a href="{% url 'accounts:calculation_detail' calc.pk %}">Открыть сохранённую смету</a>
         <p>Материалы: {{ calc.materials_total }} ₸ · Работы: {{ calc.works_total }} ₸</p>
         <strong>Итог: {{ calc.grand_total }} ₸</strong>
       </article>

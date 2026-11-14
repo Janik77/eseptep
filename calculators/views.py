@@ -157,7 +157,7 @@ def calculator_detail(request, slug):
                     messages.success(request, 'Смета сохранена и запрос поставщикам отправлен.')
                 else:
                     messages.success(request, 'Смета сохранена в личный кабинет.')
-                return redirect('calculators:detail', slug=slug)
+                return redirect('accounts:calculation_detail', calculation_id=calculation.pk)
     return render(
         request,
         'calculators/detail.html',

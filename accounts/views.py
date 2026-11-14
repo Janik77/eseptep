@@ -6,7 +6,7 @@ from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import LoginView, LogoutView
 from django.db.models import Count, F, Q
-from django.http import HttpResponseBadRequest, HttpResponseForbidden
+from django.http import Http404, HttpResponseBadRequest, HttpResponseForbidden
 from django.db import transaction
 from django.views.decorators.http import require_POST
 from django.shortcuts import get_object_or_404, redirect, render
@@ -330,3 +330,27 @@ def _dashboard_url_by_role(role):
     if role == UserProfile.Role.SUPPLIER:
         return reverse_lazy('accounts:dashboard_supplier')
     return reverse_lazy('accounts:dashboard_client')
+
+
+@role_required(UserProfile.Role.CLIENT)
+def calculation_detail(request, calculation_id):
+    from calculators.definitions import CALCULATORS_BY_SLUG
+    pk = parse_positive_id(calculation_id)
+    if pk is None:
+        raise Http404('Расчёт не найден')
+    calculation = get_object_or_404(
+        Calculation.objects.select_related('project'), pk=pk, project__user=request.user)
+    definition = CALCULATORS_BY_SLUG.get(calculation.calculator_slug, {})
+    data = calculation.result_data
+    inputs = data.get('input', {})
+    parameters = []
+    for field in definition.get('fields', []):
+        value = inputs.get(field['name'])
+        if value is not None:
+            value = next((option['label'] for option in field.get('options', []) if option['value'] == value), value)
+            parameters.append({'label': field['label'], 'value': value, 'unit': field.get('unit', '')})
+    return render(request, 'accounts/calculation_detail.html', {
+        'calculation': calculation, 'title': definition.get('title', calculation.calculator_slug),
+        'parameters': parameters,
+        'variant_label': data.get('selected_variant_label') or data.get('selected_variant') or data.get('segment_label'),
+    })
