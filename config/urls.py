@@ -1,5 +1,10 @@
 from django.conf import settings
 from django.conf.urls.static import static
+from django.http import Http404
+from django.urls import re_path
+
+def deny_private_media(request, **kwargs):
+    raise Http404
 from django.contrib import admin
 
 admin.site.site_header = 'ESEPTEP Admin'
@@ -19,6 +24,7 @@ from accounts.views import (
 )
 
 urlpatterns = [
+    re_path(r'^media/(?:project_uploads|projects)/', deny_private_media),
     path('', include('core.urls')),
     path('calculators/', include('calculators.urls')),
     path('marketplace/', include('marketplace.urls')),

@@ -1,12 +1,13 @@
-from decimal import Decimal, InvalidOperation
-
 from django.contrib import messages
+from django.http import FileResponse, Http404
+from django.views.decorators.http import require_GET
+from .forms import ProjectUploadForm, ProjectEstimateForm
 from django.shortcuts import get_object_or_404, redirect, render
 
 from .models import ProjectUpload
 
 AI_ANALYSIS_MODE = 'demo'
-ALLOWED_UPLOAD_EXTENSIONS = '.pdf,.jpg,.jpeg,.png,.webp,.dwg'
+ALLOWED_UPLOAD_EXTENSIONS = '.pdf,.jpg,.jpeg,.png,.webp'
 DEMO_AI_SUMMARY = {
     'object_type': 'квартира',
     'status': 'требуется подтверждение площади',
@@ -24,56 +25,66 @@ def projects_home(request):
     return redirect('projects:upload')
 
 
+def accessible_uploads(request):
+    # Legacy unowned uploads have no session key and are deliberately inaccessible.
+    if request.user.is_authenticated:
+        return ProjectUpload.objects.filter(user=request.user)
+    key = request.session.session_key
+    if not key:
+        return ProjectUpload.objects.none()
+    return ProjectUpload.objects.filter(user__isnull=True, guest_session_key=key)
+
+
+@require_GET
+def project_download(request, pk):
+    upload = get_object_or_404(accessible_uploads(request), pk=pk)
+    try:
+        stream = upload.file.open('rb')
+    except (FileNotFoundError, OSError):
+        raise Http404('File unavailable')
+    response = FileResponse(stream, as_attachment=True, filename=upload.file.name.rsplit('/', 1)[-1], content_type='application/octet-stream')
+    response['X-Content-Type-Options'] = 'nosniff'
+    response['Cache-Control'] = 'private, no-store'
+    response['Content-Security-Policy'] = "sandbox; default-src 'none'"
+    return response
+
+
 def project_upload(request):
     upload = None
     estimate = None
-
+    upload_form = ProjectUploadForm()
+    estimate_form = ProjectEstimateForm(initial={'repair_level': ProjectUpload.RepairLevel.STANDARD})
     if request.method == 'POST' and request.POST.get('action') == 'estimate':
-        upload = get_object_or_404(ProjectUpload, pk=request.POST.get('upload_id'))
-        area_raw = request.POST.get('area', '')
-        repair_level = request.POST.get('repair_level') or ProjectUpload.RepairLevel.STANDARD
         try:
-            area = Decimal(str(area_raw).replace(',', '.'))
-        except (InvalidOperation, TypeError):
-            area = None
-
-        if area and area > 0:
-            upload.area = area
-            upload.repair_level = repair_level
+            pk = int(request.POST.get('upload_id', ''))
+        except (ValueError, TypeError):
+            raise Http404('Upload unavailable')
+        upload = get_object_or_404(accessible_uploads(request), pk=pk)
+        data = request.POST.copy()
+        data['area'] = data.get('area', '').replace(',', '.')
+        estimate_form = ProjectEstimateForm(data)
+        if estimate_form.is_valid():
+            upload.area = estimate_form.cleaned_data['area']
+            upload.repair_level = estimate_form.cleaned_data['repair_level']
             upload.save(update_fields=['area', 'repair_level'])
-            estimate = {
-                'area': area,
-                'repair_level': upload.get_repair_level_display(),
-                'total': round(float(area) * REPAIR_LEVEL_RATES[repair_level]),
-            }
+            estimate = {'area': upload.area, 'repair_level': upload.get_repair_level_display(),
+                        'total': round(upload.area * REPAIR_LEVEL_RATES[upload.repair_level])}
             messages.success(request, 'Предварительный расчёт готов.')
-        else:
-            messages.error(request, 'Укажите корректную площадь квартиры.')
-
     elif request.method == 'POST':
-        uploaded_file = request.FILES.get('file')
-        if uploaded_file:
+        upload_form = ProjectUploadForm(request.POST, request.FILES)
+        if upload_form.is_valid():
+            if not request.user.is_authenticated and not request.session.session_key:
+                request.session.create()
             upload = ProjectUpload.objects.create(
                 user=request.user if request.user.is_authenticated else None,
-                file=uploaded_file,
-                comment=request.POST.get('comment', ''),
-                ai_status=AI_ANALYSIS_MODE,
-                ai_summary=DEMO_AI_SUMMARY,
-            )
+                guest_session_key='' if request.user.is_authenticated else request.session.session_key,
+                file=upload_form.cleaned_data['file'], comment=upload_form.cleaned_data['comment'],
+                ai_status=AI_ANALYSIS_MODE, ai_summary=DEMO_AI_SUMMARY)
             messages.success(request, 'Файл принят для demo-анализа.')
-        else:
-            messages.error(request, 'Выберите файл проекта.')
-
-    return render(
-        request,
-        'projects/upload.html',
-        {
-            'upload': upload,
-            'estimate': estimate,
-            'ai_summary': upload.ai_summary if upload else None,
-            'ai_analysis_mode': AI_ANALYSIS_MODE,
-            'allowed_upload_extensions': ALLOWED_UPLOAD_EXTENSIONS,
-            'repair_levels': ProjectUpload.RepairLevel.choices,
-            'show_auth_save_cta': not request.user.is_authenticated,
-        },
-    )
+    return render(request, 'projects/upload.html', {
+        'upload': upload, 'estimate': estimate, 'upload_form': upload_form, 'estimate_form': estimate_form,
+        'ai_summary': upload.ai_summary if upload else None, 'ai_analysis_mode': AI_ANALYSIS_MODE,
+        'allowed_upload_extensions': ALLOWED_UPLOAD_EXTENSIONS,
+        'repair_levels': ProjectUpload.RepairLevel.choices,
+        'show_auth_save_cta': not request.user.is_authenticated,
+    })
