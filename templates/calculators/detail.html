@@ -70,9 +70,9 @@
                         <div>
                             <span>Ваш расчёт готов ✅</span>
                             <h2>{{ result.summary }}</h2>
-                            <p>{% if result.variants %}{{ result.selected_variant_label }} · {% elif result.segment_label != 'Предварительно' %}{{ result.segment_label }} · {% endif %}{{ result.materials_count }} позиций · цены справочно</p>
+                            <p data-summary-variant>{% if result.variants %}{{ result.selected_variant_label }} · {% elif result.segment_label != 'Предварительно' %}{{ result.segment_label }} · {% endif %}{{ result.materials_count }} позиций · цены справочно</p>
                         </div>
-                        <strong>₸ {{ result.grand_total }}</strong>
+                        <strong data-summary-total>₸ {{ result.grand_total }}</strong>
                     </div>
                     <div class="result-params" aria-label="Введённые параметры">
                         {% for field in form_fields %}
@@ -94,7 +94,7 @@
                             </div>
                             <div class="variant-cards" role="tablist" aria-label="Варианты расчёта">
                                 {% for variant in result.variants %}
-                                    <button class="variant-card{% if variant.key == result.selected_variant %} is-active{% endif %}" type="button" data-variant-button="{{ variant.key }}" role="tab" aria-selected="{% if variant.key == result.selected_variant %}true{% else %}false{% endif %}">
+                                    <button class="variant-card{% if variant.key == result.selected_variant %} is-active{% endif %}" type="button" data-variant-button="{{ variant.key }}" data-variant-total="{{ variant.total }}" data-variant-count="{{ variant.materials_count }}" role="tab" aria-selected="{% if variant.key == result.selected_variant %}true{% else %}false{% endif %}">
                                         <b>{{ variant.title }}</b>
                                         <span>{{ variant.description }}</span>
                                         <strong>от ₸ {{ variant.total }}</strong>
@@ -117,6 +117,8 @@
                                             </div>
                                         {% endfor %}
                                     </div>
+                                    <div class="grand-total grand-total--secondary"><span>Материалы по строкам</span><strong>₸ {{ variant.materials_total }}</strong></div>
+                                    {% if variant.extra %}<p>{{ variant.extra_label }}: ₸ {{ variant.extra }}</p>{% endif %}
                                     <div class="grand-total grand-total--secondary"><span>{{ result.price_note|default:"Цены ориентировочные по Казахстану" }}</span><strong>Итог: ₸ {{ variant.total }}</strong></div>
                                     <textarea class="master-template__text" data-variant-copy-source="{{ variant.key }}" aria-label="Список {{ variant.title }} без цен">ESEPTEP.KZ
 {{ calculator.title }} — {{ variant.title }}
@@ -138,7 +140,8 @@
                             {% for material in result.materials %}
                                 <div class="materials-table__row">
                                     <div><b>{{ material.title }}</b><small>Справочно ₸ {{ material.reference_price }} за {{ material.unit }}</small></div>
-                                    <strong>{% if calculator.slug == 'laminat-spc-parket' and material.title == 'Порог' %}1–2{% else %}{{ material.quantity }}{% endif %} {{ material.unit }}</strong>
+                                    <strong>{{ material.quantity }} {{ material.unit }}</strong>
+                                    <small class="material-line-total">₸ {{ material.reference_total }}</small>
                                 </div>
                             {% endfor %}
                         </div>
@@ -147,7 +150,7 @@
                             <textarea class="master-template__text" data-single-copy-source aria-label="Список материалов без цен">ESEPTEP.KZ
 {{ calculator.title }}
 
-{% for material in result.materials %}{% if material.quantity > 0 %}{{ forloop.counter }}. {{ material.title }} — {% if calculator.slug == 'laminat-spc-parket' and material.title == 'Порог' %}1–2{% else %}{{ material.quantity }}{% endif %} {{ material.unit }}
+{% for material in result.materials %}{% if material.quantity > 0 %}{{ forloop.counter }}. {{ material.title }} — {{ material.quantity }} {{ material.unit }}
 {% endif %}{% endfor %}
 Список составлен через ESEPTEP.KZ</textarea>
                             <button class="btn btn--secondary" type="button" data-copy-single>Скопировать список материалов без цен</button>
