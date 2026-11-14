@@ -1,0 +1,12 @@
+<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+{% if icon == 'tile' %}<path d="m12 16 20-8 20 8v30l-20 9-20-9V16Zm0 0 20 9 20-9M32 25v30M22 12l20 9v30M12 31l20 9 20-9"/>
+{% elif icon == 'laminate' or icon == 'floor' %}<path d="m8 40 28-28 21 14-28 28L8 40Zm7 5 28-28M22 49l28-28M21 27l21 14M34 15l21 14"/>
+{% elif icon == 'electric' %}<path d="M24 9v13m16-13v13M19 22h26v9a13 13 0 0 1-26 0v-9Zm13 22v10m-9 0h18"/>
+{% elif icon == 'plumbing' %}<path d="M12 28h40M20 28v-8a12 12 0 0 1 24 0m-5 1h10M16 28v15c0 6 8 11 16 11s16-5 16-11V28M32 44v10"/>
+{% elif icon == 'paint' %}<rect x="10" y="10" width="35" height="16" rx="3"/><path d="M45 18h7v17H31v9m-4 0h8v13h-8zM16 10v16"/>
+{% elif icon == 'door' %}<path d="M13 54V10h38v44M20 54V16h24v38M7 54h50M36 33v4"/>
+{% elif icon == 'ceiling' or icon == 'drywall' %}<path d="m8 22 24-12 24 12-24 12L8 22Zm0 9 24 12 24-12M8 40l24 12 24-12M32 10v24"/>
+{% elif icon == 'warmfloor' %}<path d="M12 14h35a6 6 0 0 1 0 12H18a6 6 0 0 0 0 12h29a6 6 0 0 1 0 12H12M12 9v10"/>
+{% elif icon == 'demolition' %}<path d="m15 54 24-32m-9-7 11-7 14 11-7 10-7-7-8 1-9-7-8 9-5-5 9-11 10 6Z"/>
+{% else %}<path d="m12 39 25-24 17 17-25 24L12 39Zm25-24-5-5M18 33l17 17M11 24l14-14m-7 8 8 8"/>{% endif %}
+</svg>

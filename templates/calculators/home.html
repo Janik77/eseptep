@@ -1,31 +1,25 @@
-{% extends 'base.html' %}
-
+{% extends 'base.html' %}{% load static %}
 {% block title %}Калькуляторы ремонта — ESEPTEP{% endblock %}
-
-{% block breadcrumbs %}<nav class="breadcrumbs"><a href="{% url 'core:home' %}">Главная</a><span>›</span><b>Калькуляторы</b></nav>{% endblock %}
-
+{% block body_class %}editorial-catalog{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/editorial.css' %}">{% endblock %}
+{% block extra_js %}<script src="{% static 'js/catalog.js' %}" defer></script>{% endblock %}
+{% block breadcrumbs %}<nav class="breadcrumbs" aria-label="Хлебные крошки"><a href="{% url 'core:home' %}">Главная</a><span aria-hidden="true">/</span><b>Калькуляторы</b></nav>{% endblock %}
 {% block content %}
-<section class="page-hero page-hero--compact calculators-hero">
-    <span class="hero__badge">Калькуляторы</span>
-    <h1>Выберите расчёт для вашего ремонта</h1>
-    <p>Материалы, количество, запас и шаблон списка для мастера.</p>
+<header class="catalog-header"><div><p class="eyebrow">Инструменты вашего ремонта</p><h1>Большой ремонт.<br><em>Понятные расчёты.</em></h1><p>Выберите работу. Мы поможем собрать список материалов<br class="desktop-break"> по вашим размерам и сравнить варианты.</p></div><div class="catalog-index" aria-hidden="true"><b>12</b><span>видов работ<br>одна понятная система</span></div></header>
+<div class="catalog-toolbar" data-catalog-toolbar hidden>
+  <div class="catalog-filters" role="group" aria-label="Этап ремонта"><button type="button" class="is-active" data-filter="all" aria-pressed="true">Все работы</button><button type="button" data-filter="prepare" aria-pressed="false">Подготовка</button><button type="button" data-filter="systems" aria-pressed="false">Инженерные системы</button><button type="button" data-filter="finish" aria-pressed="false">Отделка</button></div>
+  <label class="catalog-search"><span class="sr-only">Поиск калькулятора</span><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" aria-hidden="true"><circle cx="10" cy="10" r="6"/><path d="m15 15 6 6"/></svg><input type="search" placeholder="Найти работу" data-catalog-search></label>
+</div>
+<p class="catalog-count" data-catalog-count role="status" aria-live="polite">12 калькуляторов</p>
+<section class="work-catalog" aria-label="Список калькуляторов">
+{% for item in calculators %}
+<a class="work-card work-card--{{ item.icon }}" href="{% url 'calculators:detail' item.slug %}" aria-label="Открыть калькулятор: {{ item.title }}" data-work-card data-slug="{{ item.slug }}" data-title="{{ item.title }}" data-group="{% if item.slug == 'demontazh' or item.slug == 'shtukaturka' or item.slug == 'nalivnoy-pol' %}prepare{% elif item.slug == 'elektrika' or item.slug == 'santehnika' or item.slug == 'teplyy-pol' %}systems{% else %}finish{% endif %}">
+  <div class="work-card__visual"><span class="work-card__number">{{ forloop.counter|stringformat:'02d' }}</span>{% include 'calculators/partials/work_icon.html' with icon=item.icon %}<span class="work-card__category">{% if item.slug == 'demontazh' or item.slug == 'shtukaturka' or item.slug == 'nalivnoy-pol' %}Подготовка{% elif item.slug == 'elektrika' or item.slug == 'santehnika' or item.slug == 'teplyy-pol' %}Системы{% else %}Отделка{% endif %}</span></div>
+  <div class="work-card__copy"><h2>{{ item.title }}</h2><p>{% if item.slug == 'demontazh' %}Площадь и тип демонтажа → расходники и вывоз{% elif item.slug == 'elektrika' %}Площадь и комнаты → кабель, розетки и защита{% elif item.slug == 'santehnika' %}Площадь и санузлы → трубы и комплектующие{% elif item.slug == 'shtukaturka' %}Площадь и слой → смесь, маяки и грунтовка{% elif item.slug == 'gipsokarton-potolok' %}Площадь и конструкция → листы, профиль и крепёж{% elif item.slug == 'nalivnoy-pol' %}Площадь и толщина → смесь и расходники{% elif item.slug == 'plitka-keramogranit' %}Площадь и формат → плитка, клей и затирка{% elif item.slug == 'laminat-spc-parket' %}Площадь и покрытие → пол, подложка и плинтус{% elif item.slug == 'malyarka' %}Площадь и отделка → материалы для стен{% elif item.slug == 'natyazhnoy-potolok' %}Площадь и комнаты → полотно и комплектующие{% elif item.slug == 'dveri' %}Количество дверей → полотна и фурнитура{% else %}Площадь и система → материалы для обогрева{% endif %}</p><span class="work-card__cta">Рассчитать <span aria-hidden="true">↗</span></span></div>
+</a>
+{% endfor %}
 </section>
-
-<section class="calculator-grid calculator-grid--premium" aria-label="Список калькуляторов">
-    {% for item in calculators %}
-        <article class="calculator-card calculator-card--premium">
-            <div class="calculator-card__icon feature-card__icon--{{ item.icon }}" aria-hidden="true"></div>
-            <div class="calculator-card__content">
-                <h2>{{ item.title }}</h2>
-                <p>{{ item.description }}</p>
-            </div>
-            <a class="card-button calculator-card__button" aria-label="Открыть калькулятор: {{ item.title }}" href="{% url 'calculators:detail' item.slug %}">
-                <span>Открыть</span>
-                <span aria-hidden="true">→</span>
-            </a>
-        </article>
-    {% endfor %}
-</section>
-
-<p class="catalog-note">Цены в расчётах справочные. Уточняйте стоимость и расход материалов перед закупкой.</p>
+<div class="catalog-empty" data-catalog-empty hidden><h2>Такой работы пока нет в списке</h2><p>Попробуйте другое название или сбросьте фильтры.</p><button class="btn btn--secondary" type="button" data-catalog-reset>Показать все работы</button></div>
+<aside class="catalog-bottom"><div><span class="eyebrow">Есть план квартиры?</span><h2>Начните с вашего проекта.</h2><p>Сохраните план для дальнейшей работы. Анализ файла пока демонстрационный.</p></div><a class="btn btn--secondary" href="{% url 'projects:home' %}">Загрузить проект ↗</a></aside>
+<p class="catalog-note">Цены справочные. Уточняйте стоимость, состав и расход материалов с мастером перед закупкой.</p>
 {% endblock %}

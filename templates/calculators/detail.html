@@ -1,10 +1,25 @@
 {% extends 'base.html' %}
+{% load static %}
+{% block body_class %}{% if calculator.slug == 'plitka-keramogranit' %}editorial-calculator{% endif %}{% endblock %}
+{% block extra_css %}{% if calculator.slug == 'plitka-keramogranit' %}<link rel="stylesheet" href="{% static 'css/editorial.css' %}"><link rel="stylesheet" href="{% static 'css/calculator-editorial.css' %}">{% endif %}{% endblock %}
 
 {% block title %}{{ calculator.title }} — калькулятор ESEPTEP{% endblock %}
 
 {% block breadcrumbs %}<nav class="breadcrumbs"><a href="{% url 'core:home' %}">Главная</a><span>›</span><a href="{% url 'calculators:home' %}">Калькуляторы</a><span>›</span><b>{{ calculator.title }}</b></nav>{% endblock %}
 
 {% block content %}
+{% if calculator.slug == 'plitka-keramogranit' %}
+<section class="tile-heading" aria-labelledby="tile-heading-title">
+  <div>
+    <a class="back-link" href="{% url 'calculators:home' %}">← Все калькуляторы</a>
+    <p class="tile-eyebrow">Отделка / 01</p>
+    <h1 id="tile-heading-title">Плитка.<br><span>От площади к материалам.</span></h1>
+    <p>Укажите площадь и зону укладки. Получите список плитки, клея и сопутствующих материалов для обсуждения с мастером.</p>
+  </div>
+  <div class="tile-swatch" aria-hidden="true"><div class="tile-swatch__grid"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><span>ПЛОЩАДЬ × ФОРМАТ → СПИСОК</span></div>
+</section>
+<ol class="tile-steps" aria-label="Этапы расчёта"><li><span>01</span> Выберите работы</li><li{% if not result %} aria-current="step"{% endif %}><span>02</span> Укажите параметры</li><li{% if result %} aria-current="step"{% endif %}><span>03</span> Получите список</li></ol>
+{% else %}
 <section class="page-hero page-hero--compact calculator-detail-hero">
     <a class="back-link" href="{% url 'calculators:home' %}">← Все калькуляторы</a>
     <span class="hero__badge">{{ calculator.title }}</span>
@@ -22,6 +37,7 @@
     </div>
 </section>
 
+{% endif %}
 <section class="calculator-tabs" aria-label="Калькулятор и шаблон мастера">
     <input class="calculator-tabs__radio" type="radio" name="calculator-detail-tabs" id="tab-auto" checked>
     <input class="calculator-tabs__radio" type="radio" name="calculator-detail-tabs" id="tab-master">
@@ -35,7 +51,7 @@
         <section class="calculator-workspace calculator-workspace--unified">
             <form class="calc-form calc-form--panel" method="post" data-calc-form>
                 {% csrf_token %}
-                <div class="form-step-label">Параметры расчёта</div>
+                <div class="form-step-label">{% if calculator.slug == 'plitka-keramogranit' %}<span class="tile-eyebrow">Ваше помещение</span><h2>Параметры расчёта</h2><p class="tile-form-hint">Площадь указывайте по фактическому замеру поверхности.</p>{% else %}Параметры расчёта{% endif %}</div>
                 {% if form_errors %}
                     <div class="form-errors" role="alert">
                         {% for error in form_errors %}
@@ -47,18 +63,18 @@
                     <label>
                         <span>{{ field.label }}{% if field.unit %} <small>{{ field.unit }}</small>{% endif %}</span>
                         {% if field.type == 'select' %}
-                            <select name="{{ field.name }}">
+                            <select name="{{ field.name }}"{% if field.error %} aria-invalid="true" aria-describedby="error-{{ field.name }}"{% endif %}>
                                 {% if field.error %}<option value="{{ field.value }}" selected>{{ field.value|default:"Выберите значение" }}</option>{% endif %}
                                 {% for option in field.options %}
                                     <option value="{{ option.value }}" {% if field.value == option.value %}selected{% endif %}>{{ option.label }}</option>
                                 {% endfor %}
                             </select>
                         {% elif field.decimal_field %}
-                            <input type="text" name="{{ field.name }}" value="{{ field.value }}" inputmode="decimal" autocomplete="{{ field.autocomplete|default:'off' }}" data-decimal-field="true" required>
+                            <input type="text" name="{{ field.name }}"{% if field.error %} aria-invalid="true" aria-describedby="error-{{ field.name }}"{% endif %} value="{{ field.value }}" inputmode="decimal" autocomplete="{{ field.autocomplete|default:'off' }}" data-decimal-field="true" required>
                         {% else %}
-                            <input type="text" inputmode="decimal" name="{{ field.name }}" {% if field.min is not None %}min="{{ field.min }}"{% endif %} {% if field.step is not None %}step="{{ field.step }}"{% endif %} value="{{ field.value }}" required>
+                            <input type="text" inputmode="decimal" name="{{ field.name }}"{% if field.error %} aria-invalid="true" aria-describedby="error-{{ field.name }}"{% endif %} {% if field.min is not None %}min="{{ field.min }}"{% endif %} {% if field.step is not None %}step="{{ field.step }}"{% endif %} value="{{ field.value }}" required>
                         {% endif %}
-                        {% if field.error %}<small role="alert">{{ field.error }}</small>{% endif %}
+                        {% if field.error %}<small id="error-{{ field.name }}" role="alert">{{ field.error }}</small>{% endif %}
                     </label>
                 {% endfor %}
                 <button class="btn btn--primary" type="submit">Рассчитать материалы</button>
@@ -68,7 +84,7 @@
                 {% if result %}
                     <div class="summary-card summary-card--compact" data-result-ready>
                         <div>
-                            <span>Ваш расчёт готов ✅</span>
+                            <span>{% if calculator.slug == 'plitka-keramogranit' %}Предварительный расчёт / Материалы{% else %}Ваш расчёт готов ✅{% endif %}</span>
                             <h2>{{ result.summary }}</h2>
                             <p data-summary-variant>{% if result.variants %}{{ result.selected_variant_label }} · {% elif result.segment_label != 'Предварительно' %}{{ result.segment_label }} · {% endif %}{{ result.materials_count }} позиций · цены справочно</p>
                         </div>
@@ -195,7 +211,7 @@
                     <p class="save-feedback" data-save-feedback aria-live="polite"></p>
                 {% else %}
                     <div class="empty-result empty-result--panel">
-                        <b>Заполните параметры</b>
+                        {% if calculator.slug == 'plitka-keramogranit' %}<div class="tile-empty-mark" aria-hidden="true">↗</div><span class="tile-eyebrow">Здесь будет ваш список</span>{% endif %}<b>{% if calculator.slug == 'plitka-keramogranit' %}Начните с площади помещения{% else %}Заполните параметры{% endif %}</b>
                         <p>После расчёта здесь появятся материалы, количество и единицы измерения. Цена — только справочно.</p>
                     </div>
                 {% endif %}
@@ -344,6 +360,7 @@
 </section>
 
 {% if result %}
+{% if calculator.slug == 'plitka-keramogranit' %}<details class="tile-demo-details"><summary>Посмотреть демонстрационные примеры мастеров и магазинов</summary>{% endif %}
 <p class="result-warning">Примеры ниже демонстрируют интерфейс. Профили, опыт, адреса, цены, наличие и доставка не подтверждены. Это не предложения реальных исполнителей или магазинов.</p>
 <section class="post-flow-grid" aria-label="Демонстрационные примеры">
     <div class="recommendation-panel recommendation-panel--masters">
@@ -408,5 +425,6 @@
         </div>
     </div>
 </section>
+{% if calculator.slug == 'plitka-keramogranit' %}</details>{% endif %}
 {% endif %}
 {% endblock %}

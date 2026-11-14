@@ -10,8 +10,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{% static 'css/app.css' %}">
+    {% block extra_css %}{% endblock %}
 </head>
-<body>
+<body class="{% block body_class %}{% endblock %}">
     <a class="skip-link" href="#main-content">К содержимому</a>
     <div class="app-shell">
         <header class="site-header" aria-label="Главная навигация">
@@ -66,5 +67,6 @@
     </nav>
 
     <script src="{% static 'js/app.js' %}" defer></script>
+    {% block extra_js %}{% endblock %}
 </body>
 </html>

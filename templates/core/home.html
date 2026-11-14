@@ -1,29 +1,34 @@
-{% extends 'base.html' %}
+{% extends 'base.html' %}{% load static %}
+{% block body_class %}editorial-home{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/editorial.css' %}">{% endblock %}
 {% block content %}
-<section class="home-intro" aria-labelledby="hero-title">
-  <div class="home-intro__copy">
-    <p class="section-heading__eyebrow">ESEPTEP · Планирование ремонта</p>
-    <h1 id="hero-title">Сначала расчёт.<br>Потом ремонт.</h1>
-    <p class="home-intro__lead">Узнайте, какие материалы понадобятся, соберите список и подготовьтесь к разговору с мастером.</p>
-    <div class="hero__actions"><a class="btn btn--primary" href="{% url 'calculators:home' %}">Начать расчёт <span aria-hidden="true">→</span></a><a class="text-link" href="{% url 'projects:home' %}">Загрузить план проекта →</a></div>
-    <p class="home-intro__note">Без регистрации для расчёта. Цены справочные, не коммерческое предложение.</p>
+<section class="renovation-hero" aria-labelledby="hero-title">
+  <div class="renovation-hero__copy">
+    <p class="eyebrow"><span class="small-line"></span> Дом начинается с плана</p>
+    <h1 id="hero-title">Ваш ремонт.<br>С ясного <em>начала.</em></h1>
+    <p class="hero-lead">От идеи красивого дома к понятному списку материалов. Рассчитайте объёмы и подготовьтесь к ремонту без лишней суеты.</p>
+    <div class="hero-buttons"><a class="btn btn--primary" href="{% url 'calculators:home' %}">Начать расчёт <span aria-hidden="true">↗</span></a><a class="quiet-link" href="{% url 'projects:home' %}">Загрузить план <span aria-hidden="true">↑</span></a></div>
+    <p class="hero-footnote">Расчёты доступны без регистрации<br>Цены справочные, итог уточняется перед закупкой.<br>Анализ файла пока демонстрационный.</p>
   </div>
-  <aside class="home-guide" aria-label="Как устроен расчёт">
-    <div class="home-guide__heading"><span class="brand__mark" aria-hidden="true">E</span><span>От параметров<br><b>к списку материалов</b></span></div>
-    <ol class="home-guide__steps">
-      <li><span>01</span><div><h2>Выберите работы</h2><p>Пол, стены, потолок или инженерные системы.</p></div></li>
-      <li><span>02</span><div><h2>Укажите размеры</h2><p>Площадь, количество комнат и другие параметры.</p></div></li>
-      <li><span>03</span><div><h2>Получите список</h2><p>Материалы, количество и ориентир по стоимости.</p></div></li>
-    </ol>
-    <p class="home-guide__footer">Проверьте объёмы и условия с мастером до закупки.</p>
-  </aside>
+  <figure class="renovation-hero__scene">
+    <img src="{% static 'images/renovation-hero.webp' %}" width="1536" height="1024" alt="Светлая гостиная: натуральное дерево, тёплая штукатурка и терракотовое кресло" fetchpriority="high">
+    <div class="scene-label"><span>01 / Пространство для жизни</span><b>Всё большое начинается<br>с небольшого расчёта.</b></div>
+    <figcaption>Концептуальный интерьер · AI-иллюстрация</figcaption>
+  </figure>
 </section>
-<section class="home-routes" aria-labelledby="routes-title">
-  <div class="section-heading"><p class="section-heading__eyebrow">Следующий шаг</p><h2 id="routes-title">Всё начинается с понятного плана</h2></div>
-  <div class="home-routes__grid">
-    <article><span class="route-number">01 / Материалы</span><h3>Расчёт по виду работ</h3><p>Выберите калькулятор, введите параметры и скопируйте готовый список.</p><a class="text-link" href="{% url 'calculators:home' %}">Выбрать калькулятор →</a></article>
-    <article><span class="route-number">02 / Планировка</span><h3>Загрузка проекта</h3><p>Сохраните план и подготовьте предварительный расчёт. Анализ файла пока демонстрационный.</p><a class="text-link" href="{% url 'projects:home' %}">Перейти к загрузке →</a></article>
-    <article><span class="route-number">03 / Бюджет</span><h3>Ремонт под ключ</h3><p>Сравните варианты предварительного бюджета. Итог согласуется отдельно с исполнителем.</p><a class="text-link" href="{% url 'marketplace:home' %}">Оценить бюджет →</a></article>
+<div class="home-principles"><span><b>12</b> видов расчёта</span><span><b>м² → список</b> от размера к материалам</span><span><b>Ваш выбор</b> сравнение вариантов</span></div>
+<section class="work-discovery" aria-labelledby="work-title">
+  <header class="editorial-heading"><div><p class="eyebrow">С чего начнём?</p><h2 id="work-title">Одна комната.<br>Много решений.</h2></div><a class="quiet-link" href="{% url 'calculators:home' %}">Все калькуляторы <span aria-hidden="true">↗</span></a></header>
+  <div class="work-entry-grid">
+    <a class="work-entry work-entry--floor" href="{% url 'calculators:detail' 'laminat-spc-parket' %}"><span class="work-entry__index">01 / Основа</span><div class="material-visual material-visual--wood" aria-hidden="true"><i></i><i></i><i></i></div><div><h3>Пол, по которому<br>приятно идти</h3><p>Покрытие, подложка и плинтус</p><span class="circle-arrow" aria-hidden="true">↗</span></div></a>
+    <a class="work-entry work-entry--tile" href="{% url 'calculators:detail' 'plitka-keramogranit' %}"><span class="work-entry__index">02 / Фактура</span><div class="material-visual material-visual--tile" aria-hidden="true"><i></i><i></i><i></i><i></i></div><div><h3>Плитка для<br>вашего пространства</h3><p>Плитка, клей, затирка и СВП</p><span class="circle-arrow" aria-hidden="true">↗</span></div></a>
+    <a class="work-entry work-entry--paint" href="{% url 'calculators:detail' 'malyarka' %}"><span class="work-entry__index">03 / Настроение</span><div class="material-visual material-visual--paint" aria-hidden="true"><i></i><i></i><i></i></div><div><h3>Стены как<br>чистый холст</h3><p>Подготовка под обои или краску</p><span class="circle-arrow" aria-hidden="true">↗</span></div></a>
   </div>
 </section>
+<section class="planning-story" aria-labelledby="story-title">
+  <div class="planning-story__copy"><p class="eyebrow">Не просто итоговая цифра</p><h2 id="story-title">Понимать, что покупать.<br>И о чём спросить мастера.</h2><p>Получите список с количеством материалов. Сравните варианты, скопируйте результат или сохраните его в своём проекте.</p><a class="quiet-link" href="{% url 'calculators:detail' 'plitka-keramogranit' %}">Попробовать расчёт плитки <span aria-hidden="true">↗</span></a></div>
+  <div class="estimate-preview" aria-label="Демонстрационный пример структуры списка"><div class="estimate-preview__top"><span>Пример списка</span><span>DEMO</span></div><h3>Материалы для комнаты</h3><p>Структура результата, не готовая смета</p><div class="preview-row"><span><i class="swatch swatch--tile"></i>Плитка</span><b>м²</b></div><div class="preview-row"><span><i class="swatch swatch--sand"></i>Плиточный клей</span><b>мешки</b></div><div class="preview-row"><span><i class="swatch swatch--clay"></i>Затирка</span><b>кг</b></div><div class="preview-note">Количество появится после ввода ваших размеров.</div></div>
+</section>
+<section class="three-steps" aria-labelledby="steps-title"><header><p class="eyebrow">Без сложного старта</p><h2 id="steps-title">От размера до списка.<br>Три простых шага.</h2></header><ol><li><span>01</span><h3>Выберите работу</h3><p>Начните с одного вида отделки или нужной системы.</p></li><li><span>02</span><h3>Укажите параметры</h3><p>Введите площадь, толщину слоя или другие размеры.</p></li><li><span>03</span><h3>Сравните и сохраните</h3><p>Уточните результат с мастером перед закупкой.</p></li></ol></section>
+<footer class="editorial-footer"><a class="brand" href="{% url 'core:home' %}">ESEPTEP</a><p>Планируйте осмысленно. Создавайте своё.</p><a class="quiet-link" href="{% url 'calculators:home' %}">Начать расчёт ↗</a></footer>
 {% endblock %}
