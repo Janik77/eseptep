@@ -3,6 +3,7 @@
 {% block breadcrumbs %}<nav class="breadcrumbs"><a href="{% url 'core:home' %}">Главная</a><span>›</span><b>Кабинет поставщика</b></nav>{% endblock %}
 
 {% block content %}
+{% if response_form.errors %}<div class="dashboard-card" role="alert"><h2>Отклик не отправлен</h2>{{ response_form.errors }}</div>{% endif %}
 <section class="dashboard">
   <div class="dashboard-card">
     <h1>{{ supplier_profile.company_name }}</h1>

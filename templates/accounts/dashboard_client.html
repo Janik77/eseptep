@@ -70,10 +70,12 @@
         <p>Цена от: ₸ {{ response.price_from }}</p>
         <small>{{ response.message|default:'Без сообщения' }}</small>
         <p><span class="status-badge status-badge--{{ response.request.status }}">{{ response.get_status_display }}</span></p>
+        {% if response.status == 'pending' and response.request.status != 'accepted' and response.request.status != 'closed' and response.request.status != 'rejected' %}
         <div class="response-actions">
           <form method="post">{% csrf_token %}<input type="hidden" name="response_type" value="master"><input type="hidden" name="response_id" value="{{ response.id }}"><button class="btn btn--primary" name="response_action" value="accept" type="submit">Принять</button></form>
           <form method="post">{% csrf_token %}<input type="hidden" name="response_type" value="master"><input type="hidden" name="response_id" value="{{ response.id }}"><button class="btn btn--secondary" name="response_action" value="reject" type="submit">Отклонить</button></form>
         </div>
+        {% endif %}
       </article>
       {% empty %}<div class="empty-state">Ответов мастеров пока нет.</div>{% endfor %}
     </div>
@@ -87,10 +89,12 @@
         <small>{{ response.message|default:'Без сообщения' }}</small>
         <p>Срок доставки: {{ response.delivery_time_label }}</p>
         <p><span class="status-badge status-badge--{{ response.request.status }}">{{ response.get_status_display }}</span></p>
+        {% if response.status == 'pending' and response.request.status != 'accepted' and response.request.status != 'closed' and response.request.status != 'rejected' %}
         <div class="response-actions">
           <form method="post">{% csrf_token %}<input type="hidden" name="response_type" value="supplier"><input type="hidden" name="response_id" value="{{ response.id }}"><button class="btn btn--primary" name="response_action" value="accept" type="submit">Принять</button></form>
           <form method="post">{% csrf_token %}<input type="hidden" name="response_type" value="supplier"><input type="hidden" name="response_id" value="{{ response.id }}"><button class="btn btn--secondary" name="response_action" value="reject" type="submit">Отклонить</button></form>
         </div>
+        {% endif %}
       </article>
       {% empty %}<div class="empty-state">Ответов поставщиков пока нет.</div>{% endfor %}
     </div>
