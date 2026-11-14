@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initSlider();
     initParallax(prefersReducedMotion);
     initCalculatorForm();
-    initResultFlow();
+    initResultFlow(prefersReducedMotion);
     initCountUp(prefersReducedMotion);
     initMasterTemplate();
     initVariantResults();
@@ -139,7 +139,7 @@ function initCalculatorForm() {
 }
 
 
-function initResultFlow() {
+function initResultFlow(prefersReducedMotion = false) {
     const readyState = document.querySelector('[data-result-ready]');
     const resultCard = document.querySelector('#estimate-result');
     const saveButtons = [...document.querySelectorAll('[data-save-estimate]')];
@@ -147,7 +147,7 @@ function initResultFlow() {
 
     if (readyState && resultCard) {
         window.setTimeout(() => {
-            resultCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            resultCard.scrollIntoView({ behavior: prefersReducedMotion ? 'auto' : 'smooth', block: 'start' });
         }, 260);
     }
 
@@ -332,22 +332,8 @@ function initMasterTemplate() {
             return;
         }
 
-        try {
-            await navigator.clipboard.writeText(text);
-        } catch (error) {
-            output.select();
-            document.execCommand('copy');
-        }
-
-        copyButton.classList.add('is-copied');
-        copyButton.textContent = 'Скопировано';
-        toast?.classList.add('is-visible');
-
-        window.setTimeout(() => {
-            copyButton.classList.remove('is-copied');
-            copyButton.textContent = 'Скопировать список';
-            toast?.classList.remove('is-visible');
-        }, 1800);
+        const copied = await copyPlainText(text);
+        showCopyFeedback(copyButton, toast, copied, 'Скопировать список');
     });
 
     buildEstimate();
@@ -398,19 +384,8 @@ function initVariantResults() {
                 return;
             }
 
-            try {
-                await navigator.clipboard.writeText(text);
-            } catch (error) {
-                source.select();
-                document.execCommand('copy');
-            }
-
-            copyButton.textContent = 'Скопировано';
-            toast?.classList.add('is-visible');
-            window.setTimeout(() => {
-                copyButton.textContent = 'Скопировать список без цен';
-                toast?.classList.remove('is-visible');
-            }, 1800);
+            const copied = await copyPlainText(text);
+            showCopyFeedback(copyButton, toast, copied, 'Скопировать список без цен');
         });
 
         if (activeKey) {
@@ -432,19 +407,59 @@ function initSingleResultCopy() {
                 return;
             }
 
-            try {
-                await navigator.clipboard.writeText(text);
-            } catch (error) {
-                source.select();
-                document.execCommand('copy');
-            }
-
-            button.textContent = 'Скопировано';
-            toast?.classList.add('is-visible');
-            window.setTimeout(() => {
-                button.textContent = 'Скопировать список материалов без цен';
-                toast?.classList.remove('is-visible');
-            }, 1800);
+            const copied = await copyPlainText(text);
+            showCopyFeedback(button, toast, copied, 'Скопировать список материалов без цен');
         });
     });
+}
+
+
+// Hidden source textareas cannot be reliably selected. Keep fallback selection
+// temporary, and only report success when the browser confirms the copy.
+async function copyPlainText(text) {
+    try {
+        if (navigator.clipboard?.writeText) {
+            await navigator.clipboard.writeText(text);
+            return true;
+        }
+    } catch (error) {
+        // Clipboard permission can be denied; try the legacy user-gesture API.
+    }
+    let temporary;
+    const previousFocus = document.activeElement;
+    try {
+        temporary = document.createElement('textarea');
+        temporary.value = text;
+        temporary.readOnly = true;
+        temporary.setAttribute('aria-label', 'Текст для копирования');
+        temporary.style.cssText = 'position:fixed;top:0;left:0;width:1px;height:1px;opacity:0.01;pointer-events:none;';
+        document.body.appendChild(temporary);
+        temporary.focus({preventScroll: true});
+        temporary.select();
+        temporary.setSelectionRange(0, text.length);
+        return document.execCommand('copy') === true;
+    } catch (error) {
+        return false;
+    } finally {
+        temporary?.remove();
+        previousFocus?.focus?.({preventScroll: true});
+    }
+}
+
+function showCopyFeedback(button, toast, copied, originalLabel) {
+    if (button.copyFeedbackTimer) window.clearTimeout(button.copyFeedbackTimer);
+    button.classList.toggle('is-copied', copied);
+    button.textContent = copied ? 'Скопировано' : 'Не удалось скопировать. Повторить';
+    if (toast) {
+        toast.textContent = copied ? 'Список скопирован' : 'Копирование недоступно. Проверьте разрешения браузера и повторите.';
+        toast.classList.add('is-visible');
+    }
+    // Failure remains visible until a later attempt succeeds.
+    if (copied) {
+        button.copyFeedbackTimer = window.setTimeout(() => {
+            button.classList.remove('is-copied');
+            button.textContent = originalLabel;
+            toast?.classList.remove('is-visible');
+        }, 1800);
+    }
 }
