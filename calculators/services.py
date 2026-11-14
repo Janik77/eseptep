@@ -5,6 +5,7 @@ from math import ceil, sqrt
 from accounts.models import Calculation, ClientProject
 
 from .definitions import SEGMENTS
+from .validation import validate_calculator_input
 
 SEGMENT_ALIASES = {'econom': 'economy'}
 PLAIN_REFERENCE = {'label': 'Предварительно', 'material': 1.0, 'labor': 0}
@@ -20,6 +21,7 @@ def to_float(value, default):
 
 def calculate_materials(calculator, form_data):
     """Calculate material quantities on the server."""
+    form_data = validate_calculator_input(calculator, form_data)
     calculators = {
         'demontazh': _calculate_demontazh,
         'elektrika': _calculate_elektrika,

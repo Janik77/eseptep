@@ -1,5 +1,16 @@
 from django.shortcuts import render
 
+from calculators.validation import InputValidationError, validate_fields
+
+CITIES = ['Астана', 'Шымкент', 'Алматы']
+DEVELOPERS = ['BI', 'OTAU', 'Bazis', 'Rise Group']
+PACKAGE_FIELDS = [
+    {'name': 'area', 'label': 'Квадратура квартиры', 'min': 1},
+    *[{'name': name, 'label': label, 'type': 'select',
+       'options': [{'value': value} for value in values]}
+      for name, label, values in [('city', 'Город', CITIES), ('developer', 'Застройщик', DEVELOPERS)]],
+]
+
 TURNKEY_PACKAGES = [
     {
         'key': 'economy',
@@ -63,16 +74,15 @@ def marketplace_home(request):
     }
     results = []
 
+    form_errors = {}
     if request.method == 'POST':
-        form_data['city'] = request.POST.get('city') or form_data['city']
-        form_data['developer'] = request.POST.get('developer') or form_data['developer']
-        form_data['area'] = request.POST.get('area') or ''
+        form_data = {name: request.POST.get(name, '') for name in form_data}
         try:
-            area = max(float(str(form_data['area']).replace(',', '.')), 1)
-        except (TypeError, ValueError):
-            area = 0
-
-        if area:
+            cleaned = validate_fields(PACKAGE_FIELDS, form_data)
+        except InputValidationError as exc:
+            form_errors = exc.errors
+        else:
+            area = float(cleaned['area'])
             for package in TURNKEY_PACKAGES:
                 results.append({
                     **package,
@@ -87,7 +97,8 @@ def marketplace_home(request):
             'form_data': form_data,
             'packages': TURNKEY_PACKAGES,
             'results': results,
-            'cities': ['Астана', 'Шымкент', 'Алматы'],
-            'developers': ['BI', 'OTAU', 'Bazis', 'Rise Group'],
+            'form_errors': form_errors,
+            'cities': CITIES,
+            'developers': DEVELOPERS,
         },
     )

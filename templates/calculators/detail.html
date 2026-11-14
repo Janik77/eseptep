@@ -48,6 +48,7 @@
                         <span>{{ field.label }}{% if field.unit %} <small>{{ field.unit }}</small>{% endif %}</span>
                         {% if field.type == 'select' %}
                             <select name="{{ field.name }}">
+                                {% if field.error %}<option value="{{ field.value }}" selected>{{ field.value|default:"Выберите значение" }}</option>{% endif %}
                                 {% for option in field.options %}
                                     <option value="{{ option.value }}" {% if field.value == option.value %}selected{% endif %}>{{ option.label }}</option>
                                 {% endfor %}
@@ -55,8 +56,9 @@
                         {% elif field.decimal_field %}
                             <input type="text" name="{{ field.name }}" value="{{ field.value }}" inputmode="decimal" autocomplete="{{ field.autocomplete|default:'off' }}" data-decimal-field="true" required>
                         {% else %}
-                            <input type="{{ field.type }}" name="{{ field.name }}" {% if field.min is not None %}min="{{ field.min }}"{% endif %} {% if field.step is not None %}step="{{ field.step }}"{% endif %} value="{{ field.value }}" required>
+                            <input type="text" inputmode="decimal" name="{{ field.name }}" {% if field.min is not None %}min="{{ field.min }}"{% endif %} {% if field.step is not None %}step="{{ field.step }}"{% endif %} value="{{ field.value }}" required>
                         {% endif %}
+                        {% if field.error %}<small role="alert">{{ field.error }}</small>{% endif %}
                     </label>
                 {% endfor %}
                 <button class="btn btn--primary" type="submit">Рассчитать материалы</button>
