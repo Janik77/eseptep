@@ -7,11 +7,44 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = 'django-insecure-3m%hv66&7s9*h8)$32jez2(&29+06w*aicws67ngup1m!@^4zw'
+import os
+from django.core.exceptions import ImproperlyConfigured
+from dotenv import load_dotenv
 
-DEBUG = True
-
-ALLOWED_HOSTS = []
+load_dotenv(BASE_DIR / '.env')
+ENVIRONMENT = os.getenv('DJANGO_ENV', 'development')
+if ENVIRONMENT not in {'development', 'test', 'production'}:
+    raise ImproperlyConfigured('DJANGO_ENV must be development, test or production')
+PRODUCTION = ENVIRONMENT == 'production'
+DEBUG = os.getenv('DJANGO_DEBUG', 'false' if PRODUCTION else 'true').lower() == 'true'
+SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', '')
+ALLOWED_HOSTS = [x.strip() for x in os.getenv('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1' if not PRODUCTION else '').split(',') if x.strip()]
+if PRODUCTION:
+    if DEBUG:
+        raise ImproperlyConfigured('DJANGO_DEBUG must be false in production')
+    if len(SECRET_KEY) < 50 or SECRET_KEY.startswith('django-insecure-') or len(set(SECRET_KEY)) < 5:
+        raise ImproperlyConfigured('Production requires a strong DJANGO_SECRET_KEY (50+ characters)')
+    if not ALLOWED_HOSTS or '*' in ALLOWED_HOSTS:
+        raise ImproperlyConfigured('Production requires explicit DJANGO_ALLOWED_HOSTS')
+    if not os.getenv('DJANGO_PRIVATE_MEDIA_ROOT'):
+        raise ImproperlyConfigured('Production requires DJANGO_PRIVATE_MEDIA_ROOT outside public web roots')
+else:
+    # Deliberately non-production fallback; no real credential is embedded.
+    SECRET_KEY = SECRET_KEY or 'development-only-not-for-public-use-' * 2
+CSRF_TRUSTED_ORIGINS = [x.strip() for x in os.getenv('DJANGO_CSRF_TRUSTED_ORIGINS', '').split(',') if x.strip()]
+SECURE_SSL_REDIRECT = PRODUCTION
+SESSION_COOKIE_SECURE = PRODUCTION
+CSRF_COOKIE_SECURE = PRODUCTION
+SECURE_HSTS_SECONDS = 31536000 if PRODUCTION else 0
+SECURE_HSTS_INCLUDE_SUBDOMAINS = PRODUCTION
+SECURE_HSTS_PRELOAD = PRODUCTION
+# Enable only behind a trusted proxy that strips incoming forwarded headers.
+if os.getenv('DJANGO_TRUST_PROXY', 'false').lower() == 'true':
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+PRIVATE_MEDIA_ROOT = Path(os.getenv('DJANGO_PRIVATE_MEDIA_ROOT', BASE_DIR / 'private_media'))
+PROJECT_UPLOAD_MAX_BYTES = 10 * 1024 * 1024
+DATA_UPLOAD_MAX_MEMORY_SIZE = 12 * 1024 * 1024
+FILE_UPLOAD_MAX_MEMORY_SIZE = 2 * 1024 * 1024
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -59,7 +92,7 @@ WSGI_APPLICATION = 'config.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'NAME': os.getenv('DJANGO_DB_PATH', BASE_DIR / 'db.sqlite3'),
     }
 }
 

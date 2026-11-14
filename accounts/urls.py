@@ -3,6 +3,7 @@ from django.urls import path
 from .views import (
     AccountLoginView,
     client_dashboard,
+    calculation_detail,
     client_project_create,
     master_dashboard,
     master_profile_edit,
@@ -16,6 +17,7 @@ from .views import (
 app_name = 'accounts'
 
 urlpatterns = [
+    path('calculations/<str:calculation_id>/', calculation_detail, name='calculation_detail'),
     path('register/', register_view, name='register'),
     path('login/', AccountLoginView.as_view(), name='login'),
     path('logout/', logout_view, name='logout'),

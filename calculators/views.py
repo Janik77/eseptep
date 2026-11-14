@@ -1,11 +1,13 @@
 from django.contrib import messages
 from django.http import Http404
+from django.core.exceptions import ValidationError
 from django.shortcuts import redirect, render
 
-from accounts.models import ServiceRequest
+from accounts.models import ClientProject, ServiceRequest, UserProfile
 
 from .definitions import CALCULATORS, CALCULATORS_BY_SLUG, SEGMENT_MULTIPLIERS
 from .services import calculate_materials, save_calculation_for_user
+from .validation import InputValidationError, validate_calculator_input
 
 RECOMMENDED_MASTERS = [
     {
@@ -109,41 +111,53 @@ def calculator_detail(request, slug):
         raise Http404('Калькулятор не найден')
 
     form_data = _get_form_data(calculator, request.POST if request.method == 'POST' else None)
-    if request.method == 'POST' and request.POST.get('selected_variant'):
+    if request.method == 'POST' and 'selected_variant' in request.POST:
         form_data['selected_variant'] = request.POST.get('selected_variant')
-    form_errors = _validate_decimal_fields(calculator, form_data) if request.method == 'POST' else []
+    field_errors = {}
+    if request.method == 'POST':
+        try:
+            validate_calculator_input(calculator, form_data)
+        except InputValidationError as exc:
+            field_errors = exc.errors
+    form_errors = list(field_errors.values())
     form_fields = _get_form_fields(calculator, form_data)
+    for field in form_fields:
+        field['error'] = field_errors.get(field['name'])
     result = None
 
     if request.method == 'POST' and not form_errors:
         result = calculate_materials(calculator, form_data)
         action = request.POST.get('action')
 
-        if request.user.is_authenticated and action in {'save_estimate', 'request_master', 'request_supplier'}:
-            project, calculation = save_calculation_for_user(request.user, slug, result)
-            if action == 'request_master':
-                ServiceRequest.objects.create(
-                    client=request.user,
-                    project=project,
-                    calculation=calculation,
-                    request_type=ServiceRequest.RequestType.MASTER,
-                    status=ServiceRequest.Status.NEW,
-                    comment=f'Заявка после расчёта: {calculator["title"]}',
-                )
-                messages.success(request, 'Смета сохранена и заявка мастерам отправлена.')
-            elif action == 'request_supplier':
-                ServiceRequest.objects.create(
-                    client=request.user,
-                    project=project,
-                    calculation=calculation,
-                    request_type=ServiceRequest.RequestType.SUPPLIER,
-                    status=ServiceRequest.Status.NEW,
-                    comment=f'Запрос поставщикам после расчёта: {calculator["title"]}',
-                )
-                messages.success(request, 'Смета сохранена и запрос поставщикам отправлен.')
+        if action in {'save_estimate', 'request_master', 'request_supplier'}:
+            try:
+                project, calculation = save_calculation_for_user(request.user, slug, result, request.POST.get('project_id'))
+            except ValidationError as error:
+                form_errors.extend(error.messages)
             else:
-                messages.success(request, 'Смета сохранена в личный кабинет.')
-            return redirect('calculators:detail', slug=slug)
+                if action == 'request_master':
+                    ServiceRequest.objects.create(
+                        client=request.user,
+                        project=project,
+                        calculation=calculation,
+                        request_type=ServiceRequest.RequestType.MASTER,
+                        status=ServiceRequest.Status.NEW,
+                        comment=f'Заявка после расчёта: {calculator["title"]}',
+                    )
+                    messages.success(request, 'Смета сохранена и заявка мастерам отправлена.')
+                elif action == 'request_supplier':
+                    ServiceRequest.objects.create(
+                        client=request.user,
+                        project=project,
+                        calculation=calculation,
+                        request_type=ServiceRequest.RequestType.SUPPLIER,
+                        status=ServiceRequest.Status.NEW,
+                        comment=f'Запрос поставщикам после расчёта: {calculator["title"]}',
+                    )
+                    messages.success(request, 'Смета сохранена и запрос поставщикам отправлен.')
+                else:
+                    messages.success(request, 'Смета сохранена в личный кабинет.')
+                return redirect('accounts:calculation_detail', calculation_id=calculation.pk)
     return render(
         request,
         'calculators/detail.html',
@@ -157,6 +171,9 @@ def calculator_detail(request, slug):
             'calculators': CALCULATORS,
             'recommended_masters': RECOMMENDED_MASTERS,
             'material_sellers': MATERIAL_SELLERS,
+            'client_projects': ClientProject.objects.filter(user=request.user, status__in=['draft', 'calculated']) if request.user.is_authenticated else ClientProject.objects.none(),
+            'can_save_calculation': request.user.is_authenticated and getattr(getattr(request.user, 'profile', None), 'role', None) == UserProfile.Role.CLIENT,
+            'selected_project_id': request.POST.get('project_id', ''),
             'show_auth_save_cta': not request.user.is_authenticated,
         },
     )
@@ -165,7 +182,7 @@ def _get_form_data(calculator, post_data=None):
     form_data = {}
     for field in calculator.get('fields', []):
         default = field.get('default', '')
-        form_data[field['name']] = (post_data or {}).get(field['name'], str(default))
+        form_data[field['name']] = post_data.get(field['name'], '') if post_data is not None else str(default)
     return form_data
 
 
@@ -181,22 +198,3 @@ def _get_form_fields(calculator, form_data):
             )
         fields.append(prepared)
     return fields
-
-
-def _validate_decimal_fields(calculator, form_data):
-    errors = []
-    for field in calculator.get('fields', []):
-        if not field.get('decimal_field'):
-            continue
-        raw_value = str(form_data.get(field['name'], '')).strip()
-        normalized_value = raw_value.replace(',', '.')
-        try:
-            parsed_value = float(normalized_value)
-        except ValueError:
-            errors.append('Введите толщину числом, например 2.5')
-            continue
-        if parsed_value <= 0 or parsed_value > field.get('max', 20):
-            errors.append('Введите толщину числом, например 2.5')
-            continue
-        form_data[field['name']] = normalized_value
-    return errors

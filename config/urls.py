@@ -1,5 +1,7 @@
 from django.conf import settings
-from django.conf.urls.static import static
+from django.http import Http404
+from django.urls import re_path
+from .media import public_development_media
 from django.contrib import admin
 
 admin.site.site_header = 'ESEPTEP Admin'
@@ -19,6 +21,7 @@ from accounts.views import (
 )
 
 urlpatterns = [
+    re_path(r'^media/(?P<path>.*)$', public_development_media),
     path('', include('core.urls')),
     path('calculators/', include('calculators.urls')),
     path('marketplace/', include('marketplace.urls')),
@@ -34,6 +37,3 @@ urlpatterns = [
     path('dashboard/supplier/materials/create/', supplier_material_create, name='dashboard_supplier_material_create_root'),
     path('admin/', admin.site.urls),
 ]
-
-if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

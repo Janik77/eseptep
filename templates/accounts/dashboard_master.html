@@ -3,6 +3,7 @@
 {% block breadcrumbs %}<nav class="breadcrumbs"><a href="{% url 'core:home' %}">Главная</a><span>›</span><b>Кабинет мастера</b></nav>{% endblock %}
 
 {% block content %}
+{% if response_form.errors %}<div class="dashboard-card" role="alert"><h2>Отклик не отправлен</h2>{{ response_form.errors }}</div>{% endif %}
 <section class="dashboard">
   <div class="dashboard-card master-profile-card">
     <div class="master-profile-head">
@@ -14,7 +15,7 @@
       <div>
         <h1>{{ master_profile.full_name }}</h1>
         <p>{{ master_profile.city }} · {{ master_profile.specialization }}</p>
-        <p>Опыт: {{ master_profile.experience_years }} лет · Рейтинг: {{ master_profile.rating }} · {% if master_profile.is_available %}Свободен{% else %}Занят{% endif %}</p>
+        <p>Опыт: {{ master_profile.experience_years }} лет · Отзывы пока не подтверждены · {% if master_profile.is_available %}Свободен{% else %}Занят{% endif %}</p>
       </div>
     </div>
     <a class="btn btn--secondary" href="{% url 'accounts:master_profile_edit' %}">Редактировать профиль</a>

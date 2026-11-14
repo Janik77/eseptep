@@ -13,15 +13,8 @@
     <form class="calc-form project-upload-form" method="post" enctype="multipart/form-data">
         {% csrf_token %}
         <input type="hidden" name="action" value="upload">
-        <label>
-            <span>Файл проекта</span>
-            <input type="file" name="file" accept="{{ allowed_upload_extensions }}" required>
-            <small>PDF, JPG, JPEG, PNG, WEBP, DWG</small>
-        </label>
-        <label>
-            <span>Комментарий</span>
-            <textarea name="comment" rows="4" placeholder="Например: нужна смета для ремонта под ключ"></textarea>
-        </label>
+        {{ upload_form.as_p }}
+        <p>PDF до 100 страниц, JPG, PNG или WEBP. До 10 МБ; изображения до 20 Мп. DWG пока не поддерживается.</p>
         <button class="btn btn--primary" type="submit">Загрузить и проанализировать</button>
     </form>
 
@@ -30,7 +23,7 @@
         <p>Реальный ИИ пока не подключён. Сейчас работает честный demo-mode: файл сохраняется, а система показывает демо-структуру анализа.</p>
         {% if show_auth_save_cta %}
             <div class="auth-soft-cta auth-soft-cta--compact">
-                <p>Войдите или зарегистрируйтесь, чтобы привязать загрузку к личному кабинету.</p>
+                <p>Войдите до загрузки, чтобы сохранить её за аккаунтом. Гостевой файл доступен только в текущей сессии; после входа загрузите его заново.</p>
                 <div class="result-actions">
                     <a class="btn btn--primary" href="{% url 'accounts:login' %}?next={{ request.path|urlencode }}">Войти</a>
                     <a class="btn btn--secondary" href="{% url 'accounts:register' %}">Регистрация</a>
@@ -45,6 +38,7 @@
     <div class="success-state success-state--compact">
         <span>Файл принят ✅</span>
         <h2>{{ upload.file.name }}</h2>
+        <a href="{% url 'projects:download' upload.pk %}">Скачать свой файл</a>
         <p>Demo-анализ сформирован. Статус: {{ upload.ai_status }}</p>
     </div>
 
@@ -68,18 +62,7 @@
         {% csrf_token %}
         <input type="hidden" name="action" value="estimate">
         <input type="hidden" name="upload_id" value="{{ upload.id }}">
-        <label>
-            <span>Площадь квартиры</span>
-            <input type="number" name="area" min="1" step="0.1" value="{{ upload.area|default:'' }}" required>
-        </label>
-        <label>
-            <span>Уровень ремонта</span>
-            <select name="repair_level">
-                {% for value,label in repair_levels %}
-                    <option value="{{ value }}" {% if upload.repair_level == value %}selected{% endif %}>{{ label }}</option>
-                {% endfor %}
-            </select>
-        </label>
+        {{ estimate_form.as_p }}
         <button class="btn btn--primary" type="submit">Получить предварительный расчёт</button>
     </form>
 

@@ -358,6 +358,9 @@ function initVariantResults() {
         const buttons = Array.from(root.querySelectorAll('[data-variant-button]'));
         const panels = Array.from(root.querySelectorAll('[data-variant-panel]'));
         const label = root.querySelector('[data-active-variant-label]');
+        const resultCard = root.closest('.result-card');
+        const summary = resultCard?.querySelector('[data-summary-variant]');
+        const summaryTotal = resultCard?.querySelector('[data-summary-total]');
         const hiddenInputs = document.querySelectorAll('[data-selected-variant-input]');
         const copyButton = root.querySelector('[data-copy-variant]');
         const toast = root.querySelector('[data-variant-copy-toast]');
@@ -369,8 +372,11 @@ function initVariantResults() {
                 const isActive = button.dataset.variantButton === key;
                 button.classList.toggle('is-active', isActive);
                 button.setAttribute('aria-selected', String(isActive));
-                if (isActive && label) {
-                    label.textContent = button.querySelector('b')?.textContent || '';
+                if (isActive) {
+                    const title = button.querySelector('b')?.textContent || '';
+                    if (label) label.textContent = title;
+                    if (summary) summary.textContent = `${title} · ${button.dataset.variantCount} позиций · цены справочно`;
+                    if (summaryTotal) summaryTotal.textContent = `₸ ${button.dataset.variantTotal}`;
                 }
             });
             panels.forEach((panel) => {
