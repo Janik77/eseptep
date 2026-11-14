@@ -6,6 +6,7 @@ from accounts.models import ServiceRequest
 
 from .definitions import CALCULATORS, CALCULATORS_BY_SLUG, SEGMENT_MULTIPLIERS
 from .services import calculate_materials, save_calculation_for_user
+from .validation import InputValidationError, validate_calculator_input
 
 RECOMMENDED_MASTERS = [
     {
@@ -109,10 +110,18 @@ def calculator_detail(request, slug):
         raise Http404('Калькулятор не найден')
 
     form_data = _get_form_data(calculator, request.POST if request.method == 'POST' else None)
-    if request.method == 'POST' and request.POST.get('selected_variant'):
+    if request.method == 'POST' and 'selected_variant' in request.POST:
         form_data['selected_variant'] = request.POST.get('selected_variant')
-    form_errors = _validate_decimal_fields(calculator, form_data) if request.method == 'POST' else []
+    field_errors = {}
+    if request.method == 'POST':
+        try:
+            validate_calculator_input(calculator, form_data)
+        except InputValidationError as exc:
+            field_errors = exc.errors
+    form_errors = list(field_errors.values())
     form_fields = _get_form_fields(calculator, form_data)
+    for field in form_fields:
+        field['error'] = field_errors.get(field['name'])
     result = None
 
     if request.method == 'POST' and not form_errors:
@@ -165,7 +174,7 @@ def _get_form_data(calculator, post_data=None):
     form_data = {}
     for field in calculator.get('fields', []):
         default = field.get('default', '')
-        form_data[field['name']] = (post_data or {}).get(field['name'], str(default))
+        form_data[field['name']] = post_data.get(field['name'], '') if post_data is not None else str(default)
     return form_data
 
 
@@ -181,22 +190,3 @@ def _get_form_fields(calculator, form_data):
             )
         fields.append(prepared)
     return fields
-
-
-def _validate_decimal_fields(calculator, form_data):
-    errors = []
-    for field in calculator.get('fields', []):
-        if not field.get('decimal_field'):
-            continue
-        raw_value = str(form_data.get(field['name'], '')).strip()
-        normalized_value = raw_value.replace(',', '.')
-        try:
-            parsed_value = float(normalized_value)
-        except ValueError:
-            errors.append('Введите толщину числом, например 2.5')
-            continue
-        if parsed_value <= 0 or parsed_value > field.get('max', 20):
-            errors.append('Введите толщину числом, например 2.5')
-            continue
-        form_data[field['name']] = normalized_value
-    return errors

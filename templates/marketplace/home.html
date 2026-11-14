@@ -12,9 +12,11 @@
 <section class="turnkey-layout" aria-label="Расчёт ремонта под ключ">
     <form class="calc-form turnkey-form" method="post">
         {% csrf_token %}
+        {% if form_errors %}<div role="alert">{% for error in form_errors.values %}<p>{{ error }}</p>{% endfor %}</div>{% endif %}
         <label>
             <span>Город</span>
             <select name="city">
+                {% if form_errors.city %}<option value="{{ form_data.city }}" selected>{{ form_data.city|default:"Выберите значение" }}</option>{% endif %}
                 {% for city in cities %}
                     <option value="{{ city }}" {% if form_data.city == city %}selected{% endif %}>{{ city }}</option>
                 {% endfor %}
@@ -23,6 +25,7 @@
         <label>
             <span>Застройщик</span>
             <select name="developer">
+                {% if form_errors.developer %}<option value="{{ form_data.developer }}" selected>{{ form_data.developer|default:"Выберите значение" }}</option>{% endif %}
                 {% for developer in developers %}
                     <option value="{{ developer }}" {% if form_data.developer == developer %}selected{% endif %}>{{ developer }}</option>
                 {% endfor %}
@@ -30,7 +33,7 @@
         </label>
         <label>
             <span>Квадратура квартиры</span>
-            <input type="number" min="1" step="0.1" name="area" value="{{ form_data.area }}" placeholder="Например: 60" required>
+            <input type="text" inputmode="decimal" name="area" value="{{ form_data.area }}" placeholder="Например: 60" required>
         </label>
         <button class="btn btn--primary" type="submit">Рассчитать</button>
     </form>
