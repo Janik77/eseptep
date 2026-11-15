@@ -137,7 +137,7 @@ try {
   assert.equal(await page.locator('[name=comment]').inputValue(),'Synthetic draft Ә Ғ Қ Ң Ө Ұ Ү Һ І');
   assert.equal(uploadPosts.length,0,'language switch did not upload');
   await page.locator('.project-upload-form button[type=submit]').click();
-  await page.locator('[name=upload_id]').waitFor();
+  await page.locator('[name=upload_id]').waitFor({state:'attached'});
   assert.equal(uploadPosts.length,1,'explicit upload sent once');
   await switchLanguage(page,'ru');
   assert.equal(uploadPosts.length,1,'language switch after upload did not replay');

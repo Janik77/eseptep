@@ -85,3 +85,23 @@ class LocalizationTests(TestCase):
                     self.assertEqual(original['name'], translated['name'])
                     self.assertEqual(original.get('default'), translated.get('default'))
                     self.assertEqual([x['value'] for x in original.get('options', [])], [x['value'] for x in translated.get('options', [])])
+
+    def test_kazakh_prices_use_complete_messages_with_natural_word_order(self):
+        from django.template import Template, Context
+        samples = [
+            ('от ₸ {{ amount }}', '₸ 12000 бастап'),
+            ('₸ {{ amount }} за {{ unit }}', 'м² үшін ₸ 12000'),
+            ('Справочно ₸ {{ amount }} за {{ unit }}', 'Анықтамалық баға: м² үшін ₸ 12000'),
+        ]
+        for source, expected in samples:
+            template = Template('{% load i18n %}{% blocktranslate %}' + source + '{% endblocktranslate %}')
+            with override('kk'):
+                self.assertEqual(template.render(Context({'amount': '12000', 'unit': 'м²'})), expected)
+            with override('ru'):
+                self.assertEqual(template.render(Context({'amount': '12000', 'unit': 'м²'})), source.replace('{{ amount }}', '12000').replace('{{ unit }}', 'м²'))
+        self.client.cookies['django_language'] = 'kk'
+        for calculator in CALCULATORS:
+            data = {f['name']: str(f.get('default', '')) for f in calculator['fields']}
+            response = self.client.get(reverse('calculators:detail', args=[calculator['slug']]), {**data, '_preview': '1'})
+            self.assertNotContains(response, 'бастап ₸')
+            self.assertNotRegex(response.content.decode(), r'₸\s*[\d\s.,]+\s+үшін')

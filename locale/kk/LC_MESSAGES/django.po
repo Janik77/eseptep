@@ -2576,3 +2576,15 @@ msgid "Ensure that there are no more than %(max)s digit before the decimal point
 msgid_plural "Ensure that there are no more than %(max)s digits before the decimal point."
 msgstr[0] "Үтірге дейін %(max)s цифрдан артық болмауы керек."
 msgstr[1] "Үтірге дейін %(max)s цифрдан артық болмауы керек."
+
+#: templates/calculators/detail.html
+msgid "от ₸ %(amount)s"
+msgstr "₸ %(amount)s бастап"
+
+#: templates/calculators/detail.html
+msgid "₸ %(amount)s за %(unit)s"
+msgstr "%(unit)s үшін ₸ %(amount)s"
+
+#: templates/calculators/detail.html
+msgid "Справочно ₸ %(amount)s за %(unit)s"
+msgstr "Анықтамалық баға: %(unit)s үшін ₸ %(amount)s"

@@ -85,7 +85,7 @@
                                     <button class="variant-card{% if variant.key == result.selected_variant %} is-active{% endif %}" type="button" data-variant-button="{{ variant.key }}" data-variant-total="{{ variant.total }}" data-variant-count="{{ variant.materials_count }}" aria-selected="{% if variant.key == result.selected_variant %}true{% else %}false{% endif %}">
                                         <b>{{ variant.title }}</b>
                                         <span>{{ variant.description }}</span>
-                                        <strong>{% translate 'от ₸' %} {{ variant.total }}</strong>
+                                        <strong>{% blocktranslate with amount=variant.total %}от ₸ {{ amount }}{% endblocktranslate %}</strong>
                                     </button>
                                 {% endfor %}
                             </div>
@@ -99,7 +99,7 @@
                                     <div class="materials-table materials-table--primary materials-table--priced">
                                         {% for material in variant.materials %}
                                             <div class="materials-table__row">
-                                                <div><b>{{ forloop.counter }}. {{ material.title }}</b><small>₸ {{ material.reference_price }} {% translate 'за' %} {{ material.unit }}</small></div>
+                                                <div><b>{{ forloop.counter }}. {{ material.title }}</b><small>{% blocktranslate with amount=material.reference_price unit=material.unit %}₸ {{ amount }} за {{ unit }}{% endblocktranslate %}</small></div>
                                                 <strong>{{ material.quantity }} {{ material.unit }}</strong>
                                                 <small class="material-line-total">₸ {{ material.reference_total }}</small>
                                             </div>
@@ -127,7 +127,7 @@
                         <div class="materials-table materials-table--primary">
                             {% for material in result.materials %}
                                 <div class="materials-table__row">
-                                    <div><b>{{ material.title }}</b><small>{% translate 'Справочно ₸' %} {{ material.reference_price }} {% translate 'за' %} {{ material.unit }}</small></div>
+                                    <div><b>{{ material.title }}</b><small>{% blocktranslate with amount=material.reference_price unit=material.unit %}Справочно ₸ {{ amount }} за {{ unit }}{% endblocktranslate %}</small></div>
                                     <strong>{{ material.quantity }} {{ material.unit }}</strong>
                                     <small class="material-line-total">₸ {{ material.reference_total }}</small>
                                 </div>
