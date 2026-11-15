@@ -7,6 +7,8 @@ class InterfaceRegressionTests(TestCase):
         response = self.client.get(reverse('core:home'))
         self.assertContains(response, 'Планируйте ремонт проще')
         self.assertContains(response, 'class="direction-card"', count=3)
+        self.assertContains(response, 'class="planning-intro"')
+        self.assertNotContains(response, 'class="home-intro"')
         self.assertContains(response, reverse('calculators:home'))
         self.assertContains(response, reverse('marketplace:home'))
         self.assertContains(response, reverse('projects:upload'))

@@ -38,10 +38,10 @@ try {
       await switchLanguage(page,lang);
       const cards=page.locator('.direction-card');
       assert.equal(await cards.count(),3);
-      if(width===1440) for(const card of await cards.all()) {
-        const box=await card.boundingBox(); assert(box && box.y+box.height<=900, 'all three paths above fold');
-      }
       await shot(page,`home-${lang}-${width}`);
+      if(width===1440) for(const card of await cards.all()) {
+        const box=await card.boundingBox(); assert(box && box.y+box.height<=900, `all three paths above fold (${lang}): ${JSON.stringify(box)}`);
+      }
       await page.goto(`${base}/calculators/`);
       assert.equal(await page.locator('.work-card').count(),12);
       await shot(page,`catalog-${lang}-${width}`);
