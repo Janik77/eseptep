@@ -1,3 +1,4 @@
+from django.utils.translation import gettext_lazy as _
 from django import forms
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.contrib.auth.models import User
@@ -14,16 +15,16 @@ from .models import (
 
 
 class RegisterForm(UserCreationForm):
-    first_name = forms.CharField(max_length=150, label='Имя')
-    phone = forms.CharField(max_length=32, label='Телефон')
+    first_name = forms.CharField(max_length=150, label=_('Имя'))
+    phone = forms.CharField(max_length=32, label=_('Телефон'))
     email = forms.EmailField(label='Email')
     role = forms.ChoiceField(
         choices=[
-            (UserProfile.Role.CLIENT, 'Клиент'),
-            (UserProfile.Role.MASTER, 'Мастер'),
-            (UserProfile.Role.SUPPLIER, 'Поставщик'),
+            (UserProfile.Role.CLIENT, _('Клиент')),
+            (UserProfile.Role.MASTER, _('Мастер')),
+            (UserProfile.Role.SUPPLIER, _('Поставщик')),
         ],
-        label='Роль',
+        label=_('Роль'),
     )
 
     class Meta(UserCreationForm.Meta):
@@ -33,7 +34,7 @@ class RegisterForm(UserCreationForm):
     def clean_email(self):
         email = self.cleaned_data['email'].lower()
         if User.objects.filter(email__iexact=email).exists():
-            raise forms.ValidationError('Пользователь с таким email уже существует.')
+            raise forms.ValidationError(_('Пользователь с таким email уже существует.'))
         return email
 
     def save(self, commit=True):
@@ -52,6 +53,7 @@ class RegisterForm(UserCreationForm):
 
 
 class EseptepAuthenticationForm(AuthenticationForm):
+    error_messages = {**AuthenticationForm.error_messages, 'invalid_login': _('Укажите верный email и пароль. Учитывайте регистр букв.')}
     username = forms.EmailField(label='Email')
 
 
@@ -60,11 +62,11 @@ class ClientProjectCreateForm(forms.ModelForm):
         model = ClientProject
         fields = ('title', 'city', 'area_m2', 'rooms', 'repair_segment')
         labels = {
-            'title': 'Название проекта',
-            'city': 'Город',
-            'area_m2': 'Площадь, м²',
-            'rooms': 'Комнаты',
-            'repair_segment': 'Сегмент ремонта',
+            'title': _('Название проекта'),
+            'city': _('Город'),
+            'area_m2': _('Площадь, м²'),
+            'rooms': _('Комнаты'),
+            'repair_segment': _('Сегмент ремонта'),
         }
 
 
@@ -72,14 +74,17 @@ class MasterProfileForm(forms.ModelForm):
     class Meta:
         model = MasterProfile
         fields = ('full_name', 'photo', 'city', 'specialization', 'experience_years', 'is_available', 'whatsapp', 'description')
+        labels = {'full_name': _('Имя и фамилия'), 'photo': _('Фотография'), 'city': _('Город'),
+                  'specialization': _('Специализация'), 'experience_years': _('Опыт работы, лет'),
+                  'is_available': _('Принимаю заказы'), 'whatsapp': 'WhatsApp', 'description': _('Описание')}
 
 
 class MasterResponseForm(forms.ModelForm):
-    price_from = forms.DecimalField(min_value=0, max_digits=12, decimal_places=2, label="Цена от")
+    price_from = forms.DecimalField(min_value=0, max_digits=12, decimal_places=2, label=_("Цена от"))
     class Meta:
         model = MasterResponse
         fields = ('price_from', 'message')
-        labels = {'price_from': 'Цена от', 'message': 'Сообщение клиенту'}
+        labels = {'price_from': _('Цена от'), 'message': _('Сообщение клиенту')}
 
 
 class SupplierProfileForm(forms.ModelForm):
@@ -87,28 +92,30 @@ class SupplierProfileForm(forms.ModelForm):
         model = SupplierProfile
         fields = ('company_name', 'city', 'address', 'delivery_info', 'whatsapp', 'description', 'is_active')
         labels = {
-            'company_name': 'Название компании',
-            'city': 'Город',
-            'address': 'Адрес',
-            'delivery_info': 'Доставка',
+            'company_name': _('Название компании'),
+            'city': _('Город'),
+            'address': _('Адрес'),
+            'delivery_info': _('Доставка'),
             'whatsapp': 'WhatsApp',
-            'description': 'Описание',
-            'is_active': 'Активный профиль',
+            'description': _('Описание'),
+            'is_active': _('Активный профиль'),
         }
 
 
 class SupplierMaterialForm(forms.ModelForm):
-    price = forms.DecimalField(min_value=0, max_digits=12, decimal_places=2, label="Цена")
+    price = forms.DecimalField(min_value=0, max_digits=12, decimal_places=2, label=_("Цена"))
     class Meta:
         model = SupplierMaterial
         fields = ('name', 'category', 'unit', 'price', 'stock_status', 'delivery_time')
+        labels = {'name': _('Название материала'), 'category': _('Категория'), 'unit': _('Единица измерения'),
+                  'stock_status': _('Наличие'), 'delivery_time': _('Срок поставки')}
 
 
 class SupplierResponseForm(forms.ModelForm):
-    total_price = forms.DecimalField(min_value=0, max_digits=12, decimal_places=2, label="Итоговая цена")
-    delivery_time = forms.CharField(label='Срок поставки', required=False)
+    total_price = forms.DecimalField(min_value=0, max_digits=12, decimal_places=2, label=_("Итоговая цена"))
+    delivery_time = forms.CharField(label=_('Срок поставки'), required=False)
 
     class Meta:
         model = SupplierResponse
         fields = ('total_price', 'message')
-        labels = {'total_price': 'Итоговая цена', 'message': 'Сообщение'}
+        labels = {'total_price': _('Итоговая цена'), 'message': _('Сообщение')}

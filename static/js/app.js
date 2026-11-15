@@ -1,3 +1,4 @@
+const tr = (text) => typeof gettext === 'function' ? gettext(text) : text;
 document.documentElement.classList.add('js');
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -133,7 +134,7 @@ function initCalculatorForm() {
 
         if (button) {
             button.dataset.originalText = button.textContent;
-            button.textContent = 'Считаем';
+            button.textContent = tr('Считаем');
         }
     });
 }
@@ -153,7 +154,7 @@ function initResultFlow(prefersReducedMotion = false) {
 
     saveButtons.forEach((button) => {
         button.addEventListener('click', async () => {
-            const estimateText = button.dataset.estimateText || 'Список материалов ESEPTEP';
+            const estimateText = button.dataset.estimateText || tr('Список материалов ESEPTEP');
             const storagePayload = {
                 text: estimateText,
                 savedAt: new Date().toISOString(),
@@ -167,17 +168,17 @@ function initResultFlow(prefersReducedMotion = false) {
 
             try {
                 await navigator.clipboard.writeText(estimateText);
-                button.textContent = button.dataset.savedText || 'Список сохранён';
+                button.textContent = button.dataset.savedText || tr('Список сохранён');
             } catch (error) {
-                button.textContent = 'Список сохранён';
+                button.textContent = tr('Список сохранён');
             }
 
             if (feedback) {
-                feedback.textContent = 'Список сохранён в браузере и скопирован. Можно отправить мастеру или продавцу.';
+                feedback.textContent = tr('Список сохранён в браузере и скопирован. Можно отправить мастеру или продавцу.');
             }
 
             window.setTimeout(() => {
-                button.textContent = button.dataset.originalText || 'Сохранить список';
+                button.textContent = button.dataset.originalText || tr('Сохранить список');
             }, 1800);
         });
 
@@ -198,7 +199,7 @@ function initCountUp(prefersReducedMotion) {
         const suffix = element.dataset.countSuffix || '';
 
         if (!Number.isFinite(target) || prefersReducedMotion) {
-            element.textContent = `${prefix}${target.toLocaleString('ru-RU')}${suffix}`;
+            element.textContent = `${prefix}${target.toLocaleString(document.documentElement.lang === 'kk' ? 'kk-KZ' : 'ru-RU')}${suffix}`;
             return;
         }
 
@@ -209,7 +210,7 @@ function initCountUp(prefersReducedMotion) {
             const progress = Math.min((now - startTime) / duration, 1);
             const eased = 1 - Math.pow(1 - progress, 3);
             const current = Math.round(target * eased);
-            element.textContent = `${prefix}${current.toLocaleString('ru-RU')}${suffix}`;
+            element.textContent = `${prefix}${current.toLocaleString(document.documentElement.lang === 'kk' ? 'kk-KZ' : 'ru-RU')}${suffix}`;
 
             if (progress < 1) {
                 window.requestAnimationFrame(tick);
@@ -260,7 +261,7 @@ function initMasterTemplate() {
         const quantity = Math.max(Number(quantityInput?.value || 0), 0);
 
         return {
-            material: materialNode?.dataset.value || materialNode?.textContent?.trim() || 'Материал',
+            material: materialNode?.dataset.value || materialNode?.textContent?.trim() || tr('Материал'),
             quantity,
             unit,
         };
@@ -268,24 +269,24 @@ function initMasterTemplate() {
 
     const buildEstimate = () => {
         const filledRows = getPositiveRows();
-        const lines = ['ESEPTEP · список материалов для мастера', ''];
+        const lines = [tr('ESEPTEP · список материалов для мастера'), ''];
 
         if (filledRows.length === 0) {
-            lines.push('Заполните количество у нужных материалов — в список попадут только позиции больше 0.');
+            lines.push(tr('Заполните количество у нужных материалов — в список попадут только позиции больше 0.'));
         } else {
             filledRows.forEach((item, index) => {
-                const quantityLabel = `${item.quantity.toLocaleString('ru-RU')} ${item.unit}`.trim();
+                const quantityLabel = `${item.quantity.toLocaleString(document.documentElement.lang === 'kk' ? 'kk-KZ' : 'ru-RU')} ${item.unit}`.trim();
                 lines.push(`${index + 1}. ${item.material} — ${quantityLabel}`);
             });
         }
 
         lines.push('');
-        lines.push('Цены не указаны. Количество нужно проверить по проекту.');
+        lines.push(tr('Цены не указаны. Количество нужно проверить по проекту.'));
 
         const text = lines.join('\n');
 
         if (totalElement) {
-            totalElement.textContent = `${filledRows.length} из ${getRows().length} заполнено`;
+            totalElement.textContent = `${filledRows.length} / ${getRows().length} ${tr('заполнено')}`;
         }
 
         if (output) {
@@ -333,7 +334,7 @@ function initMasterTemplate() {
         }
 
         const copied = await copyPlainText(text);
-        showCopyFeedback(copyButton, toast, copied, 'Скопировать список');
+        showCopyFeedback(copyButton, toast, copied, tr('Скопировать список'));
     });
 
     buildEstimate();
@@ -361,7 +362,7 @@ function initVariantResults() {
                 if (isActive) {
                     const title = button.querySelector('b')?.textContent || '';
                     if (label) label.textContent = title;
-                    if (summary) summary.textContent = `${title} · ${button.dataset.variantCount} позиций · цены справочно`;
+                    if (summary) summary.textContent = `${title} · ${button.dataset.variantCount} ${tr('позиций · цены справочно')}`;
                     if (summaryTotal) summaryTotal.textContent = `₸ ${button.dataset.variantTotal}`;
                 }
             });
@@ -385,7 +386,7 @@ function initVariantResults() {
             }
 
             const copied = await copyPlainText(text);
-            showCopyFeedback(copyButton, toast, copied, 'Скопировать список без цен');
+            showCopyFeedback(copyButton, toast, copied, tr('Скопировать список без цен'));
         });
 
         if (activeKey) {
@@ -408,7 +409,7 @@ function initSingleResultCopy() {
             }
 
             const copied = await copyPlainText(text);
-            showCopyFeedback(button, toast, copied, 'Скопировать список материалов без цен');
+            showCopyFeedback(button, toast, copied, tr('Скопировать список материалов без цен'));
         });
     });
 }
@@ -431,7 +432,7 @@ async function copyPlainText(text) {
         temporary = document.createElement('textarea');
         temporary.value = text;
         temporary.readOnly = true;
-        temporary.setAttribute('aria-label', 'Текст для копирования');
+        temporary.setAttribute('aria-label', tr('Текст для копирования'));
         temporary.style.cssText = 'position:fixed;top:0;left:0;width:1px;height:1px;opacity:0.01;pointer-events:none;';
         document.body.appendChild(temporary);
         temporary.focus({preventScroll: true});
@@ -449,9 +450,9 @@ async function copyPlainText(text) {
 function showCopyFeedback(button, toast, copied, originalLabel) {
     if (button.copyFeedbackTimer) window.clearTimeout(button.copyFeedbackTimer);
     button.classList.toggle('is-copied', copied);
-    button.textContent = copied ? 'Скопировано' : 'Не удалось скопировать. Повторить';
+    button.textContent = copied ? tr('Скопировано') : tr('Не удалось скопировать. Повторить');
     if (toast) {
-        toast.textContent = copied ? 'Список скопирован' : 'Копирование недоступно. Проверьте разрешения браузера и повторите.';
+        toast.textContent = copied ? tr('Список скопирован') : tr('Копирование недоступно. Проверьте разрешения браузера и повторите.');
         toast.classList.add('is-visible');
     }
     // Failure remains visible until a later attempt succeeds.

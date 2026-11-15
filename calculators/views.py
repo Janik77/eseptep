@@ -1,7 +1,9 @@
+from core.localization import render
+from django.utils.translation import gettext as _
 from django.contrib import messages
 from django.http import Http404
 from django.core.exceptions import ValidationError
-from django.shortcuts import redirect, render
+from django.shortcuts import redirect
 
 from accounts.models import ClientProject, ServiceRequest, UserProfile
 
@@ -110,11 +112,14 @@ def calculator_detail(request, slug):
     if calculator is None:
         raise Http404('Калькулятор не найден')
 
-    form_data = _get_form_data(calculator, request.POST if request.method == 'POST' else None)
-    if request.method == 'POST' and 'selected_variant' in request.POST:
-        form_data['selected_variant'] = request.POST.get('selected_variant')
+    preview = request.method == 'GET' and request.GET.get('_preview') in {'0', '1'}
+    source = request.POST if request.method == 'POST' else (request.GET if preview else None)
+    calculate = request.method == 'POST' or (preview and request.GET.get('_preview') == '1')
+    form_data = _get_form_data(calculator, source)
+    if source is not None and 'selected_variant' in source:
+        form_data['selected_variant'] = source.get('selected_variant')
     field_errors = {}
-    if request.method == 'POST':
+    if calculate:
         try:
             validate_calculator_input(calculator, form_data)
         except InputValidationError as exc:
@@ -125,9 +130,9 @@ def calculator_detail(request, slug):
         field['error'] = field_errors.get(field['name'])
     result = None
 
-    if request.method == 'POST' and not form_errors:
+    if calculate and not form_errors:
         result = calculate_materials(calculator, form_data)
-        action = request.POST.get('action')
+        action = request.POST.get('action') if request.method == 'POST' else None
 
         if action in {'save_estimate', 'request_master', 'request_supplier'}:
             try:
@@ -144,7 +149,7 @@ def calculator_detail(request, slug):
                         status=ServiceRequest.Status.NEW,
                         comment=f'Заявка после расчёта: {calculator["title"]}',
                     )
-                    messages.success(request, 'Смета сохранена и заявка мастерам отправлена.')
+                    messages.success(request, _('Смета сохранена и заявка мастерам отправлена.'))
                 elif action == 'request_supplier':
                     ServiceRequest.objects.create(
                         client=request.user,
@@ -154,9 +159,9 @@ def calculator_detail(request, slug):
                         status=ServiceRequest.Status.NEW,
                         comment=f'Запрос поставщикам после расчёта: {calculator["title"]}',
                     )
-                    messages.success(request, 'Смета сохранена и запрос поставщикам отправлен.')
+                    messages.success(request, _('Смета сохранена и запрос поставщикам отправлен.'))
                 else:
-                    messages.success(request, 'Смета сохранена в личный кабинет.')
+                    messages.success(request, _('Смета сохранена в личный кабинет.'))
                 return redirect('accounts:calculation_detail', calculation_id=calculation.pk)
     return render(
         request,

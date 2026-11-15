@@ -1,0 +1,28 @@
+// Extraction-only messages for Django makemessages -d djangojs. Not loaded by pages.
+gettext_noop('.result-card');
+gettext_noop('DOMContentLoaded');
+gettext_noop('ESEPTEP · список материалов для мастера');
+gettext_noop('script');
+gettext_noop('textarea');
+gettext_noop('Заполните количество у нужных материалов — в список попадут только позиции больше 0.');
+gettext_noop('Копирование недоступно. Проверьте разрешения браузера и повторите.');
+gettext_noop('Материал');
+gettext_noop('Не удалось временно сохранить ввод. Завершите форму перед переключением языка.');
+gettext_noop('Не удалось переключить язык. Введённые данные сохранены на этой странице.');
+gettext_noop('Не удалось скопировать. Повторить');
+gettext_noop('Показано:');
+gettext_noop('Скопировано');
+gettext_noop('Скопировать список');
+gettext_noop('Скопировать список без цен');
+gettext_noop('Скопировать список материалов без цен');
+gettext_noop('Сохранить список');
+gettext_noop('Список материалов ESEPTEP');
+gettext_noop('Список скопирован');
+gettext_noop('Список сохранён');
+gettext_noop('Список сохранён в браузере и скопирован. Можно отправить мастеру или продавцу.');
+gettext_noop('Считаем');
+gettext_noop('Текст для копирования');
+gettext_noop('Цены не указаны. Количество нужно проверить по проекту.');
+gettext_noop('заполнено');
+gettext_noop('из');
+gettext_noop('позиций · цены справочно');

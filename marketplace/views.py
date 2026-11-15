@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from core.localization import render
 
 from calculators.validation import InputValidationError, validate_fields
 
@@ -75,8 +75,11 @@ def marketplace_home(request):
     results = []
 
     form_errors = {}
-    if request.method == 'POST':
-        form_data = {name: request.POST.get(name, '') for name in form_data}
+    preview = request.method == 'GET' and request.GET.get('_preview') in {'0', '1'}
+    source = request.POST if request.method == 'POST' else request.GET
+    if request.method == 'POST' or preview:
+        form_data = {name: source.get(name, '') for name in form_data}
+    if request.method == 'POST' or (preview and source.get('_preview') == '1'):
         try:
             cleaned = validate_fields(PACKAGE_FIELDS, form_data)
         except InputValidationError as exc:
