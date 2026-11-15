@@ -5,12 +5,13 @@ from django.urls import reverse
 class InterfaceRegressionTests(TestCase):
     def test_home_explains_workflow_without_unverified_claims(self):
         response = self.client.get(reverse('core:home'))
-        self.assertContains(response, 'Ваш ремонт.')
-        self.assertContains(response, 'Концептуальный интерьер · AI-иллюстрация')
-        self.assertContains(response, 'DEMO')
-        self.assertContains(response, 'width="1536" height="1024"')
-        self.assertContains(response, 'Начать расчёт')
-        self.assertContains(response, 'Анализ файла пока демонстрационный')
+        self.assertContains(response, 'Планируйте ремонт проще')
+        self.assertContains(response, 'class="direction-card"', count=3)
+        self.assertContains(response, reverse('calculators:home'))
+        self.assertContains(response, reverse('marketplace:home'))
+        self.assertContains(response, reverse('projects:upload'))
+        self.assertNotContains(response, 'renovation-hero.webp')
+        self.assertContains(response, 'демонстрационный')
         self.assertNotContains(response, 'проверенные специалисты')
         self.assertNotContains(response, 'data-slider')
 
@@ -33,15 +34,16 @@ class InterfaceRegressionTests(TestCase):
         self.assertNotContains(response, 'Проверенные профили')
         self.assertNotContains(response, '>Заказать</a>')
 
-    def test_first_iteration_styles_only_selected_pages(self):
-        tile = self.client.get(reverse('calculators:detail', args=['plitka-keramogranit']))
-        self.assertContains(tile, 'body class="editorial-calculator"')
-        self.assertContains(tile, 'calculator-editorial.css')
-        other = self.client.get(reverse('calculators:detail', args=['elektrika']))
-        self.assertNotContains(other, 'calculator-editorial.css')
-        self.assertNotContains(other, 'editorial.css')
-        dashboard = self.client.get(reverse('accounts:login'))
-        self.assertNotContains(dashboard, 'editorial.css')
+    def test_all_twelve_calculators_use_same_minimal_system(self):
+        from calculators.definitions import CALCULATORS
+        for calculator in CALCULATORS:
+            response = self.client.get(reverse('calculators:detail', args=[calculator['slug']]))
+            self.assertContains(response, 'minimal.css')
+            self.assertContains(response, 'calculator-detail-hero')
+            self.assertContains(response, 'calculator-workspace--unified')
+            self.assertNotContains(response, 'editorial.css')
+            self.assertNotContains(response, 'tile-swatch')
+        self.assertContains(self.client.get(reverse('accounts:login')), 'minimal.css')
 
     def test_catalog_filters_progressively_enhance_all_twelve_links(self):
         from calculators.definitions import CALCULATORS
@@ -61,3 +63,8 @@ class InterfaceRegressionTests(TestCase):
         self.assertContains(response, 'aria-describedby="error-area"')
         self.assertContains(response, 'id="error-area"')
         self.assertContains(response, 'value="-2"')
+
+    def test_invalid_login_has_visible_general_error(self):
+        response = self.client.post(reverse('accounts:login'), {'username': 'not-found@example.test', 'password': 'Wrong-test-password'})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'class="form-errors" role="alert"')

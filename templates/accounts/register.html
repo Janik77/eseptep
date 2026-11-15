@@ -1,11 +1,11 @@
-{% extends 'base.html' %}
-{% block title %}Регистрация — ESEPTEP{% endblock %}
+{% extends 'base.html' %}{% load i18n %}
+{% block title %}{% translate 'Регистрация — ESEPTEP' %}{% endblock %}
 {% block content %}
 <section class="auth-wrap">
   <div class="auth-card">
-    <p class="section-heading__eyebrow">ESEPTEP аккаунт</p>
-    <h1>Регистрация</h1>
-    <p>Создайте аккаунт и начните расчёт ремонта.</p>
+    <p class="section-heading__eyebrow">{% translate 'ESEPTEP аккаунт' %}</p>
+    <h1>{% translate 'Регистрация' %}</h1>
+    <p>{% translate 'Создайте аккаунт и начните расчёт ремонта.' %}</p>
     <form method="post" class="auth-form">
       {% csrf_token %}
       {% for field in form %}
@@ -15,9 +15,9 @@
         {% if field.errors %}<small>{{ field.errors|striptags }}</small>{% endif %}
       </label>
       {% endfor %}
-      <button type="submit" class="btn btn--primary">Создать аккаунт</button>
+      <button type="submit" class="btn btn--primary">{% translate 'Создать аккаунт' %}</button>
     </form>
-    <p class="auth-alt">Уже есть аккаунт? <a href="{% url 'accounts:login' %}">Войти</a></p>
+    <p class="auth-alt">{% translate 'Уже есть аккаунт?' %} <a href="{% url 'accounts:login' %}">{% translate 'Войти' %}</a></p>
   </div>
 </section>
 {% endblock %}

@@ -1,5 +1,6 @@
 /* Progressive enhancement: without JS every calculator remains a normal link. */
 (() => {
+  const tr = text => typeof gettext === 'function' ? gettext(text) : text;
   const toolbar = document.querySelector('[data-catalog-toolbar]');
   if (!toolbar) return;
   const cards = [...document.querySelectorAll('[data-work-card]')];
@@ -22,7 +23,7 @@
       button.setAttribute('aria-pressed', String(active));
     }
     empty.hidden = visible !== 0;
-    count.textContent = `Показано: ${visible} из ${cards.length}`;
+    count.textContent = `${tr('Показано:')} ${visible} ${tr('из')} ${cards.length}`;
   };
   filters.forEach(button => button.addEventListener('click', () => { group = button.dataset.filter; update(); }));
   search.addEventListener('input', update);

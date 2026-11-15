@@ -1,30 +1,30 @@
-{% extends 'base.html' %}
-{% block title %}Сохранённая смета — ESEPTEP{% endblock %}
+{% extends 'base.html' %}{% load i18n %}
+{% block title %}{% translate 'Сохранённая смета — ESEPTEP' %}{% endblock %}
 {% block content %}
 <section class="dashboard saved-estimate">
   <div class="dashboard-card">
-    <a class="back-link" href="{% url 'accounts:dashboard_client' %}">← Кабинет клиента</a>
+    <a class="back-link" href="{% url 'accounts:dashboard_client' %}">{% translate '← Кабинет клиента' %}</a>
     <h1>{{ title }}</h1>
-    <p>Сохранённая смета · {{ calculation.created_at|date:'d.m.Y H:i' }}</p>
-    <p>Проект: <b>{{ calculation.project.title }}</b>{% if variant_label %} · Вариант: <b>{{ variant_label }}</b>{% endif %}</p>
-    <p>Это сохранённые данные расчёта, без пересчёта по текущим ценам.</p>
+    <p>{% translate 'Сохранённая смета ·' %} {{ calculation.created_at|date:'d.m.Y H:i' }}</p>
+    <p>{% translate 'Проект:' %} <b>{{ calculation.project.title }}</b>{% if variant_label %} {% translate '· Вариант:' %} <b>{{ variant_label }}</b>{% endif %}</p>
+    <p>{% translate 'Это сохранённые данные расчёта, без пересчёта по текущим ценам.' %}</p>
   </div>
   <div class="dashboard-card">
-    <h2>Параметры</h2>
-    {% for parameter in parameters %}<p>{{ parameter.label }}: <b>{{ parameter.value }} {{ parameter.unit }}</b></p>{% empty %}<p>Параметры старой сметы недоступны.</p>{% endfor %}
+    <h2>{% translate 'Параметры' %}</h2>
+    {% for parameter in parameters %}<p>{{ parameter.label }}: <b>{{ parameter.value }} {{ parameter.unit }}</b></p>{% empty %}<p>{% translate 'Параметры старой сметы недоступны.' %}</p>{% endfor %}
   </div>
   <div class="dashboard-card">
-    <h2>Материалы</h2>
+    <h2>{% translate 'Материалы' %}</h2>
     <div class="table-wrap">
-      <table><thead><tr><th>Материал</th><th>Количество</th><th>Сумма, ₸</th></tr></thead>
-      <tbody>{% for row in calculation.result_data.materials %}<tr><td>{{ row.title }}</td><td>{{ row.quantity }} {{ row.unit }}</td><td>{{ row.total }}</td></tr>{% empty %}<tr><td colspan="3">Список материалов недоступен.</td></tr>{% endfor %}</tbody></table>
+      <table><thead><tr><th>{% translate 'Материал' %}</th><th>{% translate 'Количество' %}</th><th>{% translate 'Сумма, ₸' %}</th></tr></thead>
+      <tbody>{% for row in calculation.result_data.materials %}<tr><td>{{ row.title }}</td><td>{{ row.quantity }} {{ row.unit }}</td><td>{{ row.total }}</td></tr>{% empty %}<tr><td colspan="3">{% translate 'Список материалов недоступен.' %}</td></tr>{% endfor %}</tbody></table>
     </div>
-    <p>Материалы: {{ calculation.materials_total }} ₸ · Работы: {{ calculation.works_total }} ₸</p>
-    {% if calculation.result_data.totals.additional_total %}<p>Дополнительная сумма пакета (состав не указан): {{ calculation.result_data.totals.additional_total }} ₸</p>{% endif %}
-    <strong>Итого: {{ calculation.grand_total }} ₸</strong>
+    <p>{% translate 'Материалы:' %} {{ calculation.materials_total }} {% translate '₸ · Работы:' %} {{ calculation.works_total }} ₸</p>
+    {% if calculation.result_data.totals.additional_total %}<p>{% translate 'Дополнительная сумма пакета (состав не указан):' %} {{ calculation.result_data.totals.additional_total }} ₸</p>{% endif %}
+    <strong>{% translate 'Итого:' %} {{ calculation.grand_total }} ₸</strong>
     {% if calculation.result_data.warning %}<p>{{ calculation.result_data.warning }}</p>{% endif %}
-    <p>Цены справочные. Это не коммерческое предложение.</p>
-    <a class="btn btn--secondary" href="{% url 'calculators:detail' calculation.calculator_slug %}">Начать новый расчёт</a>
+    <p>{% translate 'Цены справочные. Это не коммерческое предложение.' %}</p>
+    <a class="btn btn--secondary" href="{% url 'calculators:detail' calculation.calculator_slug %}">{% translate 'Начать новый расчёт' %}</a>
   </div>
 </section>
 {% endblock %}

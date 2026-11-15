@@ -1,9 +1,10 @@
-{% extends 'base.html' %}
-{% block title %}Кабинет мастера — ESEPTEP{% endblock %}
-{% block breadcrumbs %}<nav class="breadcrumbs"><a href="{% url 'core:home' %}">Главная</a><span>›</span><b>Кабинет мастера</b></nav>{% endblock %}
+{% extends 'base.html' %}{% load i18n eseptep_i18n %}
+{% block title %}{% translate 'Кабинет мастера — ESEPTEP' %}{% endblock %}
+{% block breadcrumbs %}<nav class="breadcrumbs"><a href="{% url 'core:home' %}">{% translate 'Главная' %}</a><span>›</span><b>{% translate 'Кабинет мастера' %}</b></nav>{% endblock %}
 
 {% block content %}
-{% if response_form.errors %}<div class="dashboard-card" role="alert"><h2>Отклик не отправлен</h2>{{ response_form.errors }}</div>{% endif %}
+{% translate 'Без комментария' as i18n_default_0 %}
+{% if response_form.errors %}<div class="dashboard-card" role="alert"><h2>{% translate 'Отклик не отправлен' %}</h2>{{ response_form.errors }}</div>{% endif %}
 <section class="dashboard">
   <div class="dashboard-card master-profile-card">
     <div class="master-profile-head">
@@ -15,21 +16,21 @@
       <div>
         <h1>{{ master_profile.full_name }}</h1>
         <p>{{ master_profile.city }} · {{ master_profile.specialization }}</p>
-        <p>Опыт: {{ master_profile.experience_years }} лет · Отзывы пока не подтверждены · {% if master_profile.is_available %}Свободен{% else %}Занят{% endif %}</p>
+        <p>{% translate 'Опыт:' %} {{ master_profile.experience_years }} {% translate 'лет · Отзывы пока не подтверждены ·' %} {% if master_profile.is_available %}{% translate 'Свободен' %}{% else %}{% translate 'Занят' %}{% endif %}</p>
       </div>
     </div>
-    <a class="btn btn--secondary" href="{% url 'accounts:master_profile_edit' %}">Редактировать профиль</a>
+    <a class="btn btn--secondary" href="{% url 'accounts:master_profile_edit' %}">{% translate 'Редактировать профиль' %}</a>
   </div>
 
   <div class="dashboard-card">
-    <h2>Новые заявки</h2>
+    <h2>{% translate 'Новые заявки' %}</h2>
     <div class="dashboard-list">
       {% for request_item in new_requests %}
       <article class="dashboard-item">
         <b>{{ request_item.project.title }}</b>
-        <p>{{ request_item.project.area_m2 }} м² · {{ request_item.project.city }} · {{ request_item.project.get_repair_segment_display }}</p>
-        <p>Сумма сметы: {% if request_item.calculation %}₸ {{ request_item.calculation.grand_total }}{% else %}—{% endif %}</p>
-        <small>{{ request_item.comment|default:'Без комментария' }} · {{ request_item.created_at|date:'d.m.Y' }}</small>
+        <p>{{ request_item.project.area_m2 }} {% translate 'м² ·' %} {{ request_item.project.city }} · {{ request_item.project.get_repair_segment_display|system_text }}</p>
+        <p>{% translate 'Сумма сметы:' %} {% if request_item.calculation %}₸ {{ request_item.calculation.grand_total }}{% else %}—{% endif %}</p>
+        <small>{{ request_item.comment|default:i18n_default_0 }} · {{ request_item.created_at|date:'d.m.Y' }}</small>
 
         <form method="post" class="master-response-form">
           {% csrf_token %}
@@ -42,23 +43,23 @@
             <span>{{ response_form.message.label }}</span>
             <textarea name="message" rows="3"></textarea>
           </label>
-          <button type="submit" class="btn btn--primary">Отправить отклик</button>
+          <button type="submit" class="btn btn--primary">{% translate 'Отправить отклик' %}</button>
         </form>
       </article>
-      {% empty %}<div class="empty-state">Пока нет новых заявок.</div>{% endfor %}
+      {% empty %}<div class="empty-state">{% translate 'Пока нет новых заявок.' %}</div>{% endfor %}
     </div>
   </div>
 
   <div class="dashboard-card">
-    <h2>Мои отклики</h2>
+    <h2>{% translate 'Мои отклики' %}</h2>
     <div class="dashboard-list">
       {% for response in my_responses %}
       <article class="dashboard-item">
         <b>{{ response.request.project.title }}</b>
-        <p>Цена: ₸ {{ response.price_from }} · Статус: {{ response.get_status_display }}</p>
+        <p>{% translate 'Цена: ₸' %} {{ response.price_from }} {% translate '· Статус:' %} {{ response.get_status_display|system_text }}</p>
         <small>{{ response.created_at|date:'d.m.Y' }}</small>
       </article>
-      {% empty %}<div class="empty-state">Вы еще не отправляли отклики.</div>{% endfor %}
+      {% empty %}<div class="empty-state">{% translate 'Вы еще не отправляли отклики.' %}</div>{% endfor %}
     </div>
   </div>
 </section>

@@ -1,8 +1,10 @@
+from core.localization import render
+from django.utils.translation import gettext as _
 from django.contrib import messages
 from django.http import FileResponse, Http404
 from django.views.decorators.http import require_GET
 from .forms import ProjectUploadForm, ProjectEstimateForm
-from django.shortcuts import get_object_or_404, redirect, render
+from django.shortcuts import get_object_or_404, redirect
 
 from .models import ProjectUpload
 
@@ -54,6 +56,16 @@ def project_upload(request):
     estimate = None
     upload_form = ProjectUploadForm()
     estimate_form = ProjectEstimateForm(initial={'repair_level': ProjectUpload.RepairLevel.STANDARD})
+    if request.method == 'GET' and request.GET.get('upload_id'):
+        try:
+            pk = int(request.GET['upload_id'])
+        except (ValueError, TypeError):
+            raise Http404('Upload unavailable')
+        upload = get_object_or_404(accessible_uploads(request), pk=pk)
+        estimate_form = ProjectEstimateForm(initial={'area': upload.area, 'repair_level': upload.repair_level})
+        if upload.area:
+            estimate = {'area': upload.area, 'repair_level': upload.get_repair_level_display(),
+                        'total': round(upload.area * REPAIR_LEVEL_RATES[upload.repair_level])}
     if request.method == 'POST' and request.POST.get('action') == 'estimate':
         try:
             pk = int(request.POST.get('upload_id', ''))
@@ -69,7 +81,7 @@ def project_upload(request):
             upload.save(update_fields=['area', 'repair_level'])
             estimate = {'area': upload.area, 'repair_level': upload.get_repair_level_display(),
                         'total': round(upload.area * REPAIR_LEVEL_RATES[upload.repair_level])}
-            messages.success(request, 'Предварительный расчёт готов.')
+            messages.success(request, _('Предварительный расчёт готов.'))
     elif request.method == 'POST':
         upload_form = ProjectUploadForm(request.POST, request.FILES)
         if upload_form.is_valid():
@@ -80,7 +92,7 @@ def project_upload(request):
                 guest_session_key='' if request.user.is_authenticated else request.session.session_key,
                 file=upload_form.cleaned_data['file'], comment=upload_form.cleaned_data['comment'],
                 ai_status=AI_ANALYSIS_MODE, ai_summary=DEMO_AI_SUMMARY)
-            messages.success(request, 'Файл принят для demo-анализа.')
+            messages.success(request, _('Файл принят для demo-анализа.'))
     return render(request, 'projects/upload.html', {
         'upload': upload, 'estimate': estimate, 'upload_form': upload_form, 'estimate_form': estimate_form,
         'ai_summary': upload.ai_summary if upload else None, 'ai_analysis_mode': AI_ANALYSIS_MODE,

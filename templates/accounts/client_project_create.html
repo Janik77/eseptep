@@ -1,9 +1,9 @@
-{% extends 'base.html' %}
-{% block title %}Новый проект — ESEPTEP{% endblock %}
+{% extends 'base.html' %}{% load i18n %}
+{% block title %}{% translate 'Новый проект — ESEPTEP' %}{% endblock %}
 {% block content %}
 <section class="auth-wrap">
   <div class="auth-card">
-    <h1>Создать проект</h1>
+    <h1>{% translate 'Создать проект' %}</h1>
     <form method="post" class="auth-form">
       {% csrf_token %}
       {% for field in form %}
@@ -13,7 +13,7 @@
         {% if field.errors %}<small>{{ field.errors|striptags }}</small>{% endif %}
       </label>
       {% endfor %}
-      <button type="submit" class="btn btn--primary">Сохранить проект</button>
+      <button type="submit" class="btn btn--primary">{% translate 'Сохранить проект' %}</button>
     </form>
   </div>
 </section>

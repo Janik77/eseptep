@@ -1,34 +1,10 @@
-{% extends 'base.html' %}{% load static %}
-{% block body_class %}editorial-home{% endblock %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'css/editorial.css' %}">{% endblock %}
+{% extends 'base.html' %}{% load i18n %}
 {% block content %}
-<section class="renovation-hero" aria-labelledby="hero-title">
-  <div class="renovation-hero__copy">
-    <p class="eyebrow"><span class="small-line"></span> Дом начинается с плана</p>
-    <h1 id="hero-title">Ваш ремонт.<br>С ясного <em>начала.</em></h1>
-    <p class="hero-lead">От идеи красивого дома к понятному списку материалов. Рассчитайте объёмы и подготовьтесь к ремонту без лишней суеты.</p>
-    <div class="hero-buttons"><a class="btn btn--primary" href="{% url 'calculators:home' %}">Начать расчёт <span aria-hidden="true">↗</span></a><a class="quiet-link" href="{% url 'projects:home' %}">Загрузить план <span aria-hidden="true">↑</span></a></div>
-    <p class="hero-footnote">Расчёты доступны без регистрации<br>Цены справочные, итог уточняется перед закупкой.<br>Анализ файла пока демонстрационный.</p>
-  </div>
-  <figure class="renovation-hero__scene">
-    <img src="{% static 'images/renovation-hero.webp' %}" width="1536" height="1024" alt="Светлая гостиная: натуральное дерево, тёплая штукатурка и терракотовое кресло" fetchpriority="high">
-    <div class="scene-label"><span>01 / Пространство для жизни</span><b>Всё большое начинается<br>с небольшого расчёта.</b></div>
-    <figcaption>Концептуальный интерьер · AI-иллюстрация</figcaption>
-  </figure>
+<section class="home-intro"><p class="eyebrow">ESEPTEP</p><h1>{% translate 'Планируйте ремонт проще' %}</h1><p>{% translate 'Рассчитайте материалы, оцените бюджет или начните с плана квартиры.' %}</p></section>
+<section class="direction-grid" aria-label="{% translate 'С чего начать' %}">
+<article class="direction-card"><span class="direction-icon" aria-hidden="true">{% include 'calculators/partials/work_icon.html' with icon='tile' %}</span><h2>{% translate 'Расчёт материалов' %}</h2><p>{% translate 'Выберите работы, укажите параметры и получите список материалов.' %}</p><a class="btn btn--primary" href="{% url 'calculators:home' %}">{% translate 'Выбрать работы' %}<span aria-hidden="true">→</span></a></article>
+<article class="direction-card"><span class="direction-icon" aria-hidden="true">{% include 'calculators/partials/work_icon.html' with icon='door' %}</span><h2>{% translate 'Ремонт под ключ' %}</h2><p>{% translate 'Предварительно оцените бюджет ремонта по площади квартиры.' %}</p><a class="btn btn--primary" href="{% url 'marketplace:home' %}">{% translate 'Оценить бюджет' %}<span aria-hidden="true">→</span></a></article>
+<article class="direction-card"><span class="direction-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 3H5v18h14V8l-5-5Zm0 0v5h5M12 17v-6m-3 3 3-3 3 3"/></svg></span><h2>{% translate 'Загрузить проект' %}</h2><p>{% translate 'Передайте план квартиры и продолжите работу с проектом.' %}</p><a class="btn btn--primary" href="{% url 'projects:upload' %}">{% translate 'Загрузить план' %}<span aria-hidden="true">→</span></a></article>
 </section>
-<div class="home-principles"><span><b>12</b> видов расчёта</span><span><b>м² → список</b> от размера к материалам</span><span><b>Ваш выбор</b> сравнение вариантов</span></div>
-<section class="work-discovery" aria-labelledby="work-title">
-  <header class="editorial-heading"><div><p class="eyebrow">С чего начнём?</p><h2 id="work-title">Одна комната.<br>Много решений.</h2></div><a class="quiet-link" href="{% url 'calculators:home' %}">Все калькуляторы <span aria-hidden="true">↗</span></a></header>
-  <div class="work-entry-grid">
-    <a class="work-entry work-entry--floor" href="{% url 'calculators:detail' 'laminat-spc-parket' %}"><span class="work-entry__index">01 / Основа</span><div class="material-visual material-visual--wood" aria-hidden="true"><i></i><i></i><i></i></div><div><h3>Пол, по которому<br>приятно идти</h3><p>Покрытие, подложка и плинтус</p><span class="circle-arrow" aria-hidden="true">↗</span></div></a>
-    <a class="work-entry work-entry--tile" href="{% url 'calculators:detail' 'plitka-keramogranit' %}"><span class="work-entry__index">02 / Фактура</span><div class="material-visual material-visual--tile" aria-hidden="true"><i></i><i></i><i></i><i></i></div><div><h3>Плитка для<br>вашего пространства</h3><p>Плитка, клей, затирка и СВП</p><span class="circle-arrow" aria-hidden="true">↗</span></div></a>
-    <a class="work-entry work-entry--paint" href="{% url 'calculators:detail' 'malyarka' %}"><span class="work-entry__index">03 / Настроение</span><div class="material-visual material-visual--paint" aria-hidden="true"><i></i><i></i><i></i></div><div><h3>Стены как<br>чистый холст</h3><p>Подготовка под обои или краску</p><span class="circle-arrow" aria-hidden="true">↗</span></div></a>
-  </div>
-</section>
-<section class="planning-story" aria-labelledby="story-title">
-  <div class="planning-story__copy"><p class="eyebrow">Не просто итоговая цифра</p><h2 id="story-title">Понимать, что покупать.<br>И о чём спросить мастера.</h2><p>Получите список с количеством материалов. Сравните варианты, скопируйте результат или сохраните его в своём проекте.</p><a class="quiet-link" href="{% url 'calculators:detail' 'plitka-keramogranit' %}">Попробовать расчёт плитки <span aria-hidden="true">↗</span></a></div>
-  <div class="estimate-preview" aria-label="Демонстрационный пример структуры списка"><div class="estimate-preview__top"><span>Пример списка</span><span>DEMO</span></div><h3>Материалы для комнаты</h3><p>Структура результата, не готовая смета</p><div class="preview-row"><span><i class="swatch swatch--tile"></i>Плитка</span><b>м²</b></div><div class="preview-row"><span><i class="swatch swatch--sand"></i>Плиточный клей</span><b>мешки</b></div><div class="preview-row"><span><i class="swatch swatch--clay"></i>Затирка</span><b>кг</b></div><div class="preview-note">Количество появится после ввода ваших размеров.</div></div>
-</section>
-<section class="three-steps" aria-labelledby="steps-title"><header><p class="eyebrow">Без сложного старта</p><h2 id="steps-title">От размера до списка.<br>Три простых шага.</h2></header><ol><li><span>01</span><h3>Выберите работу</h3><p>Начните с одного вида отделки или нужной системы.</p></li><li><span>02</span><h3>Укажите параметры</h3><p>Введите площадь, толщину слоя или другие размеры.</p></li><li><span>03</span><h3>Сравните и сохраните</h3><p>Уточните результат с мастером перед закупкой.</p></li></ol></section>
-<footer class="editorial-footer"><a class="brand" href="{% url 'core:home' %}">ESEPTEP</a><p>Планируйте осмысленно. Создавайте своё.</p><a class="quiet-link" href="{% url 'calculators:home' %}">Начать расчёт ↗</a></footer>
+<section class="home-help"><div><h2>{% translate 'От параметров к решению' %}</h2><p>{% translate 'Сравните варианты, скопируйте список или сохраните расчёт в своём проекте.' %}</p></div><p class="disclaimer">{% translate 'Расчёты и цены предварительные. Перед закупкой уточните объёмы с мастером. Анализ загруженного плана пока демонстрационный.' %}</p></section>
 {% endblock %}

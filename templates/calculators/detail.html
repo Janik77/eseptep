@@ -1,57 +1,29 @@
-{% extends 'base.html' %}
+{% extends 'base.html' %}{% load i18n eseptep_i18n %}
 {% load static %}
-{% block body_class %}{% if calculator.slug == 'plitka-keramogranit' %}editorial-calculator{% endif %}{% endblock %}
-{% block extra_css %}{% if calculator.slug == 'plitka-keramogranit' %}<link rel="stylesheet" href="{% static 'css/editorial.css' %}"><link rel="stylesheet" href="{% static 'css/calculator-editorial.css' %}">{% endif %}{% endblock %}
+{% block title %}{{ calculator.title }} {% translate '— калькулятор ESEPTEP' %}{% endblock %}
 
-{% block title %}{{ calculator.title }} — калькулятор ESEPTEP{% endblock %}
-
-{% block breadcrumbs %}<nav class="breadcrumbs"><a href="{% url 'core:home' %}">Главная</a><span>›</span><a href="{% url 'calculators:home' %}">Калькуляторы</a><span>›</span><b>{{ calculator.title }}</b></nav>{% endblock %}
+{% block breadcrumbs %}<nav class="breadcrumbs"><a href="{% url 'core:home' %}">{% translate 'Главная' %}</a><span>›</span><a href="{% url 'calculators:home' %}">{% translate 'Калькуляторы' %}</a><span>›</span><b>{{ calculator.title }}</b></nav>{% endblock %}
 
 {% block content %}
-{% if calculator.slug == 'plitka-keramogranit' %}
-<section class="tile-heading" aria-labelledby="tile-heading-title">
-  <div>
-    <a class="back-link" href="{% url 'calculators:home' %}">← Все калькуляторы</a>
-    <p class="tile-eyebrow">Отделка / 01</p>
-    <h1 id="tile-heading-title">Плитка.<br><span>От площади к материалам.</span></h1>
-    <p>Укажите площадь и зону укладки. Получите список плитки, клея и сопутствующих материалов для обсуждения с мастером.</p>
-  </div>
-  <div class="tile-swatch" aria-hidden="true"><div class="tile-swatch__grid"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><span>ПЛОЩАДЬ × ФОРМАТ → СПИСОК</span></div>
-</section>
-<ol class="tile-steps" aria-label="Этапы расчёта"><li><span>01</span> Выберите работы</li><li{% if not result %} aria-current="step"{% endif %}><span>02</span> Укажите параметры</li><li{% if result %} aria-current="step"{% endif %}><span>03</span> Получите список</li></ol>
-{% else %}
-<section class="page-hero page-hero--compact calculator-detail-hero">
-    <a class="back-link" href="{% url 'calculators:home' %}">← Все калькуляторы</a>
-    <span class="hero__badge">{{ calculator.title }}</span>
-    <h1>Калькулятор: {{ calculator.title }}</h1>
-    <p>{{ calculator.description }}</p>
-</section>
-
-<section class="flow-panel flow-panel--compact" aria-label="Прогресс расчёта">
-    <div class="flow-panel__top">
-        <span>{% if result %}Шаг 3 из 3 · Смета{% else %}Шаг 2 из 3 · Параметры{% endif %}</span>
-        <strong>{% if result %}Материалы рассчитаны{% else %}Введите параметры{% endif %}</strong>
-    </div>
-    <div class="flow-progress" aria-hidden="true">
-        <span style="width: {% if result %}100{% else %}66{% endif %}%"></span>
-    </div>
-</section>
-
-{% endif %}
-<section class="calculator-tabs" aria-label="Калькулятор и шаблон мастера">
+{% translate "Выберите значение" as i18n_default_0 %}
+{% translate "Базовый / Оптимальный / Максимальный" as i18n_default_1 %}
+{% translate "Цены ориентировочные по Казахстану" as i18n_default_2 %}
+{% translate "Справочно по материалам" as i18n_default_3 %}
+<section class="calculator-detail-hero"><a class="back-link" href="{% url 'calculators:home' %}">{% translate '← Все калькуляторы' %}</a><h1>{{ calculator.title }}</h1><p>{{ calculator.description }}</p></section>
+<section class="calculator-tabs" aria-label="{% translate 'Калькулятор и шаблон мастера' %}">
     <input class="calculator-tabs__radio" type="radio" name="calculator-detail-tabs" id="tab-auto" checked>
     <input class="calculator-tabs__radio" type="radio" name="calculator-detail-tabs" id="tab-master">
 
-    <div class="calculator-tabs__nav" role="tablist" aria-label="Разделы калькулятора">
-        <label class="calculator-tabs__button calculator-tabs__button--auto" for="tab-auto" role="tab">Авторасчёт</label>
-        <label class="calculator-tabs__button calculator-tabs__button--master" for="tab-master" role="tab">Шаблон мастера</label>
+    <div class="calculator-tabs__nav" aria-label="{% translate 'Разделы калькулятора' %}">
+        <label class="calculator-tabs__button calculator-tabs__button--auto" for="tab-auto">{% translate 'Авторасчёт' %}</label>
+        <label class="calculator-tabs__button calculator-tabs__button--master" for="tab-master">{% translate 'Шаблон мастера' %}</label>
     </div>
 
     <div class="calculator-tabs__panel calculator-tabs__panel--auto">
         <section class="calculator-workspace calculator-workspace--unified">
             <form class="calc-form calc-form--panel" method="post" data-calc-form>
                 {% csrf_token %}
-                <div class="form-step-label">{% if calculator.slug == 'plitka-keramogranit' %}<span class="tile-eyebrow">Ваше помещение</span><h2>Параметры расчёта</h2><p class="tile-form-hint">Площадь указывайте по фактическому замеру поверхности.</p>{% else %}Параметры расчёта{% endif %}</div>
+                <div class="form-step-label"><h2>{% translate 'Параметры расчёта' %}</h2></div>
                 {% if form_errors %}
                     <div class="form-errors" role="alert">
                         {% for error in form_errors %}
@@ -64,35 +36,35 @@
                         <span>{{ field.label }}{% if field.unit %} <small>{{ field.unit }}</small>{% endif %}</span>
                         {% if field.type == 'select' %}
                             <select name="{{ field.name }}"{% if field.error %} aria-invalid="true" aria-describedby="error-{{ field.name }}"{% endif %}>
-                                {% if field.error %}<option value="{{ field.value }}" selected>{{ field.value|default:"Выберите значение" }}</option>{% endif %}
+                                {% if field.error %}<option value="{{ field.value }}" selected>{{ field.value|default:i18n_default_0|system_text }}</option>{% endif %}
                                 {% for option in field.options %}
                                     <option value="{{ option.value }}" {% if field.value == option.value %}selected{% endif %}>{{ option.label }}</option>
                                 {% endfor %}
                             </select>
                         {% elif field.decimal_field %}
-                            <input type="text" name="{{ field.name }}"{% if field.error %} aria-invalid="true" aria-describedby="error-{{ field.name }}"{% endif %} value="{{ field.value }}" inputmode="decimal" autocomplete="{{ field.autocomplete|default:'off' }}" data-decimal-field="true" required>
+                            <input type="text" name="{{ field.name }}"{% if field.error %} aria-invalid="true" aria-describedby="error-{{ field.name }}"{% endif %} value="{{ field.value }}" inputmode="decimal" autocomplete="{{ field.autocomplete|default:'off'|system_text }}" data-decimal-field="true" required>
                         {% else %}
                             <input type="text" inputmode="decimal" name="{{ field.name }}"{% if field.error %} aria-invalid="true" aria-describedby="error-{{ field.name }}"{% endif %} {% if field.min is not None %}min="{{ field.min }}"{% endif %} {% if field.step is not None %}step="{{ field.step }}"{% endif %} value="{{ field.value }}" required>
                         {% endif %}
                         {% if field.error %}<small id="error-{{ field.name }}" role="alert">{{ field.error }}</small>{% endif %}
                     </label>
                 {% endfor %}
-                <button class="btn btn--primary" type="submit">Рассчитать материалы</button>
+                <button class="btn btn--primary" type="submit">{% translate 'Рассчитать материалы' %}</button>
             </form>
 
             <div id="estimate-result" class="result-card result-card--panel{% if result %} has-result{% endif %}">
                 {% if result %}
                     <div class="summary-card summary-card--compact" data-result-ready>
                         <div>
-                            <span>{% if calculator.slug == 'plitka-keramogranit' %}Предварительный расчёт / Материалы{% else %}Ваш расчёт готов ✅{% endif %}</span>
+                            <span>{% translate 'Предварительный расчёт' %}</span>
                             <h2>{{ result.summary }}</h2>
-                            <p data-summary-variant>{% if result.variants %}{{ result.selected_variant_label }} · {% elif result.segment_label != 'Предварительно' %}{{ result.segment_label }} · {% endif %}{{ result.materials_count }} позиций · цены справочно</p>
+                            <p data-summary-variant>{% if result.variants %}{{ result.selected_variant_label }} · {% elif result.segment_label != 'Предварительно' %}{{ result.segment_label }} · {% endif %}{{ result.materials_count }} {% translate 'позиций · цены справочно' %}</p>
                         </div>
                         <strong data-summary-total>₸ {{ result.grand_total }}</strong>
                     </div>
-                    <div class="result-params" aria-label="Введённые параметры">
+                    <div class="result-params" aria-label="{% translate 'Введённые параметры' %}">
                         {% for field in form_fields %}
-                            <span><b>{{ field.label }}</b>{{ field.display_value|default:field.value }}{% if field.unit %} {{ field.unit }}{% endif %}</span>
+                            <span><b>{{ field.label }}</b>{{ field.display_value|default:field.value|system_text }}{% if field.unit %} {{ field.unit }}{% endif %}</span>
                         {% endfor %}
                         {% for metric in result.metrics %}
                             <span><b>{{ metric.label }}</b>{{ metric.value }}{% if metric.unit %} {{ metric.unit }}{% endif %}</span>
@@ -103,17 +75,17 @@
                         <div class="variant-result" data-variant-result>
                             <div class="variant-result__head">
                                 <div>
-                                    <span>{% if calculator.slug == 'malyarka' %}Варианты малярки{% else %}Варианты расчёта{% endif %}</span>
-                                    <h3>{{ result.variant_heading|default:"Базовый / Оптимальный / Максимальный" }}</h3>
+                                    <span>{% if calculator.slug == 'malyarka' %}{% translate 'Варианты малярки' %}{% else %}{% translate 'Варианты расчёта' %}{% endif %}</span>
+                                    <h3>{{ result.variant_heading|default:i18n_default_1|system_text }}</h3>
                                 </div>
-                                <small>Активен: <b data-active-variant-label>{{ result.selected_variant_label }}</b></small>
+                                <small>{% translate 'Активен:' %} <b data-active-variant-label>{{ result.selected_variant_label }}</b></small>
                             </div>
-                            <div class="variant-cards" role="tablist" aria-label="Варианты расчёта">
+                            <div class="variant-cards" aria-label="{% translate 'Варианты расчёта' %}">
                                 {% for variant in result.variants %}
-                                    <button class="variant-card{% if variant.key == result.selected_variant %} is-active{% endif %}" type="button" data-variant-button="{{ variant.key }}" data-variant-total="{{ variant.total }}" data-variant-count="{{ variant.materials_count }}" role="tab" aria-selected="{% if variant.key == result.selected_variant %}true{% else %}false{% endif %}">
+                                    <button class="variant-card{% if variant.key == result.selected_variant %} is-active{% endif %}" type="button" data-variant-button="{{ variant.key }}" data-variant-total="{{ variant.total }}" data-variant-count="{{ variant.materials_count }}" aria-selected="{% if variant.key == result.selected_variant %}true{% else %}false{% endif %}">
                                         <b>{{ variant.title }}</b>
                                         <span>{{ variant.description }}</span>
-                                        <strong>от ₸ {{ variant.total }}</strong>
+                                        <strong>{% translate 'от ₸' %} {{ variant.total }}</strong>
                                     </button>
                                 {% endfor %}
                             </div>
@@ -121,56 +93,56 @@
                             {% for variant in result.variants %}
                                 <div class="variant-panel{% if variant.key == result.selected_variant %} is-active{% endif %}" data-variant-panel="{{ variant.key }}">
                                     <div class="result-card__head">
-                                        <span>Список материалов — {{ variant.title }}</span>
-                                        <strong>Количество</strong>
+                                        <span>{% translate 'Список материалов —' %} {{ variant.title }}</span>
+                                        <strong>{% translate 'Количество' %}</strong>
                                     </div>
                                     <div class="materials-table materials-table--primary materials-table--priced">
                                         {% for material in variant.materials %}
                                             <div class="materials-table__row">
-                                                <div><b>{{ forloop.counter }}. {{ material.title }}</b><small>₸ {{ material.reference_price }} за {{ material.unit }}</small></div>
+                                                <div><b>{{ forloop.counter }}. {{ material.title }}</b><small>₸ {{ material.reference_price }} {% translate 'за' %} {{ material.unit }}</small></div>
                                                 <strong>{{ material.quantity }} {{ material.unit }}</strong>
                                                 <small class="material-line-total">₸ {{ material.reference_total }}</small>
                                             </div>
                                         {% endfor %}
                                     </div>
-                                    <div class="grand-total grand-total--secondary"><span>Материалы по строкам</span><strong>₸ {{ variant.materials_total }}</strong></div>
+                                    <div class="grand-total grand-total--secondary"><span>{% translate 'Материалы по строкам' %}</span><strong>₸ {{ variant.materials_total }}</strong></div>
                                     {% if variant.extra %}<p>{{ variant.extra_label }}: ₸ {{ variant.extra }}</p>{% endif %}
-                                    <div class="grand-total grand-total--secondary"><span>{{ result.price_note|default:"Цены ориентировочные по Казахстану" }}</span><strong>Итог: ₸ {{ variant.total }}</strong></div>
+                                    <div class="grand-total grand-total--secondary"><span>{{ result.price_note|default:i18n_default_2|system_text }}</span><strong>{% translate 'Итог: ₸' %} {{ variant.total }}</strong></div>
                                     <textarea class="master-template__text" data-variant-copy-source="{{ variant.key }}" aria-label="Список {{ variant.title }} без цен">ESEPTEP.KZ
 {{ calculator.title }} — {{ variant.title }}
 
 {% for material in variant.materials %}{% if material.quantity > 0 %}{{ forloop.counter }}. {{ material.title }} — {{ material.quantity }} {{ material.unit }}
 {% endif %}{% endfor %}
-Список составлен через ESEPTEP.KZ</textarea>
+{% translate 'Список составлен через ESEPTEP.KZ' %}</textarea>
                                 </div>
                             {% endfor %}
-                            <button class="btn btn--secondary" type="button" data-copy-variant>Скопировать список без цен</button>
-                            <div class="copy-toast" role="status" aria-live="polite" data-variant-copy-toast>Список скопирован</div>
+                            <button class="btn btn--secondary" type="button" data-copy-variant>{% translate 'Скопировать список без цен' %}</button>
+                            <div class="copy-toast" role="status" aria-live="polite" data-variant-copy-toast>{% translate 'Список скопирован' %}</div>
                         </div>
                     {% else %}
                         <div class="result-card__head">
-                            <span>Список материалов</span>
-                            <strong>Количество</strong>
+                            <span>{% translate 'Список материалов' %}</span>
+                            <strong>{% translate 'Количество' %}</strong>
                         </div>
                         <div class="materials-table materials-table--primary">
                             {% for material in result.materials %}
                                 <div class="materials-table__row">
-                                    <div><b>{{ material.title }}</b><small>Справочно ₸ {{ material.reference_price }} за {{ material.unit }}</small></div>
+                                    <div><b>{{ material.title }}</b><small>{% translate 'Справочно ₸' %} {{ material.reference_price }} {% translate 'за' %} {{ material.unit }}</small></div>
                                     <strong>{{ material.quantity }} {{ material.unit }}</strong>
                                     <small class="material-line-total">₸ {{ material.reference_total }}</small>
                                 </div>
                             {% endfor %}
                         </div>
-                        <div class="grand-total grand-total--secondary"><span>{{ result.price_note|default:"Справочно по материалам" }}</span><strong class="count-up" data-count-up="{{ result.reference_total }}" data-count-prefix="₸ ">{% if calculator.slug == 'laminat-spc-parket' %}Итог от: {% endif %}₸ {{ result.reference_total }}</strong></div>
+                        <div class="grand-total grand-total--secondary"><span>{{ result.price_note|default:i18n_default_3|system_text }}</span><strong class="count-up" data-count-up="{{ result.reference_total }}" data-count-prefix="₸ ">{% if calculator.slug == 'laminat-spc-parket' %}{% translate 'Итог от:' %} {% endif %}₸ {{ result.reference_total }}</strong></div>
                         {% if calculator.slug == 'nalivnoy-pol' or calculator.slug == 'laminat-spc-parket' %}
-                            <textarea class="master-template__text" data-single-copy-source aria-label="Список материалов без цен">ESEPTEP.KZ
+                            <textarea class="master-template__text" data-single-copy-source aria-label="{% translate 'Список материалов без цен' %}">ESEPTEP.KZ
 {{ calculator.title }}
 
 {% for material in result.materials %}{% if material.quantity > 0 %}{{ forloop.counter }}. {{ material.title }} — {{ material.quantity }} {{ material.unit }}
 {% endif %}{% endfor %}
-Список составлен через ESEPTEP.KZ</textarea>
-                            <button class="btn btn--secondary" type="button" data-copy-single>Скопировать список материалов без цен</button>
-                            <div class="copy-toast" role="status" aria-live="polite" data-single-copy-toast>Список скопирован</div>
+{% translate 'Список составлен через ESEPTEP.KZ' %}</textarea>
+                            <button class="btn btn--secondary" type="button" data-copy-single>{% translate 'Скопировать список материалов без цен' %}</button>
+                            <div class="copy-toast" role="status" aria-live="polite" data-single-copy-toast>{% translate 'Список скопирован' %}</div>
                         {% endif %}
                     {% endif %}
                     {% if result.warning %}<p class="result-warning">{{ result.warning }}</p>{% endif %}
@@ -181,38 +153,38 @@
                         {% for field in form_fields %}<input type="hidden" name="{{ field.name }}" value="{{ field.value }}">{% endfor %}
                         {% if result.variants %}<input type="hidden" name="selected_variant" value="{{ result.selected_variant }}" data-selected-variant-input>{% endif %}
                         {% if client_projects %}
-                        <label>Проект для сметы
+                        <label>{% translate 'Проект для сметы' %}
                             <select name="project_id" required>
-                                <option value="">Выберите проект</option>
+                                <option value="">{% translate 'Выберите проект' %}</option>
                                 {% for project in client_projects %}
                                 <option value="{{ project.pk }}" {% if selected_project_id == project.pk|stringformat:"s" %}selected{% endif %}>{{ project.title }}</option>
                                 {% endfor %}
                             </select>
                         </label>
-                        <button class="btn btn--secondary" type="submit" name="action" value="save_estimate">Сохранить в выбранный проект</button>
-                        <button class="btn btn--primary" type="submit" name="action" value="request_master">Отправить заявку мастерам</button>
-                        <button class="btn btn--secondary" type="submit" name="action" value="request_supplier">Отправить запрос поставщикам</button>
+                        <button class="btn btn--secondary" type="submit" name="action" value="save_estimate">{% translate 'Сохранить в выбранный проект' %}</button>
+                        <button class="btn btn--primary" type="submit" name="action" value="request_master">{% translate 'Отправить заявку мастерам' %}</button>
+                        <button class="btn btn--secondary" type="submit" name="action" value="request_supplier">{% translate 'Отправить запрос поставщикам' %}</button>
                         {% else %}
-                        <p>Сначала создайте проект в кабинете. Расчёт не будет привязан автоматически.</p>
-                        <a class="btn btn--secondary" href="{% url 'accounts:client_project_create' %}" target="_blank" rel="noopener">Создать проект в новой вкладке</a>
+                        <p>{% translate 'Сначала создайте проект в кабинете. Расчёт не будет привязан автоматически.' %}</p>
+                        <a class="btn btn--secondary" href="{% url 'accounts:client_project_create' %}" target="_blank" rel="noopener">{% translate 'Создать проект в новой вкладке' %}</a>
                         {% endif %}
                     </form>
                     {% elif request.user.is_authenticated %}
-                    <p>Сохранение сметы и отправка заявок доступны в кабинете клиента.</p>
+                    <p>{% translate 'Сохранение сметы и отправка заявок доступны в кабинете клиента.' %}</p>
                     {% else %}
                     <div class="auth-soft-cta">
-                        <p>Войдите, чтобы сохранить смету и получить ответы мастеров.</p>
+                        <p>{% translate 'Войдите, чтобы сохранить смету и получить ответы мастеров.' %}</p>
                         <div class="result-actions">
-                            <a class="btn btn--primary" href="{% url 'accounts:login' %}?next={{ request.path|urlencode }}">Войти</a>
-                            <a class="btn btn--secondary" href="{% url 'accounts:register' %}">Регистрация</a>
+                            <a class="btn btn--primary" href="{% url 'accounts:login' %}?next={{ request.path|urlencode }}">{% translate 'Войти' %}</a>
+                            <a class="btn btn--secondary" href="{% url 'accounts:register' %}">{% translate 'Регистрация' %}</a>
                         </div>
                     </div>
                     {% endif %}
                     <p class="save-feedback" data-save-feedback aria-live="polite"></p>
                 {% else %}
                     <div class="empty-result empty-result--panel">
-                        {% if calculator.slug == 'plitka-keramogranit' %}<div class="tile-empty-mark" aria-hidden="true">↗</div><span class="tile-eyebrow">Здесь будет ваш список</span>{% endif %}<b>{% if calculator.slug == 'plitka-keramogranit' %}Начните с площади помещения{% else %}Заполните параметры{% endif %}</b>
-                        <p>После расчёта здесь появятся материалы, количество и единицы измерения. Цена — только справочно.</p>
+                        <b>{% translate 'Заполните параметры' %}</b>
+                        <p>{% translate 'После расчёта здесь появятся материалы, количество и единицы измерения. Цена — только справочно.' %}</p>
                     </div>
                 {% endif %}
             </div>
@@ -223,16 +195,16 @@
         <section class="master-template estimate-builder estimate-builder--panel" aria-labelledby="master-template-title" data-estimate-builder>
             <div class="estimate-builder__header estimate-builder__header--simple">
                 <div>
-                    <p class="section-heading__eyebrow">Шаблон мастера</p>
-                    <h2 id="master-template-title">Список материалов</h2>
-                    <p><span data-builder-total>{% if calculator.master_template_groups %}{% if form_data.construction_type == 'wall' %}{{ calculator.master_template_groups.wall|length }}{% elif form_data.construction_type == 'partition' %}{{ calculator.master_template_groups.partition|length }}{% elif form_data.covering_type == 'spc' %}{{ calculator.master_template_groups.spc|length }}{% elif form_data.covering_type == 'parquet' %}{{ calculator.master_template_groups.parquet|length }}{% elif form_data.covering_type == 'laminate' %}{{ calculator.master_template_groups.laminate|length }}{% else %}{{ calculator.master_template_groups.ceiling|length }}{% endif %}{% else %}{{ calculator.master_template_items|length }}{% endif %} позиций</span></p>
+                    <p class="section-heading__eyebrow">{% translate 'Шаблон мастера' %}</p>
+                    <h2 id="master-template-title">{% translate 'Список материалов' %}</h2>
+                    <p><span data-builder-total>{% if calculator.master_template_groups %}{% if form_data.construction_type == 'wall' %}{{ calculator.master_template_groups.wall|length }}{% elif form_data.construction_type == 'partition' %}{{ calculator.master_template_groups.partition|length }}{% elif form_data.covering_type == 'spc' %}{{ calculator.master_template_groups.spc|length }}{% elif form_data.covering_type == 'parquet' %}{{ calculator.master_template_groups.parquet|length }}{% elif form_data.covering_type == 'laminate' %}{{ calculator.master_template_groups.laminate|length }}{% else %}{{ calculator.master_template_groups.ceiling|length }}{% endif %}{% else %}{{ calculator.master_template_items|length }}{% endif %} {% translate 'позиций' %}</span></p>
                 </div>
             </div>
 
             <div class="estimate-builder__body estimate-builder__body--single">
                 <div class="estimate-editor estimate-editor--full">
                     <div class="estimate-editor__topline estimate-editor__topline--simple">
-                        <span>Заполните только нужные позиции. В список уйдут только заполненные материалы.</span>
+                        <span>{% translate 'Заполните только нужные позиции. В список уйдут только заполненные материалы.' %}</span>
                     </div>
 
                     <div class="material-row-list material-row-list--simple" data-material-rows>
@@ -244,9 +216,9 @@
                                 <div class="material-row__title" data-row-material data-unit="{{ item.unit }}">{{ item.title }}</div>
                                 <div class="quantity-stepper quantity-stepper--compact">
                                     <div class="quantity-stepper__control">
-                                        <button type="button" data-step-decrease aria-label="Уменьшить количество">−</button>
-                                        <input type="number" min="0" step="0.1" value="0" data-row-qty aria-label="Количество для {{ item.title }}">
-                                        <button type="button" data-step-increase aria-label="Увеличить количество">+</button>
+                                        <button type="button" data-step-decrease aria-label="{% translate 'Уменьшить количество' %}">−</button>
+                                        <input type="number" min="0" step="0.1" value="0" data-row-qty aria-label="{% translate 'Количество для' %} {{ item.title }}">
+                                        <button type="button" data-step-increase aria-label="{% translate 'Увеличить количество' %}">+</button>
                                     </div>
                                 </div>
                                 <small class="material-row__unit" data-row-total>{{ item.unit }}</small>
@@ -259,9 +231,9 @@
                                 <div class="material-row__title" data-row-material data-unit="{{ item.unit }}">{{ item.title }}</div>
                                 <div class="quantity-stepper quantity-stepper--compact">
                                     <div class="quantity-stepper__control">
-                                        <button type="button" data-step-decrease aria-label="Уменьшить количество">−</button>
-                                        <input type="number" min="0" step="0.1" value="0" data-row-qty aria-label="Количество для {{ item.title }}">
-                                        <button type="button" data-step-increase aria-label="Увеличить количество">+</button>
+                                        <button type="button" data-step-decrease aria-label="{% translate 'Уменьшить количество' %}">−</button>
+                                        <input type="number" min="0" step="0.1" value="0" data-row-qty aria-label="{% translate 'Количество для' %} {{ item.title }}">
+                                        <button type="button" data-step-increase aria-label="{% translate 'Увеличить количество' %}">+</button>
                                     </div>
                                 </div>
                                 <small class="material-row__unit" data-row-total>{{ item.unit }}</small>
@@ -274,9 +246,9 @@
                                 <div class="material-row__title" data-row-material data-unit="{{ item.unit }}">{{ item.title }}</div>
                                 <div class="quantity-stepper quantity-stepper--compact">
                                     <div class="quantity-stepper__control">
-                                        <button type="button" data-step-decrease aria-label="Уменьшить количество">−</button>
-                                        <input type="number" min="0" step="0.1" value="0" data-row-qty aria-label="Количество для {{ item.title }}">
-                                        <button type="button" data-step-increase aria-label="Увеличить количество">+</button>
+                                        <button type="button" data-step-decrease aria-label="{% translate 'Уменьшить количество' %}">−</button>
+                                        <input type="number" min="0" step="0.1" value="0" data-row-qty aria-label="{% translate 'Количество для' %} {{ item.title }}">
+                                        <button type="button" data-step-increase aria-label="{% translate 'Увеличить количество' %}">+</button>
                                     </div>
                                 </div>
                                 <small class="material-row__unit" data-row-total>{{ item.unit }}</small>
@@ -289,9 +261,9 @@
                                 <div class="material-row__title" data-row-material data-unit="{{ item.unit }}">{{ item.title }}</div>
                                 <div class="quantity-stepper quantity-stepper--compact">
                                     <div class="quantity-stepper__control">
-                                        <button type="button" data-step-decrease aria-label="Уменьшить количество">−</button>
-                                        <input type="number" min="0" step="0.1" value="0" data-row-qty aria-label="Количество для {{ item.title }}">
-                                        <button type="button" data-step-increase aria-label="Увеличить количество">+</button>
+                                        <button type="button" data-step-decrease aria-label="{% translate 'Уменьшить количество' %}">−</button>
+                                        <input type="number" min="0" step="0.1" value="0" data-row-qty aria-label="{% translate 'Количество для' %} {{ item.title }}">
+                                        <button type="button" data-step-increase aria-label="{% translate 'Увеличить количество' %}">+</button>
                                     </div>
                                 </div>
                                 <small class="material-row__unit" data-row-total>{{ item.unit }}</small>
@@ -304,9 +276,9 @@
                                 <div class="material-row__title" data-row-material data-unit="{{ item.unit }}">{{ item.title }}</div>
                                 <div class="quantity-stepper quantity-stepper--compact">
                                     <div class="quantity-stepper__control">
-                                        <button type="button" data-step-decrease aria-label="Уменьшить количество">−</button>
-                                        <input type="number" min="0" step="0.1" value="0" data-row-qty aria-label="Количество для {{ item.title }}">
-                                        <button type="button" data-step-increase aria-label="Увеличить количество">+</button>
+                                        <button type="button" data-step-decrease aria-label="{% translate 'Уменьшить количество' %}">−</button>
+                                        <input type="number" min="0" step="0.1" value="0" data-row-qty aria-label="{% translate 'Количество для' %} {{ item.title }}">
+                                        <button type="button" data-step-increase aria-label="{% translate 'Увеличить количество' %}">+</button>
                                     </div>
                                 </div>
                                 <small class="material-row__unit" data-row-total>{{ item.unit }}</small>
@@ -319,9 +291,9 @@
                                 <div class="material-row__title" data-row-material data-unit="{{ item.unit }}">{{ item.title }}</div>
                                 <div class="quantity-stepper quantity-stepper--compact">
                                     <div class="quantity-stepper__control">
-                                        <button type="button" data-step-decrease aria-label="Уменьшить количество">−</button>
-                                        <input type="number" min="0" step="0.1" value="0" data-row-qty aria-label="Количество для {{ item.title }}">
-                                        <button type="button" data-step-increase aria-label="Увеличить количество">+</button>
+                                        <button type="button" data-step-decrease aria-label="{% translate 'Уменьшить количество' %}">−</button>
+                                        <input type="number" min="0" step="0.1" value="0" data-row-qty aria-label="{% translate 'Количество для' %} {{ item.title }}">
+                                        <button type="button" data-step-increase aria-label="{% translate 'Увеличить количество' %}">+</button>
                                     </div>
                                 </div>
                                 <small class="material-row__unit" data-row-total>{{ item.unit }}</small>
@@ -335,9 +307,9 @@
                                 <div class="material-row__title" data-row-material data-unit="{{ item.unit }}">{{ item.title }}</div>
                                 <div class="quantity-stepper quantity-stepper--compact">
                                     <div class="quantity-stepper__control">
-                                        <button type="button" data-step-decrease aria-label="Уменьшить количество">−</button>
-                                        <input type="number" min="0" step="0.1" value="0" data-row-qty aria-label="Количество для {{ item.title }}">
-                                        <button type="button" data-step-increase aria-label="Увеличить количество">+</button>
+                                        <button type="button" data-step-decrease aria-label="{% translate 'Уменьшить количество' %}">−</button>
+                                        <input type="number" min="0" step="0.1" value="0" data-row-qty aria-label="{% translate 'Количество для' %} {{ item.title }}">
+                                        <button type="button" data-step-increase aria-label="{% translate 'Увеличить количество' %}">+</button>
                                     </div>
                                 </div>
                                 <small class="material-row__unit" data-row-total>{{ item.unit }}</small>
@@ -347,41 +319,41 @@
                     </div>
 
                     <div class="estimate-builder__actions estimate-builder__actions--copy">
-                        <button class="btn btn--primary" type="button" data-copy-template>Скопировать список</button>
+                        <button class="btn btn--primary" type="button" data-copy-template>{% translate 'Скопировать список' %}</button>
                     </div>
                 </div>
             </div>
 
-            <textarea class="master-template__text" rows="7" data-master-output aria-label="Текст сметы для копирования"></textarea>
+            <textarea class="master-template__text" rows="7" data-master-output aria-label="{% translate 'Текст сметы для копирования' %}"></textarea>
             <pre class="master-template__preview" data-whatsapp-preview></pre>
-            <div class="copy-toast" role="status" aria-live="polite" data-copy-toast>Список скопирован</div>
+            <div class="copy-toast" role="status" aria-live="polite" data-copy-toast>{% translate 'Список скопирован' %}</div>
         </section>
     </div>
 </section>
 
 {% if result %}
-{% if calculator.slug == 'plitka-keramogranit' %}<details class="tile-demo-details"><summary>Посмотреть демонстрационные примеры мастеров и магазинов</summary>{% endif %}
-<p class="result-warning">Примеры ниже демонстрируют интерфейс. Профили, опыт, адреса, цены, наличие и доставка не подтверждены. Это не предложения реальных исполнителей или магазинов.</p>
-<section class="post-flow-grid" aria-label="Демонстрационные примеры">
+{% if calculator.slug == 'plitka-keramogranit' %}<details class="tile-demo-details"><summary>{% translate 'Посмотреть демонстрационные примеры мастеров и магазинов' %}</summary>{% endif %}
+<p class="result-warning">{% translate 'Примеры ниже демонстрируют интерфейс. Профили, опыт, адреса, цены, наличие и доставка не подтверждены. Это не предложения реальных исполнителей или магазинов.' %}</p>
+<section class="post-flow-grid" aria-label="{% translate 'Демонстрационные примеры' %}">
     <div class="recommendation-panel recommendation-panel--masters">
         <div class="section-heading section-heading--inline">
             <div>
-                <p class="section-heading__eyebrow">Рекомендации</p>
-                <h2>Демонстрационные профили</h2>
+                <p class="section-heading__eyebrow">{% translate 'Рекомендации' %}</p>
+                <h2>{% translate 'Демонстрационные профили' %}</h2>
             </div>
-            <span class="trust-badge">Не реальные рекомендации</span>
+            <span class="trust-badge">{% translate 'Не реальные рекомендации' %}</span>
         </div>
-        <div class="recommendation-list recommendation-list--masters" aria-label="Демонстрационные профили">
+        <div class="recommendation-list recommendation-list--masters" aria-label="{% translate 'Демонстрационные профили' %}">
             {% for master in recommended_masters %}
                 <article class="master-card-v2">
                     <div class="master-card-v2__photo-wrap">
                         <img src="{{ master.photo }}" alt="{{ master.name }}" class="master-card-v2__photo" loading="lazy">
-                        <span class="master-status">Демо-профиль</span>
+                        <span class="master-status">{% translate 'Демо-профиль' %}</span>
                     </div>
                     <div class="master-card-v2__body">
                         <div class="master-card-v2__head">
                             <h3>{{ master.name }}</h3>
-                            <span class="master-rating">Демо</span>
+                            <span class="master-rating">{% translate 'Демо' %}</span>
                         </div>
                         <p>{{ master.specialization }}</p>
                         <div class="master-meta-grid">
@@ -397,28 +369,28 @@
     <div class="recommendation-panel recommendation-panel--stores">
         <div class="section-heading section-heading--inline">
             <div>
-                <p class="section-heading__eyebrow">Материалы</p>
-                <h2>Пример предложений магазинов</h2>
+                <p class="section-heading__eyebrow">{% translate 'Материалы' %}</p>
+                <h2>{% translate 'Пример предложений магазинов' %}</h2>
             </div>
-            <span class="trust-badge trust-badge--orange">Демонстрация</span>
+            <span class="trust-badge trust-badge--orange">{% translate 'Демонстрация' %}</span>
         </div>
-        <div class="store-list" aria-label="Магазины материалов в Астане">
+        <div class="store-list" aria-label="{% translate 'Магазины материалов в Астане' %}">
             {% for seller in material_sellers %}
                 <article class="store-card">
                     <div class="store-card__top">
                         <div>
-                            <span class="store-label">Магазин</span>
+                            <span class="store-label">{% translate 'Магазин' %}</span>
                             <h3>{{ seller.name }}</h3>
                         </div>
                         <strong class="store-price">{{ seller.price }}</strong>
                     </div>
                     <div class="store-info-grid">
-                        <div><span>Доставка</span><b>{{ seller.delivery }}</b></div>
-                        <div><span>Адрес</span><b>{{ seller.address }}</b></div>
-                        <div><span>Наличие</span><b>{{ seller.availability }}</b></div>
+                        <div><span>{% translate 'Доставка' %}</span><b>{{ seller.delivery }}</b></div>
+                        <div><span>{% translate 'Адрес' %}</span><b>{{ seller.address }}</b></div>
+                        <div><span>{% translate 'Наличие' %}</span><b>{{ seller.availability }}</b></div>
                     </div>
                     <div class="store-actions">
-                        <small>Демонстрационный пример. Заказ недоступен.</small>
+                        <small>{% translate 'Демонстрационный пример. Заказ недоступен.' %}</small>
                     </div>
                 </article>
             {% endfor %}

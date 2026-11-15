@@ -1,3 +1,5 @@
+from core.localization import render
+from django.utils.translation import gettext as translate
 from .identifiers import parse_positive_id
 from functools import wraps
 
@@ -9,7 +11,7 @@ from django.db.models import Count, F, Q
 from django.http import Http404, HttpResponseBadRequest, HttpResponseForbidden
 from django.db import transaction
 from django.views.decorators.http import require_POST
-from django.shortcuts import get_object_or_404, redirect, render
+from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
 
 from .forms import (
@@ -51,7 +53,7 @@ class AccountLoginView(LoginView):
 def logout_view(request):
     if request.user.is_authenticated:
         logout(request)
-        messages.success(request, 'Вы вышли из аккаунта')
+        messages.success(request, translate('Вы вышли из аккаунта'))
     return redirect('core:home')
 
 
@@ -80,7 +82,7 @@ def role_required(role):
         def _wrapped(request, *args, **kwargs):
             profile = getattr(request.user, 'profile', None)
             if not profile or profile.role != role:
-                return HttpResponseForbidden('Недостаточно прав доступа.')
+                return HttpResponseForbidden(translate('Недостаточно прав доступа.'))
             return view_func(request, *args, **kwargs)
 
         return _wrapped
@@ -95,11 +97,11 @@ def client_dashboard(request):
         response_type = request.POST.get('response_type')
         response_id = parse_positive_id(request.POST.get('response_id'))
         if response_id is None:
-            return HttpResponseBadRequest('Некорректный отклик.')
+            return HttpResponseBadRequest(translate('Некорректный отклик.'))
 
         response_models = {'master': MasterResponse, 'supplier': SupplierResponse}
         if response_type not in response_models or action not in {'accept', 'reject'}:
-            return HttpResponseBadRequest('Некорректное действие.')
+            return HttpResponseBadRequest(translate('Некорректное действие.'))
         model = response_models[response_type]
         with transaction.atomic():
             response = get_object_or_404(
@@ -110,7 +112,7 @@ def client_dashboard(request):
             if (response.status != model.Status.PENDING
                     or service_request.status not in OPEN_REQUEST_STATUSES
                     or service_request.request_type not in {response_type, ServiceRequest.RequestType.FULL_REPAIR}):
-                return HttpResponseBadRequest('Заявка или отклик уже недоступны для изменения.')
+                return HttpResponseBadRequest(translate('Заявка или отклик уже недоступны для изменения.'))
             response.status = model.Status.ACCEPTED if action == 'accept' else model.Status.REJECTED
             response.save(update_fields=['status'])
             if action == 'accept':
@@ -175,7 +177,7 @@ def master_dashboard(request):
         form = MasterResponseForm(request.POST)
         request_id = parse_positive_id(request.POST.get('request_id'))
         if request_id is None:
-            return HttpResponseBadRequest('Некорректная заявка.')
+            return HttpResponseBadRequest(translate('Некорректная заявка.'))
         service_request = get_object_or_404(
             ServiceRequest.objects.filter(project__user=F('client')).exclude(client=request.user).select_related('project', 'calculation'),
             id=request_id,
@@ -187,7 +189,7 @@ def master_dashboard(request):
             response.request = service_request
             response.master = master_profile
             response.save()
-            messages.success(request, 'Отклик отправлен клиенту.')
+            messages.success(request, translate('Отклик отправлен клиенту.'))
             return redirect('accounts:dashboard_master')
     else:
         form = MasterResponseForm()
@@ -227,7 +229,7 @@ def master_profile_edit(request):
         form = MasterProfileForm(request.POST, request.FILES, instance=master_profile)
         if form.is_valid():
             form.save()
-            messages.success(request, 'Профиль мастера обновлен.')
+            messages.success(request, translate('Профиль мастера обновлен.'))
             return redirect('accounts:dashboard_master')
     else:
         form = MasterProfileForm(instance=master_profile)
@@ -252,7 +254,7 @@ def supplier_dashboard(request):
         form = SupplierResponseForm(request.POST)
         request_id = parse_positive_id(request.POST.get('request_id'))
         if request_id is None:
-            return HttpResponseBadRequest('Некорректная заявка.')
+            return HttpResponseBadRequest(translate('Некорректная заявка.'))
         service_request = get_object_or_404(ServiceRequest.objects.filter(project__user=F('client')).exclude(client=request.user).select_related('project', 'calculation'), id=request_id,
             request_type__in=[ServiceRequest.RequestType.SUPPLIER, ServiceRequest.RequestType.FULL_REPAIR],
             status__in=OPEN_REQUEST_STATUSES)
@@ -266,7 +268,7 @@ def supplier_dashboard(request):
                 msg = f"{msg}\nСрок поставки: {delivery_time}".strip()
             response.message = msg
             response.save()
-            messages.success(request, 'Ответ поставщика отправлен.')
+            messages.success(request, translate('Ответ поставщика отправлен.'))
             return redirect('accounts:dashboard_supplier')
     else:
         form = SupplierResponseForm()
@@ -317,7 +319,7 @@ def supplier_profile_edit(request):
         form = SupplierProfileForm(request.POST, instance=supplier_profile)
         if form.is_valid():
             form.save()
-            messages.success(request, 'Профиль поставщика обновлен.')
+            messages.success(request, translate('Профиль поставщика обновлен.'))
             return redirect('accounts:dashboard_supplier')
     else:
         form = SupplierProfileForm(instance=supplier_profile)
@@ -337,7 +339,7 @@ def calculation_detail(request, calculation_id):
     from calculators.definitions import CALCULATORS_BY_SLUG
     pk = parse_positive_id(calculation_id)
     if pk is None:
-        raise Http404('Расчёт не найден')
+        raise Http404(translate('Расчёт не найден'))
     calculation = get_object_or_404(
         Calculation.objects.select_related('project'), pk=pk, project__user=request.user)
     definition = CALCULATORS_BY_SLUG.get(calculation.calculator_slug, {})

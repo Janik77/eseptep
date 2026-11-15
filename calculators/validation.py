@@ -1,5 +1,6 @@
 """Shared input contract; limits are application bounds, not construction norms."""
 from decimal import Decimal, InvalidOperation
+from django.utils.translation import gettext as _
 
 # Keep estimates within persistence precision and limit unreasonable requests.
 MAX_AREA = 10000
@@ -27,10 +28,10 @@ def validate_fields(fields, data):
     for field in fields:
         name = field['name']
         raw = str(data.get(name, '')).strip()
-        label = field['label']
+        label = _(field['label'])
         if field.get('type') == 'select':
             if raw not in {str(option['value']) for option in field['options']}:
-                errors[name] = f'{label}: выберите значение из списка.'
+                errors[name] = _('%(label)s: выберите значение из списка.') % {'label': label}
             else:
                 cleaned[name] = raw
             continue
@@ -44,14 +45,14 @@ def validate_fields(fields, data):
             if not number.is_finite() or not minimum <= number <= maximum:
                 raise ValueError
             if integer and number != number.to_integral_value():
-                errors[name] = f'{label}: введите целое число от {minimum} до {maximum}.'
+                errors[name] = _('%(label)s: введите целое число от %(minimum)s до %(maximum)s.') % {'label': label, 'minimum': minimum, 'maximum': maximum}
                 continue
             if number != number.quantize(Decimal('0.01')):
-                errors[name] = f'{label}: укажите не более двух знаков после запятой.'
+                errors[name] = _('%(label)s: укажите не более двух знаков после запятой.') % {'label': label}
                 continue
             cleaned[name] = format(number, 'f')
         except (InvalidOperation, ValueError):
-            errors[name] = f'{label}: введите число от {minimum} до {maximum}.'
+            errors[name] = _('%(label)s: введите число от %(minimum)s до %(maximum)s.') % {'label': label, 'minimum': minimum, 'maximum': maximum}
     if errors:
         raise InputValidationError(errors)
     return cleaned
@@ -64,6 +65,6 @@ def validate_calculator_input(calculator, data):
             ('economy', 'comfort', 'business') if calculator['slug'] in VARIANT_CALCULATORS else ()
         )
         if data['selected_variant'] not in allowed:
-            raise InputValidationError({'selected_variant': 'Вариант: выберите доступный вариант расчёта.'})
+            raise InputValidationError({'selected_variant': _('Вариант: выберите доступный вариант расчёта.')})
         cleaned['selected_variant'] = data['selected_variant']
     return cleaned

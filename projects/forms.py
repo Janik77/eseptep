@@ -1,3 +1,4 @@
+from django.utils.translation import gettext_lazy as _
 from decimal import Decimal
 from io import BytesIO
 from pathlib import Path
@@ -12,16 +13,16 @@ from .models import ProjectUpload
 
 
 class ProjectUploadForm(forms.Form):
-    file = forms.FileField(label='Файл проекта')
-    comment = forms.CharField(label='Комментарий', required=False, max_length=4000, widget=forms.Textarea)
+    file = forms.FileField(label=_('Файл проекта'))
+    comment = forms.CharField(label=_('Комментарий'), required=False, max_length=4000, widget=forms.Textarea)
 
     def clean_file(self):
         uploaded = self.cleaned_data['file']
         if not uploaded.size or uploaded.size > settings.PROJECT_UPLOAD_MAX_BYTES:
-            raise forms.ValidationError('Выберите непустой файл размером до 10 МБ.')
+            raise forms.ValidationError(_('Выберите непустой файл размером до 10 МБ.'))
         suffix = Path(uploaded.name).suffix.lower()
         if suffix not in {'.pdf', '.jpg', '.jpeg', '.png', '.webp'}:
-            raise forms.ValidationError('Поддерживаются PDF, JPG, PNG и WEBP. DWG пока не принимается: безопасная проверка недоступна.')
+            raise forms.ValidationError(_('Поддерживаются PDF, JPG, PNG и WEBP. DWG пока не принимается: безопасная проверка недоступна.'))
         data = uploaded.read()
         uploaded.seek(0)
         if suffix != '.pdf':
@@ -40,7 +41,7 @@ class ProjectUploadForm(forms.Form):
                     raise ValueError('Re-encoded image exceeds size limit')
                 return ContentFile(result.getvalue(), name=Path(uploaded.name).name)
             except (UnidentifiedImageError, OSError, ValueError, Image.DecompressionBombError, Image.DecompressionBombWarning):
-                raise forms.ValidationError('Изображение повреждено, слишком большое или не соответствует расширению.')
+                raise forms.ValidationError(_('Изображение повреждено, слишком большое или не соответствует расширению.'))
         try:
             if not data.startswith(b'%PDF-') or b'%%EOF' not in data[-1024:]:
                 raise ValueError('Invalid PDF')
@@ -74,12 +75,12 @@ class ProjectUploadForm(forms.Form):
                         inspect(value, depth + 1)
             inspect(reader.trailer)
         except Exception:
-            raise forms.ValidationError('Нужен корректный PDF до 100 страниц, без пароля, скриптов и вложений.')
+            raise forms.ValidationError(_('Нужен корректный PDF до 100 страниц, без пароля, скриптов и вложений.'))
         return uploaded
 
 
 class ProjectEstimateForm(forms.Form):
-    area = forms.DecimalField(label='Площадь квартиры', min_value=Decimal('0.01'), max_value=Decimal('999999.99'),
+    area = forms.DecimalField(label=_('Площадь квартиры'), min_value=Decimal('0.01'), max_value=Decimal('999999.99'),
                               max_digits=8, decimal_places=2, localize=True)
-    repair_level = forms.ChoiceField(label='Уровень ремонта', choices=ProjectUpload.RepairLevel.choices)
+    repair_level = forms.ChoiceField(label=_('Уровень ремонта'), choices=ProjectUpload.RepairLevel.choices)
 
