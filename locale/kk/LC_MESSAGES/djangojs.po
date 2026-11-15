@@ -121,6 +121,12 @@ msgstr "ЖИ талдауын көрсету үшін жоспарды MVP ре�
 msgid "PDF до 100 страниц, JPG, PNG или WEBP. До 10 МБ; изображения до 20 Мп. DWG пока не поддерживается."
 msgstr "100 бетке дейінгі PDF, JPG, PNG немесе WEBP. Көлемі 10 МБ-қа дейін; кескіндер 20 Мп-ға дейін. DWG әзірге қолдау таппайды."
 
+msgid "Password"
+msgstr "Құпиясөз"
+
+msgid "Password confirmation"
+msgstr "Құпиясөзді растау"
+
 msgid "Please enter a correct %(username)s and password. Note that both fields may be case-sensitive."
 msgstr "Дұрыс %(username)s және құпиясөзді енгізіңіз. Бас және кіші әріптерді ескеріңіз."
 
@@ -506,7 +512,7 @@ msgid "Двери"
 msgstr "Есіктер"
 
 msgid "Дверное полотно"
-msgstr "Есік полотносы"
+msgstr "Есік жармасы"
 
 msgid "Двойной каркас, двухуровневые соединители, шумоизоляция и усиление."
 msgstr "Қос қаңқа, екі деңгейлі жалғағыштар, дыбыс оқшаулағыш және күшейткіштер."
@@ -715,6 +721,9 @@ msgstr "Оқшаулағыш таспа"
 msgid "Имя"
 msgstr "Аты"
 
+msgid "Имя и фамилия"
+msgstr "Аты-жөні"
+
 msgid "Имя клиента"
 msgstr "Тапсырыс берушінің аты"
 
@@ -807,6 +816,9 @@ msgstr "Ø110 кәріз құбыры"
 
 msgid "Канализационная труба Ø50"
 msgstr "Ø50 кәріз құбыры"
+
+msgid "Категория"
+msgstr "Санат"
 
 msgid "Качественная отделка стен"
 msgstr "Қабырғаларды сапалы әрлеу"
@@ -1060,6 +1072,9 @@ msgstr "Атауы"
 msgid "Название компании"
 msgstr "Компания атауы"
 
+msgid "Название материала"
+msgstr "Материал атауы"
+
 msgid "Название проекта"
 msgstr "Жоба атауы"
 
@@ -1076,7 +1091,7 @@ msgid "Наливной пол, грунтовка, маяки и расходн
 msgstr "Аудан мен қабат қалыңдығына қарай құйма еден қоспасы, астар, маяктар және шығын материалдары."
 
 msgid "Наличие"
-msgstr "Қолжетімділігі"
+msgstr "Қолда бары"
 
 msgid "Наличие:"
 msgstr "Қолжетімділігі:"
@@ -1218,6 +1233,9 @@ msgstr "Жайлы тұруға арналған оңтайлы нұсқа."
 
 msgid "Оптимальный ремонт с хорошими материалами."
 msgstr "Сапалы материалдармен оңтайлы жөндеу."
+
+msgid "Опыт работы, лет"
+msgstr "Жұмыс тәжірибесі, жыл"
 
 msgid "Опыт:"
 msgstr "Тәжірибе:"
@@ -1615,6 +1633,9 @@ msgstr "Дүкен ұсыныстарының мысалы"
 msgid "Примеры ниже демонстрируют интерфейс. Профили, опыт, адреса, цены, наличие и доставка не подтверждены. Это не предложения реальных исполнителей или магазинов."
 msgstr "Төмендегі мысалдар интерфейсті көрсетеді. Профильдер, тәжірибе, мекенжайлар, бағалар, қолжетімділік және жеткізу расталмаған. Бұлар нақты орындаушылардың немесе дүкендердің ұсыныстары емес."
 
+msgid "Принимаю заказы"
+msgstr "Тапсырыс қабылдаймын"
+
 msgid "Принят"
 msgstr "Қабылданған"
 
@@ -1838,7 +1859,7 @@ msgid "Респиратор / защита от пыли"
 msgstr "Респиратор / шаңнан қорғаныш"
 
 msgid "Респиратор / маска"
-msgstr "Респиратор / маска"
+msgstr "Респиратор / бетперде"
 
 msgid "Розетки"
 msgstr "Розеткалар"
@@ -2010,6 +2031,9 @@ msgstr "Сақталған смета ·"
 
 msgid "Сохранённая смета — ESEPTEP"
 msgstr "Сақталған смета — ESEPTEP"
+
+msgid "Специализация"
+msgstr "Мамандану бағыты"
 
 msgid "Список калькуляторов"
 msgstr "Калькуляторлар тізімі"
@@ -2188,6 +2212,9 @@ msgstr "Бұрыштар/жалғағыштар/тығындар"
 msgid "Уже есть аккаунт?"
 msgstr "Аккаунтыңыз бар ма?"
 
+msgid "Укажите верный email и пароль. Учитывайте регистр букв."
+msgstr "Дұрыс электрондық пошта мен құпиясөзді енгізіңіз. Бас және кіші әріптерді ескеріңіз."
+
 msgid "Укажите параметры"
 msgstr "Параметрлерді көрсетіңіз"
 
@@ -2253,6 +2280,9 @@ msgstr "Фитингтер мен жалғағыштар"
 
 msgid "Формат плитки"
 msgstr "Плитка пішімі"
+
+msgid "Фотография"
+msgstr "Фотосурет"
 
 msgid "Фуга"
 msgstr "Тігіс толтырғыш"
@@ -2521,3 +2551,28 @@ msgid "This password is too short. It must contain at least %d character."
 msgid_plural "This password is too short. It must contain at least %d characters."
 msgstr[0] "Құпиясөз тым қысқа. Кемінде %d таңба болуы керек."
 msgstr[1] "Құпиясөз тым қысқа. Кемінде %d таңба болуы керек."
+
+msgid "Ensure this value has at least %(limit_value)d character (it has %(show_value)d)."
+msgid_plural "Ensure this value has at least %(limit_value)d characters (it has %(show_value)d)."
+msgstr[0] "Кемінде %(limit_value)d таңба енгізіңіз (қазір %(show_value)d)."
+msgstr[1] "Кемінде %(limit_value)d таңба енгізіңіз (қазір %(show_value)d)."
+
+msgid "Ensure this value has at most %(limit_value)d character (it has %(show_value)d)."
+msgid_plural "Ensure this value has at most %(limit_value)d characters (it has %(show_value)d)."
+msgstr[0] "Ең көбі %(limit_value)d таңба енгізіңіз (қазір %(show_value)d)."
+msgstr[1] "Ең көбі %(limit_value)d таңба енгізіңіз (қазір %(show_value)d)."
+
+msgid "Ensure that there are no more than %(max)s digit in total."
+msgid_plural "Ensure that there are no more than %(max)s digits in total."
+msgstr[0] "Санда барлығы %(max)s цифрдан артық болмауы керек."
+msgstr[1] "Санда барлығы %(max)s цифрдан артық болмауы керек."
+
+msgid "Ensure that there are no more than %(max)s decimal place."
+msgid_plural "Ensure that there are no more than %(max)s decimal places."
+msgstr[0] "Үтірден кейін %(max)s цифрдан артық болмауы керек."
+msgstr[1] "Үтірден кейін %(max)s цифрдан артық болмауы керек."
+
+msgid "Ensure that there are no more than %(max)s digit before the decimal point."
+msgid_plural "Ensure that there are no more than %(max)s digits before the decimal point."
+msgstr[0] "Үтірге дейін %(max)s цифрдан артық болмауы керек."
+msgstr[1] "Үтірге дейін %(max)s цифрдан артық болмауы керек."

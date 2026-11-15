@@ -26,7 +26,9 @@ jobs:
       - run: python manage.py check && python manage.py makemigrations --check --dry-run && python manage.py test
       - run: node --test calculators/js_tests/*.test.cjs
       - run: npm install --prefix /tmp/eseptep-browser-driver playwright@1.65.0
-      - run: /tmp/eseptep-browser-driver/node_modules/.bin/playwright install --with-deps chromium
+      # Use the runner's packaged Chrome with its supported sandbox profile.
+      # Never disable Chromium sandboxing or change host security settings.
+      - run: google-chrome --version
       - run: python manage.py migrate --noinput && PYTHONPATH=. python tools/qa_browser_seed.py
       - name: Browser workflow and screenshots
         run: |

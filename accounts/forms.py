@@ -53,6 +53,7 @@ class RegisterForm(UserCreationForm):
 
 
 class EseptepAuthenticationForm(AuthenticationForm):
+    error_messages = {**AuthenticationForm.error_messages, 'invalid_login': _('Укажите верный email и пароль. Учитывайте регистр букв.')}
     username = forms.EmailField(label='Email')
 
 
@@ -73,6 +74,9 @@ class MasterProfileForm(forms.ModelForm):
     class Meta:
         model = MasterProfile
         fields = ('full_name', 'photo', 'city', 'specialization', 'experience_years', 'is_available', 'whatsapp', 'description')
+        labels = {'full_name': _('Имя и фамилия'), 'photo': _('Фотография'), 'city': _('Город'),
+                  'specialization': _('Специализация'), 'experience_years': _('Опыт работы, лет'),
+                  'is_available': _('Принимаю заказы'), 'whatsapp': 'WhatsApp', 'description': _('Описание')}
 
 
 class MasterResponseForm(forms.ModelForm):
@@ -103,6 +107,8 @@ class SupplierMaterialForm(forms.ModelForm):
     class Meta:
         model = SupplierMaterial
         fields = ('name', 'category', 'unit', 'price', 'stock_status', 'delivery_time')
+        labels = {'name': _('Название материала'), 'category': _('Категория'), 'unit': _('Единица измерения'),
+                  'stock_status': _('Наличие'), 'delivery_time': _('Срок поставки')}
 
 
 class SupplierResponseForm(forms.ModelForm):

@@ -56,3 +56,32 @@ class LocalizationTests(TestCase):
 
     def test_unknown_upload_cannot_be_read_via_language_preview(self):
         self.assertEqual(self.client.get('/projects/upload/?upload_id=999999').status_code, 404)
+
+    def test_account_forms_have_explicit_localized_labels(self):
+        from accounts.forms import MasterProfileForm, SupplierMaterialForm, EseptepAuthenticationForm
+        from core.localization import localize_form
+        with override('kk'):
+            master = localize_form(MasterProfileForm())
+            material = localize_form(SupplierMaterialForm())
+            self.assertEqual(str(master.fields['full_name'].label), 'Аты-жөні')
+            self.assertEqual(str(material.fields['name'].label), 'Материал атауы')
+            login = EseptepAuthenticationForm(data={'username': 'missing@example.test', 'password': 'not-a-real-password'})
+            self.assertFalse(login.is_valid())
+            self.assertIn('электрондық пошта', str(login.errors))
+
+    def test_decimal_validation_uses_kazakh_plural_messages(self):
+        from accounts.forms import SupplierMaterialForm
+        with override('kk'):
+            form = SupplierMaterialForm(data={'name':'Example', 'category':'Example', 'unit':'m', 'price':'3.11111', 'stock_status':'Example'})
+            self.assertFalse(form.is_valid())
+            self.assertIn('Үтірден кейін 2 цифрдан', str(form.errors['price']))
+
+    def test_all_definition_technical_values_are_language_invariant(self):
+        with override('kk'):
+            for definition in CALCULATORS:
+                localized = system_tree(definition)
+                self.assertEqual(localized['slug'], definition['slug'])
+                for original, translated in zip(definition['fields'], localized['fields']):
+                    self.assertEqual(original['name'], translated['name'])
+                    self.assertEqual(original.get('default'), translated.get('default'))
+                    self.assertEqual([x['value'] for x in original.get('options', [])], [x['value'] for x in translated.get('options', [])])

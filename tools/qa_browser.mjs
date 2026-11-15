@@ -8,7 +8,7 @@ const { chromium } = require(process.env.PLAYWRIGHT_PACKAGE || 'playwright');
 const base = 'http://127.0.0.1:8197';
 const output = 'browser-evidence';
 await fs.mkdir(output, { recursive: true });
-const browser = await chromium.launch({ chromiumSandbox: true });
+const browser = await chromium.launch({ channel: 'chrome', chromiumSandbox: true });
 const evidence = { sha: execFileSync('git', ['rev-parse','HEAD'], {encoding:'utf8'}).trim(), checks: [] };
 const languageForm = '[data-language-switch], [data-language-form]';
 async function switchLanguage(page, lang) {
