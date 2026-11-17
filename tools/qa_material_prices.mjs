@@ -14,7 +14,7 @@ async function publish(version){
  await row.locator('input.action-select').check();
  await page.locator('select[name=action]').first().selectOption('activate');
  await page.locator('button[name=index]').first().click();
- await page.locator('.messagelist .success').waitFor();
+ await page.locator('.messagelist').getByText('Price edition activated. Saved estimates remain unchanged.',{exact:true}).waitFor();
 }
 async function calculate(){
  await page.goto(base+'/calculators/plitka-keramogranit/');
