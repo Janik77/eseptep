@@ -4,12 +4,15 @@
 
 {% block content %}
 {% translate 'Без комментария' as i18n_default_0 %}
+{% translate 'Не указан' as profile_not_set %}
+{% translate 'Общестроительные работы' as profile_specialization %}
+{% translate 'По согласованию' as profile_delivery %}
 {% if response_form.errors %}<div class="dashboard-card" role="alert"><h2>{% translate 'Отклик не отправлен' %}</h2>{{ response_form.errors }}</div>{% endif %}
 <section class="dashboard">
   <div class="dashboard-card">
     <h1>{{ supplier_profile.company_name }}</h1>
-    <p>{{ supplier_profile.city }} · {{ supplier_profile.address }}</p>
-    <p>{% translate 'Доставка:' %} {{ supplier_profile.delivery_info }} · WhatsApp: {{ supplier_profile.whatsapp|default:'—' }}</p>
+    <p>{{ supplier_profile.city|default:profile_not_set }} · {{ supplier_profile.address|default:profile_not_set }}</p>
+    <p>{% translate 'Доставка:' %} {{ supplier_profile.delivery_info|default:profile_delivery }} · WhatsApp: {{ supplier_profile.whatsapp|default:'—' }}</p>
     <div class="result-actions">
       <a class="btn btn--secondary" href="{% url 'accounts:supplier_profile_edit' %}">{% translate 'Редактировать профиль' %}</a>
       <a class="btn btn--primary" href="{% url 'accounts:supplier_material_create' %}">{% translate 'Добавить материал' %}</a>

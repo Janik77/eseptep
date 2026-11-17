@@ -4,6 +4,9 @@
 
 {% block content %}
 {% translate 'Без комментария' as i18n_default_0 %}
+{% translate 'Не указан' as profile_not_set %}
+{% translate 'Общестроительные работы' as profile_specialization %}
+{% translate 'По согласованию' as profile_delivery %}
 {% if response_form.errors %}<div class="dashboard-card" role="alert"><h2>{% translate 'Отклик не отправлен' %}</h2>{{ response_form.errors }}</div>{% endif %}
 <section class="dashboard">
   <div class="dashboard-card master-profile-card">
@@ -15,7 +18,7 @@
       {% endif %}
       <div>
         <h1>{{ master_profile.full_name }}</h1>
-        <p>{{ master_profile.city }} · {{ master_profile.specialization }}</p>
+        <p>{{ master_profile.city|default:profile_not_set }} · {{ master_profile.specialization|default:profile_specialization }}</p>
         <p>{% translate 'Опыт:' %} {{ master_profile.experience_years }} {% translate 'лет · Отзывы пока не подтверждены ·' %} {% if master_profile.is_available %}{% translate 'Свободен' %}{% else %}{% translate 'Занят' %}{% endif %}</p>
       </div>
     </div>
@@ -29,7 +32,7 @@
       <article class="dashboard-item">
         <b>{{ request_item.project.title }}</b>
         <p>{{ request_item.project.area_m2 }} {% translate 'м² ·' %} {{ request_item.project.city }} · {{ request_item.project.get_repair_segment_display|system_text }}</p>
-        <p>{% translate 'Сумма сметы:' %} {% if request_item.calculation %}₸ {{ request_item.calculation.grand_total }}{% else %}—{% endif %}</p>
+        <p>{% translate 'Сумма сметы:' %} {% if request_item.calculation %}₸ {{ request_item.calculation.grand_total|money }}{% else %}—{% endif %}</p>
         <small>{{ request_item.comment|default:i18n_default_0 }} · {{ request_item.created_at|date:'d.m.Y' }}</small>
 
         <form method="post" class="master-response-form">
@@ -56,7 +59,7 @@
       {% for response in my_responses %}
       <article class="dashboard-item">
         <b>{{ response.request.project.title }}</b>
-        <p>{% translate 'Цена: ₸' %} {{ response.price_from }} {% translate '· Статус:' %} {{ response.get_status_display|system_text }}</p>
+        <p>{% translate 'Цена: ₸' %} {{ response.price_from|money }} {% translate '· Статус:' %} {{ response.get_status_display|system_text }}</p>
         <small>{{ response.created_at|date:'d.m.Y' }}</small>
       </article>
       {% empty %}<div class="empty-state">{% translate 'Вы еще не отправляли отклики.' %}</div>{% endfor %}

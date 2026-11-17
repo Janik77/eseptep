@@ -1,4 +1,4 @@
-{% extends 'base.html' %}{% load i18n %}
+{% extends 'base.html' %}{% load i18n eseptep_i18n %}
 
 {% block title %}{% translate 'Загрузить проект — ESEPTEP' %}{% endblock %}
 
@@ -67,7 +67,7 @@
     </form>
 
     {% if estimate %}
-        <div class="grand-total project-estimate-total"><span>{{ estimate.repair_level }} · {{ estimate.area }} {% translate 'м²' %}</span><strong>₸ {{ estimate.total }}</strong></div>
+        <div class="grand-total project-estimate-total"><span>{{ estimate.repair_level }} · {{ estimate.area }} {% translate 'м²' %}</span><strong>₸ {{ estimate.total|money }}</strong></div>
     {% endif %}
 </section>
 {% endif %}

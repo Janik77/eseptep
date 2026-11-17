@@ -19,7 +19,7 @@ test('variant click updates summary, total, rows, hidden save inputs and copied 
         const label = node(), summary = node(), total = node(), copy = node(), toast = node();
         const hidden = [node(), node(), node()];
         const buttons = keys.map((key, i) => {
-            const button = node({variantButton: key, variantCount: String(i + 2), variantTotal: String((i + 1) * 100)});
+            const button = node({variantButton: key, variantCount: String(i + 2), variantTotal: String(593060 + i)});
             button.querySelector = () => node({}, key);
             return button;
         });
@@ -33,7 +33,7 @@ test('variant click updates summary, total, rows, hidden save inputs and copied 
         };
         let copied;
         const context = {
-            document: {documentElement: node(), addEventListener() {}, querySelectorAll: selector => selector === '[data-variant-result]' ? [root] : hidden},
+            document: {documentElement: {...node(), lang: 'kk'}, addEventListener() {}, querySelectorAll: selector => selector === '[data-variant-result]' ? [root] : hidden},
             navigator: {clipboard: {async writeText(text) {copied = text;}}},
             window: {setTimeout() {}},
         };
@@ -44,7 +44,7 @@ test('variant click updates summary, total, rows, hidden save inputs and copied 
             buttons[index].handlers.click();
             assert.equal(label.textContent, key);
             assert.equal(summary.textContent, `${key} · ${index + 2} позиций · цены справочно`);
-            assert.equal(total.textContent, `₸ ${(index + 1) * 100}`);
+            assert.equal(total.textContent, `593 0${60 + index} ₸`);
             panels.forEach((panel, i) => assert.equal(panel.classList.contains('is-active'), i === index));
             buttons.forEach((button, i) => assert.equal(button.attributes['aria-selected'], String(i === index)));
             hidden.forEach(input => assert.equal(input.value, key));
@@ -64,7 +64,7 @@ function copyContext({clipboard, execResult = true, execThrows = false} = {}) {
     };
     const context = {
         document: {
-            documentElement: node(), addEventListener() {},
+            documentElement: {...node(), lang: 'kk'}, addEventListener() {},
             activeElement: {focus() {calls.focusRestored = true;}},
             createElement(tag) {assert.equal(tag, 'textarea'); return temporary;},
             body: {appendChild(element) {assert.equal(element, temporary); calls.appended = true;}},
@@ -126,7 +126,7 @@ test('result flow respects reduced motion when scrolling to the result', () => {
         let behavior;
         const card = {scrollIntoView(options) {behavior = options.behavior;}};
         const context = {
-            document: {documentElement: node(), addEventListener() {}, querySelectorAll: () => [],
+            document: {documentElement: {...node(), lang: 'kk'}, addEventListener() {}, querySelectorAll: () => [],
                 querySelector: selector => selector === '#estimate-result' ? card : selector === '[data-result-ready]' ? {} : null},
             window: {setTimeout(callback) {callback();}},
         };

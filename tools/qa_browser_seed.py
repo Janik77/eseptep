@@ -11,3 +11,7 @@ from accounts.models import UserProfile, ClientProject
 user = User.objects.create_user(username='browser-qa@example.test', email='browser-qa@example.test', password='Synthetic-QA-Only-815!')
 UserProfile.objects.create(user=user, role='client')
 ClientProject.objects.create(user=user, title='QA project Ә Ғ Қ Ң Ө Ұ Ү Һ І', city='Шымкент', area_m2=60, rooms=2)
+
+for role in ('master', 'supplier'):
+    member = User.objects.create_user(username=f'{role}@example.test', email=f'{role}@example.test', password='Synthetic-QA-Only-815!')
+    UserProfile.objects.create(user=member, role=role)
