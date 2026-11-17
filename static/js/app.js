@@ -363,7 +363,7 @@ function initVariantResults() {
                     const title = button.querySelector('b')?.textContent || '';
                     if (label) label.textContent = title;
                     if (summary) summary.textContent = `${title} · ${button.dataset.variantCount} ${tr('позиций · цены справочно')}`;
-                    if (summaryTotal) summaryTotal.textContent = `₸ ${button.dataset.variantTotal}`;
+                    if (summaryTotal) summaryTotal.textContent = `${Number(button.dataset.variantTotal).toLocaleString(document.documentElement.lang === 'kk' ? 'kk-KZ' : 'ru-RU')} ₸`;
                 }
             });
             panels.forEach((panel) => {

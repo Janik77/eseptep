@@ -39,8 +39,8 @@
         <b>{{ calc.calculator_slug }}</b>
         <p>{% translate 'Проект:' %} {{ calc.project.title }}{% if calc.result_data.selected_variant %} {% translate '· Вариант:' %} {{ calc.result_data.selected_variant_label|default:calc.result_data.selected_variant }}{% endif %}</p>
         <a href="{% url 'accounts:calculation_detail' calc.pk %}">{% translate 'Открыть сохранённую смету' %}</a>
-        <p>{% translate 'Материалы:' %} {{ calc.materials_total }} {% translate '₸ · Работы:' %} {{ calc.works_total }} ₸</p>
-        <strong>{% translate 'Итог:' %} {{ calc.grand_total }} ₸</strong>
+        <p>{% translate 'Материалы:' %} {{ calc.materials_total|money }} {% translate '₸ · Работы:' %} {{ calc.works_total|money }} ₸</p>
+        <strong>{% translate 'Итог:' %} {{ calc.grand_total|money }} ₸</strong>
       </article>
       {% empty %}<div class="empty-state">{% translate 'Смет пока нет.' %}</div>{% endfor %}
     </div>
@@ -71,7 +71,7 @@
       <article class="dashboard-item">
         <b>{{ response.master.full_name }}</b>
         <p>{{ response.master.specialization }} {% translate '· Отзывы пока не подтверждены' %}</p>
-        <p>{% translate 'Цена от: ₸' %} {{ response.price_from }}</p>
+        <p>{% translate 'Цена от: ₸' %} {{ response.price_from|money }}</p>
         <small>{{ response.message|default:i18n_default_0 }}</small>
         <p><span class="status-badge status-badge--{{ response.request.status }}">{{ response.get_status_display|system_text }}</span></p>
         {% if response.status == 'pending' and response.request.status != 'accepted' and response.request.status != 'closed' and response.request.status != 'rejected' %}

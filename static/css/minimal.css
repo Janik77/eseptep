@@ -7,3 +7,9 @@ body{font-family:'Noto Sans',system-ui,sans-serif;font-size:15px;line-height:1.6
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{transition:none!important;animation:none!important}}
 /* Avoid inherited spacing/colour remnants of the previous theme. */
 .site-header{margin-bottom:0}.breadcrumbs{margin-bottom:0}::selection{background:#dce8f7}input:focus,select:focus,textarea:focus{outline-color:var(--orange)}.site-header .language-switch button[aria-current=true]{color:var(--orange)}
+/* Shared compact surfaces: real account, upload and turnkey workflows. */
+.auth-card,.dashboard-card,.project-analysis-card,.project-upload-card,.project-demo-note,.turnkey-card{border-radius:8px;box-shadow:none;min-width:0}
+.auth-card h1,.dashboard-card h1{font-size:28px;line-height:1.25}.dashboard-card h2,.project-analysis-card h2{font-size:21px}
+.dashboard{gap:16px}.dashboard-item{overflow-wrap:anywhere}.auth-field input,.auth-field select,.auth-field textarea{min-height:44px;max-width:100%;min-width:0}.auth-field small,.errorlist{color:#a32626}.errorlist{padding-left:20px}
+.table-wrap{max-width:100%;overflow-x:auto}.table-wrap th,.table-wrap td{text-align:start;padding:10px 12px}.table-wrap table{width:100%;border-collapse:collapse}.table-wrap tr{border-bottom:1px solid var(--line)}.saved-estimate strong,.material-line-total,.grand-total strong{font-variant-numeric:tabular-nums}.saved-estimate .dashboard-card>p{margin:10px 0}.master-response-form{max-width:640px}.empty-state{padding:20px;border-radius:7px}
+@media(max-width:640px){.auth-card,.dashboard-card,.project-analysis-card,.project-upload-card,.project-demo-note,.turnkey-card{padding:18px}.auth-card h1,.dashboard-card h1{font-size:25px}.dashboard-card h2{font-size:20px}.master-profile-head{flex-wrap:wrap}.dashboard-actions,.dashboard .result-actions{gap:10px;flex-wrap:wrap}}

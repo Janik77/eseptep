@@ -29,6 +29,7 @@ jobs:
       # Use the runner's packaged Chrome with its supported sandbox profile.
       # Never disable Chromium sandboxing or change host security settings.
       - run: google-chrome --version
+      - run: /tmp/eseptep-browser-driver/node_modules/.bin/playwright install ffmpeg
       - run: python manage.py migrate --noinput && PYTHONPATH=. python tools/qa_browser_seed.py
       - name: Browser workflow and screenshots
         run: |

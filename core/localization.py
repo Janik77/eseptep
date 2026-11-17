@@ -38,6 +38,15 @@ def localize_form(form):
 
 def render(request, template_name, context=None, *args, **kwargs):
     context = dict(context or {})
+    # Derived display metrics must not repeat the user's input fields or round
+    # source measurements. This copy never changes calculations or saved JSON.
+    if context.get('result') and context.get('form_fields'):
+        result = dict(context['result'])
+        labels = {field['label'] for field in context['form_fields']}
+        result['metrics'] = [dict(metric) for metric in result.get('metrics', [])
+                             if metric['label'] not in labels
+                             and metric['label'] != 'Площадь укладки']
+        context['result'] = result
     for key in SYSTEM_CONTEXT:
         if key in context:
             context[key] = system_tree(context[key], key)

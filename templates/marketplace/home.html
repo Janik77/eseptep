@@ -53,7 +53,7 @@
         <details class="turnkey-card{% if package.key == 'standard' %} is-active{% endif %}" {% if package.key == 'standard' %}open{% endif %}>
             <summary>
                 <span>{{ package.title }}</span>
-                <strong>₸ {{ package.total }}</strong>
+                <strong>₸ {{ package.total|money }}</strong>
                 <small>{{ package.description }} · {{ package.duration }}</small>
             </summary>
             <div class="turnkey-card__body">

@@ -57,10 +57,10 @@
                     <div class="summary-card summary-card--compact" data-result-ready>
                         <div>
                             <span>{% translate 'Предварительный расчёт' %}</span>
-                            <h2>{{ result.summary }}</h2>
+                            <h2>{{ calculator.title }}</h2>
                             <p data-summary-variant>{% if result.variants %}{{ result.selected_variant_label }} · {% elif result.segment_label != 'Предварительно' %}{{ result.segment_label }} · {% endif %}{{ result.materials_count }} {% translate 'позиций · цены справочно' %}</p>
                         </div>
-                        <strong data-summary-total>₸ {{ result.grand_total }}</strong>
+                        <strong data-summary-total>{{ result.grand_total|money }} ₸</strong>
                     </div>
                     <div class="result-params" aria-label="{% translate 'Введённые параметры' %}">
                         {% for field in form_fields %}
@@ -85,7 +85,7 @@
                                     <button class="variant-card{% if variant.key == result.selected_variant %} is-active{% endif %}" type="button" data-variant-button="{{ variant.key }}" data-variant-total="{{ variant.total }}" data-variant-count="{{ variant.materials_count }}" aria-selected="{% if variant.key == result.selected_variant %}true{% else %}false{% endif %}">
                                         <b>{{ variant.title }}</b>
                                         <span>{{ variant.description }}</span>
-                                        <strong>{% blocktranslate with amount=variant.total %}от ₸ {{ amount }}{% endblocktranslate %}</strong>
+                                        <strong>{% blocktranslate with amount=variant.total|money %}от ₸ {{ amount }}{% endblocktranslate %}</strong>
                                     </button>
                                 {% endfor %}
                             </div>
@@ -99,16 +99,16 @@
                                     <div class="materials-table materials-table--primary materials-table--priced">
                                         {% for material in variant.materials %}
                                             <div class="materials-table__row">
-                                                <div><b>{{ forloop.counter }}. {{ material.title }}</b><small>{% blocktranslate with amount=material.reference_price unit=material.unit %}₸ {{ amount }} за {{ unit }}{% endblocktranslate %}</small></div>
+                                                <div><b>{{ forloop.counter }}. {{ material.title }}</b><small>{% blocktranslate with amount=material.reference_price|money unit=material.unit %}₸ {{ amount }} за {{ unit }}{% endblocktranslate %}</small></div>
                                                 <strong>{{ material.quantity }} {{ material.unit }}</strong>
-                                                <small class="material-line-total">₸ {{ material.reference_total }}</small>
+                                                <small class="material-line-total">₸ {{ material.reference_total|money }}</small>
                                             </div>
                                         {% endfor %}
                                     </div>
-                                    <div class="grand-total grand-total--secondary"><span>{% translate 'Материалы по строкам' %}</span><strong>₸ {{ variant.materials_total }}</strong></div>
-                                    {% if variant.extra %}<p>{{ variant.extra_label }}: ₸ {{ variant.extra }}</p>{% endif %}
-                                    <div class="grand-total grand-total--secondary"><span>{{ result.price_note|default:i18n_default_2|system_text }}</span><strong>{% translate 'Итог: ₸' %} {{ variant.total }}</strong></div>
-                                    <textarea class="master-template__text" data-variant-copy-source="{{ variant.key }}" aria-label="Список {{ variant.title }} без цен">ESEPTEP.KZ
+                                    {% if variant.extra %}<div class="grand-total grand-total--secondary"><span>{% translate 'Материалы по строкам' %}</span><strong>{{ variant.materials_total|money }} ₸</strong></div>{% endif %}
+                                    {% if variant.extra %}<p>{{ variant.extra_label }}: ₸ {{ variant.extra|money }}</p>{% endif %}
+                                    <div class="grand-total grand-total--secondary"><span>{{ result.price_note|default:i18n_default_2|system_text }}</span><strong>{% translate 'Итог: ₸' %} {{ variant.total|money }}</strong></div>
+                                    <textarea class="master-template__text" data-variant-copy-source="{{ variant.key }}" aria-label="{% translate 'Список материалов без цен' %}: {{ variant.title }}">ESEPTEP.KZ
 {{ calculator.title }} — {{ variant.title }}
 
 {% for material in variant.materials %}{% if material.quantity > 0 %}{{ forloop.counter }}. {{ material.title }} — {{ material.quantity }} {{ material.unit }}
@@ -127,13 +127,13 @@
                         <div class="materials-table materials-table--primary">
                             {% for material in result.materials %}
                                 <div class="materials-table__row">
-                                    <div><b>{{ material.title }}</b><small>{% blocktranslate with amount=material.reference_price unit=material.unit %}Справочно ₸ {{ amount }} за {{ unit }}{% endblocktranslate %}</small></div>
+                                    <div><b>{{ material.title }}</b><small>{% blocktranslate with amount=material.reference_price|money unit=material.unit %}Справочно ₸ {{ amount }} за {{ unit }}{% endblocktranslate %}</small></div>
                                     <strong>{{ material.quantity }} {{ material.unit }}</strong>
-                                    <small class="material-line-total">₸ {{ material.reference_total }}</small>
+                                    <small class="material-line-total">₸ {{ material.reference_total|money }}</small>
                                 </div>
                             {% endfor %}
                         </div>
-                        <div class="grand-total grand-total--secondary"><span>{{ result.price_note|default:i18n_default_3|system_text }}</span><strong class="count-up" data-count-up="{{ result.reference_total }}" data-count-prefix="₸ ">{% if calculator.slug == 'laminat-spc-parket' %}{% translate 'Итог от:' %} {% endif %}₸ {{ result.reference_total }}</strong></div>
+                        <div class="grand-total grand-total--secondary"><span>{{ result.price_note|default:i18n_default_3|system_text }}</span><strong class="count-up" data-count-up="{{ result.reference_total }}" data-count-prefix="₸ ">{% if calculator.slug == 'laminat-spc-parket' %}{% translate 'Итог от:' %} {% endif %}₸ {{ result.reference_total|money }}</strong></div>
                         {% if calculator.slug == 'nalivnoy-pol' or calculator.slug == 'laminat-spc-parket' %}
                             <textarea class="master-template__text" data-single-copy-source aria-label="{% translate 'Список материалов без цен' %}">ESEPTEP.KZ
 {{ calculator.title }}

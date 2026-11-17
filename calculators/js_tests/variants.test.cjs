@@ -44,7 +44,7 @@ test('variant click updates summary, total, rows, hidden save inputs and copied 
             buttons[index].handlers.click();
             assert.equal(label.textContent, key);
             assert.equal(summary.textContent, `${key} · ${index + 2} позиций · цены справочно`);
-            assert.equal(total.textContent, `₸ ${(index + 1) * 100}`);
+            assert.equal(total.textContent, `${(index + 1) * 100} ₸`);
             panels.forEach((panel, i) => assert.equal(panel.classList.contains('is-active'), i === index));
             buttons.forEach((button, i) => assert.equal(button.attributes['aria-selected'], String(i === index)));
             hidden.forEach(input => assert.equal(input.value, key));
