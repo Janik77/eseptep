@@ -32,6 +32,13 @@ jobs:
           python manage.py migrate --noinput
           PYTHONPATH=. python tools/qa_price_concurrency.py
 
+      - name: Real SQLite typed rate publication and upload save concurrency
+        env:
+          DJANGO_DB_PATH: /tmp/eseptep-browser-qa-typed-concurrency.sqlite3
+        run: |
+          python manage.py migrate --noinput
+          PYTHONPATH=. python tools/qa_typed_rate_concurrency.py
+
       - run: npm install --prefix /tmp/eseptep-browser-driver playwright@1.65.0
       # Use the runner's packaged Chrome with its supported sandbox profile.
       # Never disable Chromium sandboxing or change host security settings.

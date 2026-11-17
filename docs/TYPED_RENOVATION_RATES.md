@@ -47,3 +47,7 @@ if ($LASTEXITCODE -ne 0) { throw 'Migration failed' }
 ```
 
 Rollback with the server stopped: preserve a new backup, switch to prior reviewed SHA, restore its matching pre-upgrade DB/uploads/config. Do not reverse migrations on the only data copy, because new snapshots/configurations would be removed. No production deployment is authorized or performed.
+
+## Actual typed-rate concurrency evidence
+
+`tools/qa_typed_rate_concurrency.py` runs in a separate, explicitly guarded SQLite database in CI. With real separate connections and an actual upload-estimate HTTP POST, publication-first makes the stale POST wait then refuse mutation; save-first makes publication wait and preserves the saved v1 snapshot after v2 becomes active. RU/KK reopening leaves the snapshot unchanged. These checks are specific to SQLite, not PostgreSQL or production load.
