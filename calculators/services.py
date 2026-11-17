@@ -57,6 +57,8 @@ def _persist_calculation(user, slug, result, project_id):
     validate_snapshot_version(result)
     from .self_level_parameters import validate_snapshot
     validate_snapshot(slug, result)
+    from .demolition_parameters import validate_snapshot as validate_film_snapshot
+    validate_film_snapshot(slug, result)
     project_id = parse_positive_id(project_id)
     if project_id is None:
         raise ValidationError('Выберите проект для сохранения расчёта.')
@@ -109,7 +111,9 @@ def _calculate_demontazh(calculator, form_data):
     demolition_type = form_data.get('demolition_type') or form_data.get('type', 'partial')
     selected_variant = form_data.get('selected_variant', 'optimal')
 
-    film_m2 = ceil(area * 1.2)
+    from .demolition_parameters import current_parameters
+    parameters = current_parameters()
+    film_m2 = ceil(area * float(parameters['consumption']))
     tape = max(1, ceil(area / 25))
     gloves = max(1, ceil(area / 30))
     truck = max(1, ceil(area / 45))
@@ -161,7 +165,9 @@ def _calculate_demontazh(calculator, form_data):
             _variant_row('Контейнер для строительного мусора', container, 'шт', 120000),
         ]),
     }
-    return _build_variant_result(calculator, variants, selected_variant, form_data, area, 1, 1, f"{calculator['title']} · {area:g} м² · {demolition_type}")
+    result = _build_variant_result(calculator, variants, selected_variant, form_data, area, 1, 1, f"{calculator['title']} · {area:g} м² · {demolition_type}")
+    result['parameter_snapshot'] = parameters
+    return result
 
 
 ELECTRIC_COMFORT_PRICES = {

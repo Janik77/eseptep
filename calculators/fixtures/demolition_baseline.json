@@ -1,0 +1,468 @@
+{
+  "base": "15ea35e6f57a7df7343def9118c698f95e7b70b2",
+  "cases": [
+    {
+      "input": {
+        "area": "1",
+        "demolition_type": "cosmetic",
+        "selected_variant": "base"
+      },
+      "digest": "3436efd32e25edc42e729b196c4218a99026a6f873b738df7ecde10d7ad5fdc7"
+    },
+    {
+      "input": {
+        "area": "1",
+        "demolition_type": "cosmetic",
+        "selected_variant": "optimal"
+      },
+      "digest": "335aea582ca47a7c62c6281f063f00c4a54305e028720b47dd187ed142d71f73"
+    },
+    {
+      "input": {
+        "area": "1",
+        "demolition_type": "cosmetic",
+        "selected_variant": "maximum"
+      },
+      "digest": "57d773f5ac093867ba616b1925e58b1619b4c3e8adf8b0b45fe4b2932ae98305"
+    },
+    {
+      "input": {
+        "area": "1",
+        "demolition_type": "partial",
+        "selected_variant": "base"
+      },
+      "digest": "b041c7a76b267342dbb931c5f1ed3f472bc1f188fd3e9f3877a15cdd8fb305cb"
+    },
+    {
+      "input": {
+        "area": "1",
+        "demolition_type": "partial",
+        "selected_variant": "optimal"
+      },
+      "digest": "c43a47571d91e2d047cc31b20938a8085ccac7390f14023a2142909ef86968c5"
+    },
+    {
+      "input": {
+        "area": "1",
+        "demolition_type": "partial",
+        "selected_variant": "maximum"
+      },
+      "digest": "e9ec49295a888a2fec49eff07cd629683e4ad24a1fa4ce5cf8c7e86bf101a59a"
+    },
+    {
+      "input": {
+        "area": "1",
+        "demolition_type": "full",
+        "selected_variant": "base"
+      },
+      "digest": "524de502fb163da90386f750eca6af6b2a7b82ea2b78b2bfa80702c67fca158f"
+    },
+    {
+      "input": {
+        "area": "1",
+        "demolition_type": "full",
+        "selected_variant": "optimal"
+      },
+      "digest": "2e54dc7c9b269827b2d46660d3c15f3bb58d3e46cd86ad3528692969aeb69321"
+    },
+    {
+      "input": {
+        "area": "1",
+        "demolition_type": "full",
+        "selected_variant": "maximum"
+      },
+      "digest": "e06ad98c2fd1462b504dcf61a2bb81b1065117745807ed9f712f7d3fe0b61f9e"
+    },
+    {
+      "input": {
+        "area": "25",
+        "demolition_type": "cosmetic",
+        "selected_variant": "base"
+      },
+      "digest": "366ca5b5d97ccab15f11696e4d67dc5cd7d03322959638456eb25876a9cd9539"
+    },
+    {
+      "input": {
+        "area": "25",
+        "demolition_type": "cosmetic",
+        "selected_variant": "optimal"
+      },
+      "digest": "e844d0f59dd105f34f6566d907f7226b0b43ed8245a0e828b7f9227a14259e9f"
+    },
+    {
+      "input": {
+        "area": "25",
+        "demolition_type": "cosmetic",
+        "selected_variant": "maximum"
+      },
+      "digest": "7286254b228aa0d893217c638ca962a04d9d72ec9cc669d0ec01e4410a5b1ac7"
+    },
+    {
+      "input": {
+        "area": "25",
+        "demolition_type": "partial",
+        "selected_variant": "base"
+      },
+      "digest": "4074798adddaff7bb1bff34bfa8b48c531c572bde4805b25b1d5e240392e5ab0"
+    },
+    {
+      "input": {
+        "area": "25",
+        "demolition_type": "partial",
+        "selected_variant": "optimal"
+      },
+      "digest": "81f31763720a07d0e38bc4b0d907352dc1f4c63173393310e0584b730b39bb8c"
+    },
+    {
+      "input": {
+        "area": "25",
+        "demolition_type": "partial",
+        "selected_variant": "maximum"
+      },
+      "digest": "13f76fedc1d5d9d151d446e6a9d5f274a5233b8ea797cafbeec3f199eb9f5acf"
+    },
+    {
+      "input": {
+        "area": "25",
+        "demolition_type": "full",
+        "selected_variant": "base"
+      },
+      "digest": "c43381526773780f7a2e7c10f2c713fc5c9841252416810c1400ff06762365b2"
+    },
+    {
+      "input": {
+        "area": "25",
+        "demolition_type": "full",
+        "selected_variant": "optimal"
+      },
+      "digest": "7259889e15303f1d0f1472673343ea6532d573092c9958a8d2cb93a85abeb1ea"
+    },
+    {
+      "input": {
+        "area": "25",
+        "demolition_type": "full",
+        "selected_variant": "maximum"
+      },
+      "digest": "c2465a0c944d8049e7b5cee221c63dd1ea4aaec72299ae8dc72664477e7efa05"
+    },
+    {
+      "input": {
+        "area": "36.5",
+        "demolition_type": "cosmetic",
+        "selected_variant": "base"
+      },
+      "digest": "0bf7dc555df58b04bbce42c858171bfac415cb2814d98a273c8f73156748a64a"
+    },
+    {
+      "input": {
+        "area": "36.5",
+        "demolition_type": "cosmetic",
+        "selected_variant": "optimal"
+      },
+      "digest": "0db2045409fa7e96426bb4dff2f346c177b74b628e32743f61058fbde2da99e0"
+    },
+    {
+      "input": {
+        "area": "36.5",
+        "demolition_type": "cosmetic",
+        "selected_variant": "maximum"
+      },
+      "digest": "1f7770a216bc173da2816be824fdd7117c85524c96e9883b178e11b488ae4d00"
+    },
+    {
+      "input": {
+        "area": "36.5",
+        "demolition_type": "partial",
+        "selected_variant": "base"
+      },
+      "digest": "236ba268c2c4b717205f517f4e4c48dc9960c603d98e4558db5e44750b8ce30f"
+    },
+    {
+      "input": {
+        "area": "36.5",
+        "demolition_type": "partial",
+        "selected_variant": "optimal"
+      },
+      "digest": "fcca058b3056656768ecbe0c5ac2e6f7cbd36e43e90e61b9e995677f9ea3ff77"
+    },
+    {
+      "input": {
+        "area": "36.5",
+        "demolition_type": "partial",
+        "selected_variant": "maximum"
+      },
+      "digest": "a568b9b0b3dac13413892f8d323d85f82c9dde69b227cd278aa97d8c04c0df8c"
+    },
+    {
+      "input": {
+        "area": "36.5",
+        "demolition_type": "full",
+        "selected_variant": "base"
+      },
+      "digest": "5f34bae4a6592f0148c92bdcb7e01f7c84f39b5f8a13cba6fce2a3e7404f0d6b"
+    },
+    {
+      "input": {
+        "area": "36.5",
+        "demolition_type": "full",
+        "selected_variant": "optimal"
+      },
+      "digest": "71fcc0a769bd1aa8a1becc473cc19ccb4005179a0b0e447460fc97967d0e05ca"
+    },
+    {
+      "input": {
+        "area": "36.5",
+        "demolition_type": "full",
+        "selected_variant": "maximum"
+      },
+      "digest": "0d0b9b29239d9b6164a5f48f66908ca673e952b975e3ee14a1866c12f19393d7"
+    },
+    {
+      "input": {
+        "area": "42",
+        "demolition_type": "cosmetic",
+        "selected_variant": "base"
+      },
+      "digest": "55d19ef1cee3bcbd9f41915c12020859e6aad259384fec134e6b200eb12c70f2"
+    },
+    {
+      "input": {
+        "area": "42",
+        "demolition_type": "cosmetic",
+        "selected_variant": "optimal"
+      },
+      "digest": "18d2c13f22189dfb399d69d24c7faf5cf1a3933f54dc874ec3bd0834d4934a04"
+    },
+    {
+      "input": {
+        "area": "42",
+        "demolition_type": "cosmetic",
+        "selected_variant": "maximum"
+      },
+      "digest": "e5a1607e68cd0383a4d7b604189395c817e01901aee1b019d2c6affc6c1c2e55"
+    },
+    {
+      "input": {
+        "area": "42",
+        "demolition_type": "partial",
+        "selected_variant": "base"
+      },
+      "digest": "8dd2ea9034885ef1651d758fc130430522474c7068584ffa990adc013baa593a"
+    },
+    {
+      "input": {
+        "area": "42",
+        "demolition_type": "partial",
+        "selected_variant": "optimal"
+      },
+      "digest": "0c8c939557dafd89c2003af1e74b7c398e8203d395afbc040c428d2d712799cd"
+    },
+    {
+      "input": {
+        "area": "42",
+        "demolition_type": "partial",
+        "selected_variant": "maximum"
+      },
+      "digest": "a38f90ffa19452bd8a8d03449fde7b72bf032d3990812e8f0dca5c06fb0777d6"
+    },
+    {
+      "input": {
+        "area": "42",
+        "demolition_type": "full",
+        "selected_variant": "base"
+      },
+      "digest": "5ad6f744ceffe9def57d5ca1ad0af475963880e483c8a3d1f83439657e22ad1c"
+    },
+    {
+      "input": {
+        "area": "42",
+        "demolition_type": "full",
+        "selected_variant": "optimal"
+      },
+      "digest": "26addd5883aa3a653344c4fcb5c6e97fa143cdb65ae2b7bb1755a6e1a6773593"
+    },
+    {
+      "input": {
+        "area": "42",
+        "demolition_type": "full",
+        "selected_variant": "maximum"
+      },
+      "digest": "68d79692a797c1b224cd961245b0ecd4692d7652b55fc4fe03155b54edfb5c40"
+    },
+    {
+      "input": {
+        "area": "10000",
+        "demolition_type": "cosmetic",
+        "selected_variant": "base"
+      },
+      "digest": "e85cf90f5bd42c92bc98b5a4d8d235ce70eaf65b6cc1dbd85343cca2b1e1d7b3"
+    },
+    {
+      "input": {
+        "area": "10000",
+        "demolition_type": "cosmetic",
+        "selected_variant": "optimal"
+      },
+      "digest": "60963bf3ced582539cbe1017e05fdac3e0a6d41ef3367a61eb93b1d362d8ea9d"
+    },
+    {
+      "input": {
+        "area": "10000",
+        "demolition_type": "cosmetic",
+        "selected_variant": "maximum"
+      },
+      "digest": "cfe471df479073e8b1f72da6c41912dd2e9abed353edd8a64718ea0b0d770529"
+    },
+    {
+      "input": {
+        "area": "10000",
+        "demolition_type": "partial",
+        "selected_variant": "base"
+      },
+      "digest": "e7739d607d582d27ce488c866e87881862b00aec81a44a3bdb01e2a139c24dbe"
+    },
+    {
+      "input": {
+        "area": "10000",
+        "demolition_type": "partial",
+        "selected_variant": "optimal"
+      },
+      "digest": "03ca52bff2a65932b896dd3a8eb5f94a76cd9733538277c44d84920ba5f22057"
+    },
+    {
+      "input": {
+        "area": "10000",
+        "demolition_type": "partial",
+        "selected_variant": "maximum"
+      },
+      "digest": "287ae88da690c6497ee1b0345d2084ff1d04b88c438646745d553da881055e83"
+    },
+    {
+      "input": {
+        "area": "10000",
+        "demolition_type": "full",
+        "selected_variant": "base"
+      },
+      "digest": "82dc9d944b0f71dbbb7ed434f96f3ce8224c8506254c36f5bef36d1eb010e284"
+    },
+    {
+      "input": {
+        "area": "10000",
+        "demolition_type": "full",
+        "selected_variant": "optimal"
+      },
+      "digest": "82a4014b7fcca3a414c9475a59c8563f10000971bef73b15508f41b69f8e9574"
+    },
+    {
+      "input": {
+        "area": "10000",
+        "demolition_type": "full",
+        "selected_variant": "maximum"
+      },
+      "digest": "8d8e72a7cc814b830c01fb7c9b5a139a50fa1c63203a8ff57c7c7ebc20a21708"
+    }
+  ],
+  "defaults": {
+    "demontazh": {
+      "input": {
+        "area": "42",
+        "demolition_type": "partial"
+      },
+      "digest": "0c8e4ae95961193f52b3d7399e72244a1e3e7e84e7f6de833d7cdb7438996c31"
+    },
+    "elektrika": {
+      "input": {
+        "area": "60",
+        "rooms": "2"
+      },
+      "digest": "3d07d33bb0210ed107c46dbc6c4912ecb4aefead9f3a5686641a18f2bc82be77"
+    },
+    "santehnika": {
+      "input": {
+        "area": "60",
+        "bathrooms": "1"
+      },
+      "digest": "a847c13b557305d91a583e996b1a311d5939a7a89053c6c0aaed21e6f15e79ec"
+    },
+    "shtukaturka": {
+      "input": {
+        "area": "42",
+        "thickness": "2"
+      },
+      "digest": "970b0eb14b5c12e61e903c84d647736d8af74a9ad1bda40437fc507c80e5a315"
+    },
+    "gipsokarton-potolok": {
+      "input": {
+        "area": "20",
+        "rooms": "1",
+        "construction_type": "ceiling"
+      },
+      "digest": "daeeabd0461887bbbf95bf146c1ce7f0303230fdfc13d16f430358434971acef"
+    },
+    "nalivnoy-pol": {
+      "input": {
+        "area": "30",
+        "thickness": "2"
+      },
+      "digest": "d03cb4df9b250c30eb93e7409b55dd41e5984a9b4605a80af25098efc0bb940e"
+    },
+    "plitka-keramogranit": {
+      "input": {
+        "area": "24",
+        "zone": "floor",
+        "tile_format": "60x60"
+      },
+      "digest": "99a34c8a01746b55244b4f991bfae98ab8c6a4d77b20971db4b791c45f759ae1"
+    },
+    "laminat-spc-parket": {
+      "input": {
+        "area": "20",
+        "covering_type": "laminate"
+      },
+      "digest": "647fe10109c6fc6adc1c16cddfdaf87decd14648a2fafbd2031c039b1e879b4e"
+    },
+    "malyarka": {
+      "input": {
+        "floor_area": "30",
+        "type": "paint"
+      },
+      "digest": "34712bc742a917018cf3653afd3c91fe71e6a05792a5689edc26d223951d2feb"
+    },
+    "natyazhnoy-potolok": {
+      "input": {
+        "area": "42",
+        "rooms": "1"
+      },
+      "digest": "a3b75b8089c6e0fa2bba7cd865a9b06505348c1b965cbc2cfd9c2ac92fa055de"
+    },
+    "dveri": {
+      "input": {
+        "count": "3"
+      },
+      "digest": "9fda4590b002f2f73cba82eb183e32640acbd772c875e36a8781bc31c324eb45"
+    },
+    "teplyy-pol": {
+      "input": {
+        "area": "20",
+        "type": "electric_mat"
+      },
+      "digest": "8a73875de7940cef4a8f9599d26bb6874002fa40b0cd0a9c35914ceeb0bdf891"
+    },
+    "gipsokarton": {
+      "input": {
+        "area": "20",
+        "rooms": "1",
+        "construction_type": "ceiling"
+      },
+      "digest": "daeeabd0461887bbbf95bf146c1ce7f0303230fdfc13d16f430358434971acef"
+    },
+    "plitka": {
+      "input": {
+        "area": "24",
+        "zone": "floor",
+        "tile_format": "60x60"
+      },
+      "digest": "99a34c8a01746b55244b4f991bfae98ab8c6a4d77b20971db4b791c45f759ae1"
+    }
+  }
+}

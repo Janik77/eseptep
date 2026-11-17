@@ -159,7 +159,7 @@ class CalculatorArithmeticTests(TestCase):
                     self.assertEqual(result['materials'], variant['materials'])
                     self.assertIn(variant['title'], result['copy_text'])
                     self.assert_result_consistent(result)
-                    response = self.client.post(reverse('calculators:detail', args=[calculator['slug']]), {**data, 'action': 'save_estimate', 'project_id': project.pk})
+                    response = self.client.post(reverse('calculators:detail', args=[calculator['slug']]), {**data, 'action': 'save_estimate', 'project_id': project.pk, 'parameter_version': (result.get('parameter_snapshot') or {}).get('version', '')})
                     self.assertEqual(response.status_code, 302)
                     saved = Calculation.objects.latest('pk')
                     saved.full_clean()

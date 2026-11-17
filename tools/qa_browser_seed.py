@@ -48,3 +48,7 @@ legacy.save()
 from calculators.models import SelfLevelMixEdition
 for version,consumption in [('qa-mix-v1','15.00'),('qa-mix-v2','30.00')]:
     SelfLevelMixEdition.objects.create(version=version,consumption=Decimal(consumption),source_note='SYNTHETIC QA consumption, not a manufacturer recommendation',source_date=date(2026,1,1))
+
+from calculators.models import DemolitionFilmEdition
+for version,consumption in [('qa-film-v1','1.20'),('qa-film-v2','1.40')]:
+    DemolitionFilmEdition.objects.create(version=version,consumption=Decimal(consumption),source_note='SYNTHETIC QA protective film ratio, not a normative specification',source_date=date(2026,1,1))

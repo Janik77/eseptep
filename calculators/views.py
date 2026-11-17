@@ -140,7 +140,8 @@ def calculator_detail(request, slug):
             expected_parameter = request.POST.get('parameter_version', '')
             actual_parameter = (result.get('parameter_snapshot') or {}).get('version', '')
             if expected_parameter != actual_parameter:
-                form_errors.append(_('Параметр расхода изменился. Проверьте новый расчёт и сохраните снова.'))
+                message = 'Параметр защитной плёнки изменился. Проверьте новый расчёт и сохраните снова.' if slug == 'demontazh' else 'Параметр расхода изменился. Проверьте новый расчёт и сохраните снова.'
+                form_errors.append(_(message))
                 action = None
             current_version = (result.get('admin_quote') or {}).get('version', '')
             if request.POST.get('price_book_version', '') != current_version:

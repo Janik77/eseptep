@@ -1,0 +1,10 @@
+{% load i18n eseptep_i18n %}
+<section class="result-warning demolition-parameter">
+<h3>{% translate 'Параметр защитной плёнки' %}</h3>
+{% if parameter %}
+<p><b>{{ parameter.consumption|money }} {% translate 'м² плёнки на 1 м² площади демонтажа' %}</b></p>
+{% if parameter.source_kind == 'historical' %}<p>{% translate 'Исторический коэффициент из кода, не подтверждённая норма для каждого объекта.' %}</p>{% else %}<p>{{ parameter.source_note }} · {{ parameter.source_date }}</p>{% endif %}
+<small>{% translate 'Версия:' %} {{ parameter.version }}</small>
+<p>{% translate 'Настраивается только площадь защитной плёнки с округлением вверх. Остальные расходники и цены не меняются. Рулоны и упаковки не рассчитываются. Проверьте применимость к объекту.' %}</p>
+{% else %}<p>{% translate 'Версия параметра в этой старой смете не сохранена. Исторический результат не пересчитывается.' %}</p>{% endif %}
+</section>
