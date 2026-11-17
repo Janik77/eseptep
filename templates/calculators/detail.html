@@ -108,6 +108,8 @@
                                     {% if variant.extra %}<div class="grand-total grand-total--secondary"><span>{% translate 'Материалы по строкам' %}</span><strong>{{ variant.materials_total|money }} ₸</strong></div>{% endif %}
                                     {% if variant.extra %}<p>{{ variant.extra_label }}: ₸ {{ variant.extra|money }}</p>{% endif %}
                                     <div class="grand-total grand-total--secondary"><span>{{ result.price_note|default:i18n_default_2|system_text }}</span><strong>{% translate 'Итог: ₸' %} {{ variant.total|money }}</strong></div>
+                                    {% include 'calculators/partials/admin_quote.html' with quote=variant.admin_quote %}
+                                    {% include 'calculators/partials/material_offers.html' with offers=variant.offers %}
                                     <textarea class="master-template__text" data-variant-copy-source="{{ variant.key }}" aria-label="{% translate 'Список материалов без цен' %}: {{ variant.title }}">ESEPTEP.KZ
 {{ calculator.title }} — {{ variant.title }}
 
@@ -134,6 +136,8 @@
                             {% endfor %}
                         </div>
                         <div class="grand-total grand-total--secondary"><span>{{ result.price_note|default:i18n_default_3|system_text }}</span><strong class="count-up" data-count-up="{{ result.reference_total }}" data-count-prefix="₸ ">{% if calculator.slug == 'laminat-spc-parket' %}{% translate 'Итог от:' %} {% endif %}₸ {{ result.reference_total|money }}</strong></div>
+                        {% include 'calculators/partials/admin_quote.html' with quote=result.admin_quote %}
+                        {% include 'calculators/partials/material_offers.html' with offers=result.offers %}
                         {% if calculator.slug == 'nalivnoy-pol' or calculator.slug == 'laminat-spc-parket' %}
                             <textarea class="master-template__text" data-single-copy-source aria-label="{% translate 'Список материалов без цен' %}">ESEPTEP.KZ
 {{ calculator.title }}
@@ -150,6 +154,7 @@
                     {% if can_save_calculation %}
                     <form method="post" class="result-actions result-actions--backend result-actions--primary">
                         {% csrf_token %}
+                        <input type="hidden" name="price_book_version" value="{{ result.admin_quote.version|default:'' }}">
                         {% for field in form_fields %}<input type="hidden" name="{{ field.name }}" value="{{ field.value }}">{% endfor %}
                         {% if result.variants %}<input type="hidden" name="selected_variant" value="{{ result.selected_variant }}" data-selected-variant-input>{% endif %}
                         {% if client_projects %}
@@ -332,7 +337,7 @@
 </section>
 
 {% if result %}
-{% if calculator.slug == 'plitka-keramogranit' %}<details class="tile-demo-details"><summary>{% translate 'Посмотреть демонстрационные примеры мастеров и магазинов' %}</summary>{% endif %}
+<details class="tile-demo-details"><summary>{% translate 'Посмотреть демонстрационные примеры мастеров и магазинов' %}</summary>
 <p class="result-warning">{% translate 'Примеры ниже демонстрируют интерфейс. Профили, опыт, адреса, цены, наличие и доставка не подтверждены. Это не предложения реальных исполнителей или магазинов.' %}</p>
 <section class="post-flow-grid" aria-label="{% translate 'Демонстрационные примеры' %}">
     <div class="recommendation-panel recommendation-panel--masters">
@@ -397,6 +402,6 @@
         </div>
     </div>
 </section>
-{% if calculator.slug == 'plitka-keramogranit' %}</details>{% endif %}
+</details>
 {% endif %}
 {% endblock %}

@@ -106,9 +106,9 @@ class SupplierMaterialForm(forms.ModelForm):
     price = forms.DecimalField(min_value=0, max_digits=12, decimal_places=2, label=_("Цена"))
     class Meta:
         model = SupplierMaterial
-        fields = ('name', 'category', 'unit', 'price', 'stock_status', 'delivery_time')
+        fields = ('name', 'category', 'unit', 'price', 'stock_status', 'delivery_time', 'is_published')
         labels = {'name': _('Название материала'), 'category': _('Категория'), 'unit': _('Единица измерения'),
-                  'stock_status': _('Наличие'), 'delivery_time': _('Срок поставки')}
+                  'is_published': _('Показывать товар в подборе материалов'), 'stock_status': _('Наличие'), 'delivery_time': _('Срок поставки')}
 
 
 class SupplierResponseForm(forms.ModelForm):

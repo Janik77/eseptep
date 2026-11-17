@@ -132,13 +132,21 @@ def calculator_detail(request, slug):
 
     if calculate and not form_errors:
         result = calculate_materials(calculator, form_data)
+        from .pricing import attach_quotation
+        attach_quotation(slug, result)
         action = request.POST.get('action') if request.method == 'POST' else None
 
+        if action in {'save_estimate', 'request_master', 'request_supplier'}:
+            current_version = (result.get('admin_quote') or {}).get('version', '')
+            if request.POST.get('price_book_version', '') != current_version:
+                form_errors.append(_('Прайс изменился. Проверьте новый расчёт и сохраните снова.'))
+                action = None
         if action in {'save_estimate', 'request_master', 'request_supplier'}:
             try:
                 project, calculation = save_calculation_for_user(request.user, slug, result, request.POST.get('project_id'))
             except ValidationError as error:
                 form_errors.extend(error.messages)
+                attach_quotation(slug, result)
             else:
                 if action == 'request_master':
                     ServiceRequest.objects.create(
@@ -163,6 +171,9 @@ def calculator_detail(request, slug):
                 else:
                     messages.success(request, _('Смета сохранена в личный кабинет.'))
                 return redirect('accounts:calculation_detail', calculation_id=calculation.pk)
+    if result:
+        from .offers import attach_offers
+        attach_offers(result)
     return render(
         request,
         'calculators/detail.html',

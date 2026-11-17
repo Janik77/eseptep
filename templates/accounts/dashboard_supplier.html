@@ -25,7 +25,9 @@
       {% for material in materials %}
       <article class="dashboard-item">
         <b>{{ material.name }}</b>
-        <p>{{ material.category }} · {{ material.unit }} · ₸ {{ material.price }}</p>
+        <p>{{ material.category }} · {{ material.unit }} · ₸ {{ material.price|money }}</p>
+        <a class="back-link" href="{% url 'accounts:supplier_material_edit' material.pk %}">{% translate 'Редактировать' %}</a>
+        <small>{% if material.is_published %}{% translate 'Опубликован' %}{% else %}{% translate 'Черновик' %}{% endif %}</small>
         <small>{% translate 'Наличие:' %} {{ material.stock_status }} {% translate '· Срок доставки:' %} {{ material.delivery_time|default:'—' }}</small>
       </article>
       {% empty %}<div class="empty-state">{% translate 'Материалов пока нет.' %}</div>{% endfor %}

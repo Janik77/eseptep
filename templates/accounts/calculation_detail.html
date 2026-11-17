@@ -24,6 +24,8 @@
     <strong>{% translate 'Итого:' %} {{ calculation.grand_total|money }} ₸</strong>
     {% if calculation.result_data.warning %}<p>{{ calculation.result_data.warning }}</p>{% endif %}
     <p>{% translate 'Цены справочные. Это не коммерческое предложение.' %}</p>
+    {% include 'calculators/partials/admin_quote.html' with quote=calculation.result_data.admin_quote %}
+    {% include 'calculators/partials/material_offers.html' with offers=material_offers %}
     <a class="btn btn--secondary" href="{% url 'calculators:detail' calculation.calculator_slug %}">{% translate 'Начать новый расчёт' %}</a>
   </div>
 </section>

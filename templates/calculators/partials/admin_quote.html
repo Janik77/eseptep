@@ -1,0 +1,13 @@
+{% load i18n eseptep_i18n %}
+<section class="material-offers admin-quote" aria-label="{% translate 'Расчёт по прайсу магазина' %}">
+<h3>{% translate 'Расчёт по прайсу магазина' %}</h3>
+{% if quote %}
+<p>{{ quote.store_name }} · {% translate 'Версия:' %} {{ quote.version }} · {{ quote.price_date }} · KZT</p>
+<p>{{ quote.source_note }}</p>
+<p>{% translate 'Покрытие позиций:' %} {{ quote.coverage }} / {{ quote.required }}</p>
+{% for row in quote.rows %}<div class="offer-candidate"><b>{{ row.material_title|system_text }}</b><span>{{ row.quantity }} {{ row.unit_label|system_text }} × {{ row.unit_price|money }} ₸</span><strong>{{ row.line_total|money }} ₸</strong></div>{% endfor %}
+<div class="grand-total"><span>{% if quote.complete %}{% translate 'Материалы по прайсу магазина' %}{% else %}{% translate 'Неполная сумма — только позиции с ценой' %}{% endif %}</span><strong>{{ quote.subtotal|money }} ₸</strong></div>
+{% for row in quote.missing %}<p class="offer-empty">{% translate 'Нет цены:' %} {{ row.material_title|system_text }} ({{ row.unit_label|system_text }})</p>{% endfor %}
+<p>{% translate 'Количество из выбранного расчёта. Без работ, доставки и дополнительных начислений. Справочный итог выше не заменён. Цены внесены администратором, наличие и совместимость требуют уточнения.' %}</p>
+{% else %}<p>{% translate 'Опубликованный прайс магазина не настроен. Показанные выше цены остаются справочными, это не предложение магазина.' %}</p>{% endif %}
+</section>
