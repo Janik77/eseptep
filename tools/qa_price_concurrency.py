@@ -64,3 +64,44 @@ start=time.monotonic();publish(books[1]);results['publication_wait']=round(time.
 saved=Calculation.objects.get();assert saved.result_data['admin_quote']['version']=='v1';assert PriceBook.objects.get(is_active=True).version=='v2';assert results['publication_wait']>.35,results
 assert 'save_error' not in results and 'writer_error' not in results,results
 results['saved_snapshot']='v1 immutable, v2 active';results['engine']=connections['default'].settings_dict['ENGINE'];print(json.dumps(results))
+# Two actual admin POST versus publication orderings, separate DB connections.
+from django.test import Client
+from unittest.mock import patch
+admin_user=User.objects.create_superuser('isolated-concurrent-admin','admin@example.test','Synthetic-Only-835!')
+client=Client();client.force_login(admin_user)
+def draft(version):
+ book=PriceBook.objects.create(store_name='Original synthetic',version=version,source_note='Synthetic concurrency',price_date=date(2026,1,1))
+ row=r['materials'][0]
+ entry=MaterialPrice.objects.create(book=book,calculator_slug=definition['slug'],variant_key=r['selected_variant'],material_key=material_key(row['title'],row['unit']),unit=row['unit'],price=Decimal('12.34'))
+ payload={'store_name':'Edited synthetic','version':version,'source_note':'Edited source','price_date':'2026-01-01','entries-TOTAL_FORMS':'1','entries-INITIAL_FORMS':'1','entries-MIN_NUM_FORMS':'0','entries-MAX_NUM_FORMS':'1000','entries-0-id':entry.pk,'entries-0-book':book.pk,'entries-0-calculator_slug':entry.calculator_slug,'entries-0-variant_key':entry.variant_key,'entries-0-material_key':entry.material_key,'entries-0-unit':entry.unit,'entries-0-price':'88.88','_save':'Save'}
+ return book,entry,payload
+book,entry,payload=draft('admin-publish-first');acquired.clear()
+def admin_publisher_first():
+ try:
+  with transaction.atomic():
+   lock_price_configuration();acquired.set();time.sleep(.5);publish(book.pk)
+ except Exception as e:results['admin_pub_error']=repr(e)
+ finally:connections.close_all()
+t=threading.Thread(target=admin_publisher_first);t.start();assert acquired.wait(5)
+start=time.monotonic();response=client.post(f'/admin/calculators/pricebook/{book.pk}/change/',payload);results['draft_wait']=round(time.monotonic()-start,3);t.join()
+book.refresh_from_db();entry.refresh_from_db();results['published_edit_status']=response.status_code
+assert response.status_code==403,results
+assert book.published_at and book.store_name=='Original synthetic' and entry.price==Decimal('12.34'),(book.store_name,entry.price,response.status_code)
+assert results['draft_wait']>.35,results
+book2,entry2,payload2=draft('admin-draft-first');acquired.clear()
+original=PriceBookAdmin.save_related
+def paused_save_related(self,request,form,formsets,change):
+ original(self,request,form,formsets,change);acquired.set();time.sleep(.5)
+def admin_draft_first():
+ try:
+  response=client.post(f'/admin/calculators/pricebook/{book2.pk}/change/',payload2);results['admin_post_status']=response.status_code
+ except Exception as e:results['admin_edit_error']=repr(e);acquired.set()
+ finally:connections.close_all()
+with patch.object(PriceBookAdmin,'save_related',paused_save_related):
+ t=threading.Thread(target=admin_draft_first);t.start();assert acquired.wait(5)
+ start=time.monotonic();publish(book2.pk);results['draft_publication_wait']=round(time.monotonic()-start,3);t.join()
+book2.refresh_from_db();entry2.refresh_from_db()
+assert results['admin_post_status']==302 and book2.published_at and book2.store_name=='Edited synthetic' and entry2.price==Decimal('88.88'),results
+assert results['draft_publication_wait']>.35,results
+assert not any(k.endswith('_error') for k in results),results
+print('ADMIN_CONCURRENCY='+json.dumps(results))

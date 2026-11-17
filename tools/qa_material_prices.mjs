@@ -43,6 +43,8 @@ try{
  assert.equal(await quote.locator('.offer-empty').count(),0,'full coverage has no missing rows');
  for(const lang of ['ru','kk']){
   await Promise.all([page.waitForNavigation(),page.locator('[data-language-switch], [data-language-form]').locator(`button[value=${lang}]`).first().click()]);
+  assert.equal(await page.locator('[data-variant-button].is-active').getAttribute('data-variant-button'),editedVariant,'language preserves variant without client save form');
+  assert((await page.locator('.variant-panel.is-active .admin-quote').innerText()).includes('15,25'),'edited price remains after language switch');
   for(const width of [390,1440]){
    await page.setViewportSize({width,height:1000});
    assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
@@ -52,7 +54,28 @@ try{
  await page.locator('[data-variant-button=business]').click();
  assert((await page.locator('.variant-panel.is-active .admin-quote').innerText()).includes('qa-full'));
  checks.push('admin edits draft price, publishes full scoped edition; RU/KK variants and mobile/desktop show store quotation');
+ const clientContext=await browser.newContext({viewport:{width:390,height:900}});
+ const clientPage=await clientContext.newPage();
+ await clientPage.goto(base+'/accounts/login/');
+ await clientPage.locator('[name=username]').fill('browser-qa@example.test');
+ await clientPage.locator('[name=password]').fill('Synthetic-QA-Only-815!');
+ await clientPage.locator('.auth-form button[type=submit]').click();
+ await clientPage.waitForURL(/dashboard/);
+ await clientPage.goto(base+'/calculators/plitka-keramogranit/');
+ await clientPage.locator('[data-calc-form] [name=area]').fill('36.5');
+ await clientPage.locator('[data-calc-form] button[type=submit]').click();
+ await clientPage.locator(`[data-variant-button=${editedVariant}]`).click();
+ await clientPage.locator('[name=project_id]').selectOption({label:'QA project Ә Ғ Қ Ң Ө Ұ Ү Һ І'});
+ await clientPage.locator('button[name=action][value=save_estimate]').click();
+ await clientPage.waitForURL(/accounts\/calculations\//);
+ const snapshotBefore=await clientPage.locator('.admin-quote').innerText();
+ assert(snapshotBefore.includes('qa-full') && snapshotBefore.includes('15,25'));
  await publish('qa-partial');await calculate();
+ await clientPage.reload();
+ assert.equal(await clientPage.locator('.admin-quote').innerText(),snapshotBefore,'saved store quotation remains unchanged after new active edition');
+ await clientPage.screenshot({path:'browser-evidence/material-price-saved-snapshot-390.png',fullPage:true});
+ await clientContext.close();
+ checks.push('client saves selected store quote; newer active edition does not alter historical snapshot on reload');
  assert(await page.locator('.variant-panel.is-active .admin-quote .offer-empty').count()>0,'partial edition reports missing prices');
  await page.screenshot({path:'browser-evidence/material-price-partial.png',fullPage:true});
  checks.push('partial edition never presented as complete total');
@@ -60,6 +83,17 @@ try{
  await page.locator('#result_list tbody tr').filter({hasText:'qa-full'}).locator('th a').click();
  assert.equal(await page.locator('[name="entries-0-price"]').count(),0,'published prices read-only');
  checks.push('published edition immutable in admin');
+ const guest=await browser.newContext({viewport:{width:390,height:844}});
+ const guestPage=await guest.newPage();
+ await guestPage.goto(base+'/calculators/plitka-keramogranit/');
+ await guestPage.locator('[data-calc-form] button[type=submit]').click();
+ await guestPage.locator('[data-variant-button=business]').click();
+ for(const lang of ['kk','ru']) {
+  await Promise.all([guestPage.waitForNavigation(),guestPage.locator('[data-language-switch], [data-language-form]').locator(`button[value=${lang}]`).first().click()]);
+  assert.equal(await guestPage.locator('[data-variant-button].is-active').getAttribute('data-variant-button'),'business','guest language switch preserves variant');
+ }
+ await guest.close();
+ checks.push('admin and guest variants persist across RU/KK without client-only save fields');
 } finally {
  await fs.writeFile('browser-evidence/material-pricing-checks.json',JSON.stringify({checks},null,2));
  await context.close();await browser.close();

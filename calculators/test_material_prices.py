@@ -131,3 +131,20 @@ class MaterialPricingTests(TestCase):
             response=self.client.post(reverse('calculators:detail',args=['plitka-keramogranit']),data)
         self.assertEqual(response.status_code,200)
         self.assertEqual(project.calculations.count(),0)
+
+    def test_admin_stale_draft_post_cannot_edit_published_edition(self):
+        book=self.book()
+        price=MaterialPrice.objects.create(book=book,calculator_slug='plitka-keramogranit',variant_key=self.result['selected_variant'],material_key=material_key(self.row['title'],self.row['unit']),unit=self.row['unit'],price=Decimal('12.34'))
+        administrator=User.objects.create_superuser('admin-immutability','admin@example.test','Synthetic-only')
+        self.client.force_login(administrator)
+        response=self.client.post(reverse('admin:calculators_pricebook_change',args=[book.pk]),{
+            'store_name':'Tampered synthetic','version':book.version,'source_note':'Test','price_date':'2026-01-01',
+            'entries-TOTAL_FORMS':'1','entries-INITIAL_FORMS':'1','entries-MIN_NUM_FORMS':'0','entries-MAX_NUM_FORMS':'1000',
+            'entries-0-id':price.pk,'entries-0-book':book.pk,'entries-0-calculator_slug':price.calculator_slug,
+            'entries-0-variant_key':price.variant_key,'entries-0-material_key':price.material_key,
+            'entries-0-unit':price.unit,'entries-0-price':'99.99','_save':'Save',
+        })
+        self.assertEqual(response.status_code,403)
+        price.refresh_from_db();book.refresh_from_db()
+        self.assertEqual(price.price,Decimal('12.34'));self.assertEqual(book.store_name,'Synthetic store')
+        self.assertEqual(self.client.get(reverse('admin:calculators_pricebook_change',args=[book.pk])).status_code,200)

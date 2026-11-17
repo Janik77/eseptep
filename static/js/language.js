@@ -33,8 +33,9 @@
       new FormData(calc).forEach((value, name) => {
         if (!['csrfmiddlewaretoken','action','project_id'].includes(name) && typeof value === 'string') next.searchParams.set(name, value);
       });
-      const variant = document.querySelector('[data-selected-variant-input]');
-      if (variant) next.searchParams.set('selected_variant', variant.value);
+      const variant = document.querySelector('[data-selected-variant-input]')?.value
+        || document.querySelector('[data-variant-button].is-active')?.dataset.variantButton;
+      if (variant) next.searchParams.set('selected_variant', variant);
     }
     const upload = document.querySelector('[name=upload_id]');
     if (upload?.value) next.searchParams.set('upload_id', upload.value);

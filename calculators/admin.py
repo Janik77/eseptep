@@ -20,6 +20,7 @@ class CalculatorTemplateAdmin(admin.ModelAdmin):
 
 
 from django.db import transaction
+from django.core.exceptions import PermissionDenied
 from django.utils import timezone
 from .models import PriceBook, MaterialPrice
 from .pricing import lock_price_configuration
@@ -59,6 +60,24 @@ class PriceBookAdmin(admin.ModelAdmin):
     inlines = [MaterialPriceInline]
     actions = ['activate', 'deactivate']
     readonly_fields = ('is_active', 'published_at')
+
+    def has_change_permission(self, request, obj=None):
+        if obj and obj.published_at:
+            return False
+        return super().has_change_permission(request, obj)
+
+    def changeform_view(self, request, object_id=None, form_url='', extra_context=None):
+        if request.method == 'POST':
+            # The same lock covers form validation, parent save and inline saves.
+            # Re-read publication state only after acquiring the lock; a draft
+            # form opened before publication must not mutate the published edition.
+            with transaction.atomic():
+                lock_price_configuration()
+                current = self.get_object(request, object_id) if object_id else None
+                if current and current.published_at:
+                    raise PermissionDenied('Published prices are immutable. Create a new edition.')
+                return super().changeform_view(request, object_id, form_url, extra_context)
+        return super().changeform_view(request, object_id, form_url, extra_context)
 
     def get_readonly_fields(self, request, obj=None):
         if obj and obj.published_at:

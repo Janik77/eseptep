@@ -54,3 +54,5 @@ Rollback: stop server; preserve a backup of the new DB first. Switch to prior re
 ## Concurrency scope
 
 Publication/deactivation and estimate persistence serialize on a singleton configuration row. Saving acquires its write lock before transactional reads, then validates the snapshot version. A deterministic between-validation-and-save regression is included. An actual isolated two-connection SQLite check also held publication open while saving: the save waited and rejected the obsolete version without creating an estimate. This is not a load test or a PostgreSQL concurrency certification; lock timeout and operational deployment limits still require target-environment testing.
+
+Admin draft POSTs now hold the same lock through validation, parent and inline saves. Published editions reject stale edit POSTs explicitly. The reproducible CI script covers both actual SQLite orderings: publication first blocks the editor then returns 403 without mutation; draft edit first blocks publication until final edited metadata and prices are committed. These are SQLite functional concurrency checks, not a multi-backend/load certification.
