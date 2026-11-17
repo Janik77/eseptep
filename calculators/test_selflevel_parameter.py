@@ -88,3 +88,30 @@ class SelfLevelParameterTests(TestCase):
         payload['parameter_version']='mix-v1'
         response=self.client.post('/calculators/nalivnoy-pol/',payload)
         self.assertEqual(response.status_code,302);self.assertEqual(self.project.calculations.count(),1)
+
+    def test_missing_version_token_rejected_with_visible_error(self):
+        self.client.force_login(self.user)
+        payload={**self.data,'project_id':self.project.pk,'action':'save_estimate'}
+        for active in [False,True]:
+            if active:self.edition(is_active=True,published_at=timezone.now())
+            response=self.client.post('/calculators/nalivnoy-pol/',payload)
+            self.assertEqual(response.status_code,200)
+            self.assertContains(response,'Параметр расхода изменился. Проверьте новый расчёт и сохраните снова.')
+            self.assertEqual(self.project.calculations.count(),0)
+            self.assertTrue(response.context['result']['parameter_snapshot']['version'])
+
+    def test_old_snapshot_without_parameter_remains_readable_unchanged(self):
+        result=calculate_materials(self.definition,self.data)
+        _,saved=save_calculation_for_user(self.user,'nalivnoy-pol',result,self.project.pk)
+        saved.result_data.pop('parameter_snapshot',None)
+        saved.save(update_fields=['result_data'])
+        snapshot=deepcopy(saved.result_data)
+        self.edition(is_active=True,published_at=timezone.now())
+        self.client.force_login(self.user)
+        for lang in ['ru','kk']:
+            self.client.cookies['django_language']=lang
+            response=self.client.get(f'/accounts/calculations/{saved.pk}/')
+            self.assertEqual(response.status_code,200)
+            self.assertNotContains(response,'mix-v1')
+        saved.refresh_from_db()
+        self.assertEqual(saved.result_data,snapshot)
