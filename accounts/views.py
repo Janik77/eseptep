@@ -166,8 +166,8 @@ def master_dashboard(request):
         user=request.user,
         defaults={
             'full_name': request.user.first_name or request.user.username,
-            'city': request.user.profile.city or 'Не указан',
-            'specialization': 'Общестроительные работы',
+            'city': request.user.profile.city or '',
+            'specialization': '',
             'experience_years': 0,
             'rating': 0,
         },
@@ -218,8 +218,8 @@ def master_profile_edit(request):
         user=request.user,
         defaults={
             'full_name': request.user.first_name or request.user.username,
-            'city': request.user.profile.city or 'Не указан',
-            'specialization': 'Общестроительные работы',
+            'city': request.user.profile.city or '',
+            'specialization': '',
             'experience_years': 0,
             'rating': 0,
         },
@@ -244,9 +244,9 @@ def supplier_dashboard(request):
         user=request.user,
         defaults={
             'company_name': request.user.first_name or request.user.username,
-            'city': request.user.profile.city or 'Не указан',
-            'address': 'Не указан',
-            'delivery_info': 'По согласованию',
+            'city': request.user.profile.city or '',
+            'address': '',
+            'delivery_info': '',
         },
     )
 
@@ -309,9 +309,9 @@ def supplier_profile_edit(request):
         user=request.user,
         defaults={
             'company_name': request.user.first_name or request.user.username,
-            'city': request.user.profile.city or 'Не указан',
-            'address': 'Не указан',
-            'delivery_info': 'По согласованию',
+            'city': request.user.profile.city or '',
+            'address': '',
+            'delivery_info': '',
         },
     )
 

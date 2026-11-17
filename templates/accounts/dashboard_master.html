@@ -4,6 +4,9 @@
 
 {% block content %}
 {% translate 'Без комментария' as i18n_default_0 %}
+{% translate 'Не указан' as profile_not_set %}
+{% translate 'Общестроительные работы' as profile_specialization %}
+{% translate 'По согласованию' as profile_delivery %}
 {% if response_form.errors %}<div class="dashboard-card" role="alert"><h2>{% translate 'Отклик не отправлен' %}</h2>{{ response_form.errors }}</div>{% endif %}
 <section class="dashboard">
   <div class="dashboard-card master-profile-card">
@@ -15,7 +18,7 @@
       {% endif %}
       <div>
         <h1>{{ master_profile.full_name }}</h1>
-        <p>{{ master_profile.city }} · {{ master_profile.specialization }}</p>
+        <p>{{ master_profile.city|default:profile_not_set }} · {{ master_profile.specialization|default:profile_specialization }}</p>
         <p>{% translate 'Опыт:' %} {{ master_profile.experience_years }} {% translate 'лет · Отзывы пока не подтверждены ·' %} {% if master_profile.is_available %}{% translate 'Свободен' %}{% else %}{% translate 'Занят' %}{% endif %}</p>
       </div>
     </div>

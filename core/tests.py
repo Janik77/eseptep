@@ -21,3 +21,27 @@ class PresentationRegressionTests(TestCase):
             self.assertFalse(set(f['label'] for f in fields) & set(m['label'] for m in result['metrics']))
             self.assertNotContains(response, 'Площадь укладки</b>36')
             self.assertContains(response, money(result['grand_total']))
+
+    def test_profile_defaults_localize_without_translating_user_text(self):
+        from django.contrib.auth.models import User
+        from accounts.models import UserProfile
+        for role in ['master', 'supplier']:
+            user = User.objects.create_user(username=role, password='Synthetic-test-only')
+            UserProfile.objects.create(user=user, role=role)
+            self.client.force_login(user)
+            self.client.cookies['django_language'] = 'kk'
+            response = self.client.get(reverse('accounts:dashboard_' + role))
+            self.assertContains(response, 'Көрсетілмеген')
+            profile = getattr(user, role + '_profile')
+            self.assertEqual(profile.city, '')
+            self.client.cookies['django_language'] = 'ru'
+            self.assertContains(self.client.get(reverse('accounts:dashboard_' + role)), 'Не указан')
+            profile.refresh_from_db()
+            self.assertEqual(profile.city, '')
+            self.client.cookies['django_language'] = 'kk'
+            profile.city = 'Не указан'  # Exact former sentinel can be user-authored.
+            profile.save()
+            response = self.client.get(reverse('accounts:dashboard_' + role))
+            self.assertContains(response, 'Не указан')
+            profile.refresh_from_db()
+            self.assertEqual(profile.city, 'Не указан')

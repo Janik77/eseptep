@@ -38,3 +38,7 @@ if ($LASTEXITCODE -ne 0) { throw 'Check failed' }
 ```
 
 Review http://127.0.0.1:8000/. This is a test candidate, not production approval. Prices remain indicative and uploaded-plan analysis demonstrational. Native-language proofreading, assistive technologies and real mobile operating systems require separate review.
+
+## Legacy profile text
+
+New role profiles store empty optional placeholder values, with localized display fallbacks. Older profiles may contain literal Russian defaults inserted by previous versions. Without provenance these cannot safely be distinguished from user-entered text; they are deliberately not translated or overwritten automatically. Owners can replace them via profile editing. No database rewrite or migration is performed.
