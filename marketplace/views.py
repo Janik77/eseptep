@@ -1,4 +1,5 @@
 from core.localization import render
+from core.renovation_rates import rate_configuration, renovation_estimate, LEGACY_RATES
 
 from calculators.validation import InputValidationError, validate_fields
 
@@ -15,7 +16,7 @@ TURNKEY_PACKAGES = [
     {
         'key': 'economy',
         'title': 'Эконом',
-        'price_per_m2': 120000,
+        'price_per_m2': int(LEGACY_RATES['economy']),
         'description': 'Базовый ремонт без лишних расходов.',
         'duration': 'от 45 дней',
         'items': [
@@ -32,7 +33,7 @@ TURNKEY_PACKAGES = [
     {
         'key': 'standard',
         'title': 'Стандарт',
-        'price_per_m2': 170000,
+        'price_per_m2': int(LEGACY_RATES['standard']),
         'description': 'Оптимальный вариант для комфортного проживания.',
         'duration': 'от 60 дней',
         'items': [
@@ -49,7 +50,7 @@ TURNKEY_PACKAGES = [
     {
         'key': 'premium',
         'title': 'Премиум',
-        'price_per_m2': 250000,
+        'price_per_m2': int(LEGACY_RATES['premium']),
         'description': 'Расширенный ремонт с качественными материалами и контролем.',
         'duration': 'от 75 дней',
         'items': [
@@ -73,6 +74,7 @@ def marketplace_home(request):
         'area': '',
     }
     results = []
+    rate_config = rate_configuration()
 
     form_errors = {}
     preview = request.method == 'GET' and request.GET.get('_preview') in {'0', '1'}
@@ -89,7 +91,8 @@ def marketplace_home(request):
             for package in TURNKEY_PACKAGES:
                 results.append({
                     **package,
-                    'total': round(area * package['price_per_m2']),
+                    'total': renovation_estimate(cleaned['area'], package['key'], rate_config)['total'],
+                    'price_per_m2': rate_config['rates'][package['key']],
                     'area': area,
                 })
 
@@ -97,6 +100,7 @@ def marketplace_home(request):
         request,
         'marketplace/home.html',
         {
+            'rate_config': rate_config,
             'form_data': form_data,
             'packages': TURNKEY_PACKAGES,
             'results': results,

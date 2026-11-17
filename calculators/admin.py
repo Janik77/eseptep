@@ -109,3 +109,36 @@ class PriceBookAdmin(admin.ModelAdmin):
         with transaction.atomic():
             lock_price_configuration()
             queryset.update(is_active=False)
+
+
+from .models import RenovationRateEdition
+
+
+@admin.register(RenovationRateEdition)
+class RenovationRateEditionAdmin(PriceBookAdmin):
+    """Inherit the tested POST/publication lock and immutable edition permissions."""
+    list_display = ('version', 'effective_date', 'economy_rate', 'standard_rate', 'premium_rate', 'is_active', 'published_at')
+    inlines = []
+
+    def get_readonly_fields(self, request, obj=None):
+        if obj and obj.published_at:
+            return ('version', 'source_note', 'effective_date', 'economy_rate', 'standard_rate', 'premium_rate', 'is_active', 'published_at')
+        return ('is_active', 'published_at')
+
+    @admin.action(description='Publish typed renovation rates (all three tiers, KZT/m²)', permissions=['change'])
+    def activate(self, request, queryset):
+        if queryset.count() != 1:
+            self.message_user(request, 'Select exactly one edition.', level='ERROR')
+            return
+        with transaction.atomic():
+            lock_price_configuration()
+            edition = queryset.select_for_update().get()
+            if edition.effective_date > timezone.localdate():
+                self.message_user(request, 'A future edition cannot be activated yet.', level='ERROR')
+                return
+            edition.full_clean()
+            RenovationRateEdition.objects.filter(is_active=True).update(is_active=False)
+            edition.is_active = True
+            edition.published_at = edition.published_at or timezone.now()
+            edition.save(update_fields=['is_active', 'published_at'])
+        self.message_user(request, 'Renovation rates activated. Historical snapshots remain unchanged.')

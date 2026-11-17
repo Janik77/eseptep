@@ -1,0 +1,10 @@
+{% load i18n %}
+<div class="rate-source result-warning">
+  {% if configuration.source_kind == 'historical' %}
+  <p>{% translate 'Исторические справочные ставки из кода. Это не актуальные цены магазина.' %}</p>
+  {% else %}
+  <p>{% translate 'Ставки администратора для предварительной оценки ремонта, не прайс материалов магазина.' %}</p>
+  <p>{{ configuration.source_note }} · {{ configuration.effective_date }}</p>
+  {% endif %}
+  <small>{% translate 'Версия:' %} {{ configuration.version }} · {% translate 'Единица: ₸/м². Управляются только три денежные ставки, не нормы расхода и не состав работ.' %}</small>
+</div>
