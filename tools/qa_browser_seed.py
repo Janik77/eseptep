@@ -44,3 +44,7 @@ from projects.views import DEMO_AI_SUMMARY
 legacy=ProjectUpload(user=user,comment='typed-pricing-legacy',area=Decimal('36.50'),repair_level='standard',ai_summary=DEMO_AI_SUMMARY)
 legacy.file.save('synthetic-typed-legacy.png',ContentFile(base64.b64decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAFgwJ/lErZAAAAAElFTkSuQmCC')),save=False)
 legacy.save()
+
+from calculators.models import SelfLevelMixEdition
+for version,consumption in [('qa-mix-v1','15.00'),('qa-mix-v2','30.00')]:
+    SelfLevelMixEdition.objects.create(version=version,consumption=Decimal(consumption),source_note='SYNTHETIC QA consumption, not a manufacturer recommendation',source_date=date(2026,1,1))

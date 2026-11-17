@@ -137,6 +137,11 @@ def calculator_detail(request, slug):
         action = request.POST.get('action') if request.method == 'POST' else None
 
         if action in {'save_estimate', 'request_master', 'request_supplier'}:
+            expected_parameter = request.POST.get('parameter_version', '')
+            actual_parameter = (result.get('parameter_snapshot') or {}).get('version', '')
+            if expected_parameter != actual_parameter:
+                form_errors.append(_('Параметр расхода изменился. Проверьте новый расчёт и сохраните снова.'))
+                action = None
             current_version = (result.get('admin_quote') or {}).get('version', '')
             if request.POST.get('price_book_version', '') != current_version:
                 form_errors.append(_('Прайс изменился. Проверьте новый расчёт и сохраните снова.'))
@@ -146,6 +151,7 @@ def calculator_detail(request, slug):
                 project, calculation = save_calculation_for_user(request.user, slug, result, request.POST.get('project_id'))
             except ValidationError as error:
                 form_errors.extend(error.messages)
+                result = calculate_materials(calculator, form_data)
                 attach_quotation(slug, result)
             else:
                 if action == 'request_master':

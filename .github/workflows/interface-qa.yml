@@ -39,6 +39,13 @@ jobs:
           python manage.py migrate --noinput
           PYTHONPATH=. python tools/qa_typed_rate_concurrency.py
 
+      - name: Real SQLite consumption publication and estimate save concurrency
+        env:
+          DJANGO_DB_PATH: /tmp/eseptep-browser-qa-selflevel-concurrency.sqlite3
+        run: |
+          python manage.py migrate --noinput
+          PYTHONPATH=. python tools/qa_selflevel_concurrency.py
+
       - run: npm install --prefix /tmp/eseptep-browser-driver playwright@1.65.0
       # Use the runner's packaged Chrome with its supported sandbox profile.
       # Never disable Chromium sandboxing or change host security settings.
@@ -55,6 +62,7 @@ jobs:
           PLAYWRIGHT_PACKAGE=/tmp/eseptep-browser-driver/node_modules/playwright node tools/qa_material_prices.mjs
           PLAYWRIGHT_PACKAGE=/tmp/eseptep-browser-driver/node_modules/playwright node tools/qa_supplier_publication.mjs
           PLAYWRIGHT_PACKAGE=/tmp/eseptep-browser-driver/node_modules/playwright node tools/qa_typed_rates.mjs
+          PLAYWRIGHT_PACKAGE=/tmp/eseptep-browser-driver/node_modules/playwright node tools/qa_selflevel_parameter.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:

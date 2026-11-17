@@ -122,3 +122,29 @@ class RenovationRateEdition(models.Model):
 
     def __str__(self):
         return self.version
+
+
+class SelfLevelMixEdition(models.Model):
+    """One preliminary consumption parameter; fixed cm input and 25 kg bag."""
+    version = models.CharField(max_length=60, unique=True)
+    source_note = models.CharField(max_length=255)
+    source_date = models.DateField()
+    unit = models.CharField(max_length=24, choices=[('kg_per_m2_cm', 'кг/(м²·см)')], default='kg_per_m2_cm', editable=False)
+    consumption = models.DecimalField('Расход смеси, кг/(м²·см)', max_digits=4, decimal_places=2, default=15)
+    is_active = models.BooleanField(default=False)
+    published_at = models.DateTimeField(null=True, blank=True, editable=False)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['is_active'], condition=models.Q(is_active=True), name='one_active_selflevel_mix_edition'),
+            models.CheckConstraint(condition=models.Q(consumption__gte='0.01', consumption__lte='99.99', unit='kg_per_m2_cm'), name='typed_selflevel_consumption_unit_range'),
+        ]
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        from .self_level_parameters import LEGACY_VERSION
+        if self.version == LEGACY_VERSION:
+            raise ValidationError({'version': 'Reserved historical identifier.'})
+
+    def __str__(self):
+        return self.version
