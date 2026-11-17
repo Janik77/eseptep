@@ -161,7 +161,7 @@ try {
   await page.locator('.project-estimate-form button[type=submit]').click();
   await page.locator('.project-estimate-total').waitFor();
   await page.goto(`${base}/projects/upload/?upload_id=${uploadId}`);
-  assert.equal(await page.locator('.project-estimate-form [name=area]').inputValue(),'36.5');
+  assert.equal((await page.locator('.project-estimate-form [name=area]').inputValue()).replace(',','.'),'36.5');
   await shot(page,'upload-result-ru-1440');
   evidence.checks.push('upload valid synthetic image, estimate parameters, preview and authorized reopen');
   for(const lang of ['ru','kk']) {
