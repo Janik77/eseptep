@@ -43,6 +43,8 @@ def render(request, template_name, context=None, *args, **kwargs):
     if context.get('result') and context.get('form_fields'):
         result = dict(context['result'])
         labels = {field['label'] for field in context['form_fields']}
+        if context.get('calculator', {}).get('slug') == 'nalivnoy-pol':
+            labels.update({'Площадь пола', 'Толщина'})
         result['metrics'] = [dict(metric) for metric in result.get('metrics', [])
                              if metric['label'] not in labels
                              and metric['label'] != 'Площадь укладки']

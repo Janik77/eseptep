@@ -115,3 +115,21 @@ class SelfLevelParameterTests(TestCase):
             self.assertNotContains(response,'mix-v1')
         saved.refresh_from_db()
         self.assertEqual(saved.result_data,snapshot)
+
+    def test_selflevel_display_omits_rounded_duplicates_without_changing_result(self):
+        from unittest.mock import patch
+        from core.localization import render
+        from django.test import RequestFactory
+        from django.utils.translation import override
+        result=calculate_materials(self.definition,{'area':'36.5','thickness':'2'})
+        original=deepcopy(result)
+        context={'calculator':self.definition,'result':result,'form_fields':[{'label':'Площадь','value':'36.5'},{'label':'Толщина слоя','value':'2'}]}
+        for language in ['ru','kk']:
+            with override(language),patch('core.localization.django_render') as response:
+                render(RequestFactory().get('/'),'calculators/detail.html',context)
+                shown=response.call_args.args[2]['result']
+                self.assertFalse(any(m['label'] in {'Площадь пола','Толщина','Еден ауданы','Қалыңдығы'} for m in shown['metrics']))
+                self.assertEqual(shown['materials'][0]['quantity'],44)
+                self.assertEqual(context['form_fields'][0]['value'],'36.5')
+        self.assertEqual(result,original)
+        self.assertTrue(any(m['label']=='Площадь пола' for m in result['metrics']))
