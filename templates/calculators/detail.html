@@ -71,7 +71,7 @@
                         {% endfor %}
                     </div>
 
-                    {% if result.parameter_snapshot %}{% include 'calculators/partials/selflevel_parameter.html' with parameter=result.parameter_snapshot %}{% endif %}
+                    {% if calculator.slug == 'nalivnoy-pol' %}{% include 'calculators/partials/selflevel_parameter.html' with parameter=result.parameter_snapshot %}{% elif calculator.slug == 'demontazh' %}{% include 'calculators/partials/demolition_parameter.html' with parameter=result.parameter_snapshot %}{% endif %}
                     {% if result.variants %}
                         <div class="variant-result" data-variant-result>
                             <div class="variant-result__head">

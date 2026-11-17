@@ -148,3 +148,29 @@ class SelfLevelMixEdition(models.Model):
 
     def __str__(self):
         return self.version
+
+
+class DemolitionFilmEdition(models.Model):
+    """One preliminary protective film ratio; square metres per square metre."""
+    version = models.CharField(max_length=60, unique=True)
+    source_note = models.CharField(max_length=255)
+    source_date = models.DateField()
+    unit = models.CharField(max_length=24, choices=[('m2_per_m2', 'м²/м²')], default='m2_per_m2', editable=False)
+    consumption = models.DecimalField('Расход защитной плёнки, м²/м²', max_digits=4, decimal_places=2, default='1.20')
+    is_active = models.BooleanField(default=False)
+    published_at = models.DateTimeField(null=True, blank=True, editable=False)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['is_active'], condition=models.Q(is_active=True), name='one_active_demolition_film_edition'),
+            models.CheckConstraint(condition=models.Q(consumption__gte='0.01', consumption__lte='99.99', unit='m2_per_m2'), name='typed_demolition_film_unit_range'),
+        ]
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        from .demolition_parameters import LEGACY_VERSION
+        if self.version == LEGACY_VERSION:
+            raise ValidationError({'version': 'Reserved historical identifier.'})
+
+    def __str__(self):
+        return self.version
