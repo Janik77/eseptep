@@ -1,0 +1,779 @@
+{
+  "base": "eb785d3fc89d31716a02b46a4d05d42af6410f22",
+  "defaults": {
+    "demontazh": {
+      "input": {
+        "area": "42",
+        "demolition_type": "partial"
+      },
+      "digest": "0c8e4ae95961193f52b3d7399e72244a1e3e7e84e7f6de833d7cdb7438996c31"
+    },
+    "elektrika": {
+      "input": {
+        "area": "60",
+        "rooms": "2"
+      },
+      "digest": "3d07d33bb0210ed107c46dbc6c4912ecb4aefead9f3a5686641a18f2bc82be77"
+    },
+    "santehnika": {
+      "input": {
+        "area": "60",
+        "bathrooms": "1"
+      },
+      "digest": "a847c13b557305d91a583e996b1a311d5939a7a89053c6c0aaed21e6f15e79ec"
+    },
+    "shtukaturka": {
+      "input": {
+        "area": "42",
+        "thickness": "2"
+      },
+      "digest": "970b0eb14b5c12e61e903c84d647736d8af74a9ad1bda40437fc507c80e5a315"
+    },
+    "gipsokarton-potolok": {
+      "input": {
+        "area": "20",
+        "rooms": "1",
+        "construction_type": "ceiling"
+      },
+      "digest": "daeeabd0461887bbbf95bf146c1ce7f0303230fdfc13d16f430358434971acef"
+    },
+    "nalivnoy-pol": {
+      "input": {
+        "area": "30",
+        "thickness": "2"
+      },
+      "digest": "29c3688ba5722acac0496903d97478b1b9e165588a3fb693db895a2e5f70b16d"
+    },
+    "plitka-keramogranit": {
+      "input": {
+        "area": "24",
+        "zone": "floor",
+        "tile_format": "60x60"
+      },
+      "digest": "99a34c8a01746b55244b4f991bfae98ab8c6a4d77b20971db4b791c45f759ae1"
+    },
+    "laminat-spc-parket": {
+      "input": {
+        "area": "20",
+        "covering_type": "laminate"
+      },
+      "digest": "647fe10109c6fc6adc1c16cddfdaf87decd14648a2fafbd2031c039b1e879b4e"
+    },
+    "malyarka": {
+      "input": {
+        "floor_area": "30",
+        "type": "paint"
+      },
+      "digest": "34712bc742a917018cf3653afd3c91fe71e6a05792a5689edc26d223951d2feb"
+    },
+    "natyazhnoy-potolok": {
+      "input": {
+        "area": "42",
+        "rooms": "1"
+      },
+      "digest": "a3b75b8089c6e0fa2bba7cd865a9b06505348c1b965cbc2cfd9c2ac92fa055de"
+    },
+    "dveri": {
+      "input": {
+        "count": "3"
+      },
+      "digest": "9fda4590b002f2f73cba82eb183e32640acbd772c875e36a8781bc31c324eb45"
+    },
+    "teplyy-pol": {
+      "input": {
+        "area": "20",
+        "type": "electric_mat"
+      },
+      "digest": "8a73875de7940cef4a8f9599d26bb6874002fa40b0cd0a9c35914ceeb0bdf891"
+    }
+  },
+  "selflevel": [
+    {
+      "input": {
+        "area": "1",
+        "thickness": "0.1"
+      },
+      "result": {
+        "materials": [
+          {
+            "title": "Наливной пол 25 кг",
+            "quantity": 1,
+            "unit": "мешков",
+            "reference_price": 2900,
+            "reference_total": 2900,
+            "price": 2900,
+            "total": 2900
+          },
+          {
+            "title": "Грунтовка 10 кг",
+            "quantity": 1,
+            "unit": "шт",
+            "reference_price": 400,
+            "reference_total": 400,
+            "price": 400,
+            "total": 400
+          },
+          {
+            "title": "Маяк фиксатор",
+            "quantity": 2,
+            "unit": "шт",
+            "reference_price": 80,
+            "reference_total": 160,
+            "price": 80,
+            "total": 160
+          },
+          {
+            "title": "Демпферная лента",
+            "quantity": 1,
+            "unit": "м",
+            "reference_price": 100,
+            "reference_total": 100,
+            "price": 100,
+            "total": 100
+          },
+          {
+            "title": "Ведро строительное",
+            "quantity": 4,
+            "unit": "шт",
+            "reference_price": 1000,
+            "reference_total": 4000,
+            "price": 1000,
+            "total": 4000
+          },
+          {
+            "title": "Валик",
+            "quantity": 1,
+            "unit": "шт",
+            "reference_price": 1500,
+            "reference_total": 1500,
+            "price": 1500,
+            "total": 1500
+          },
+          {
+            "title": "Игольчатый валик 30-40 мм",
+            "quantity": 1,
+            "unit": "шт",
+            "reference_price": 3500,
+            "reference_total": 3500,
+            "price": 3500,
+            "total": 3500
+          },
+          {
+            "title": "Обувь шиповая",
+            "quantity": 1,
+            "unit": "пара",
+            "reference_price": 5000,
+            "reference_total": 5000,
+            "price": 5000,
+            "total": 5000
+          },
+          {
+            "title": "Степлер",
+            "quantity": 1,
+            "unit": "шт",
+            "reference_price": 3500,
+            "reference_total": 3500,
+            "price": 3500,
+            "total": 3500
+          },
+          {
+            "title": "Скобы",
+            "quantity": 2,
+            "unit": "шт",
+            "reference_price": 10,
+            "reference_total": 20,
+            "price": 10,
+            "total": 20
+          },
+          {
+            "title": "Мусорные мешки",
+            "quantity": 10,
+            "unit": "шт",
+            "reference_price": 50,
+            "reference_total": 500,
+            "price": 50,
+            "total": 500
+          }
+        ],
+        "materials_count": 11,
+        "reference_total": 21580,
+        "reference_labor_total": 0,
+        "reference_grand_total": 21580,
+        "materials_total": 21580,
+        "labor_total": 0,
+        "grand_total": 21580,
+        "segment_label": "Предварительно",
+        "summary": "Наливной Пол · 1 м² · 0.1 см",
+        "saved_list": "Наливной пол 25 кг — 1 мешков\nГрунтовка 10 кг — 1 шт\nМаяк фиксатор — 2 шт\nДемпферная лента — 1 м\nВедро строительное — 4 шт\nВалик — 1 шт\nИгольчатый валик 30-40 мм — 1 шт\nОбувь шиповая — 1 пара\nСтеплер — 1 шт\nСкобы — 2 шт\nМусорные мешки — 10 шт",
+        "whatsapp_text": "ESEPTEP: Наливной Пол · 1 м² · 0.1 см. Материалы:\nНаливной пол 25 кг — 1 мешков\nГрунтовка 10 кг — 1 шт\nМаяк фиксатор — 2 шт\nДемпферная лента — 1 м\nВедро строительное — 4 шт\nВалик — 1 шт\nИгольчатый валик 30-40 мм — 1 шт\nОбувь шиповая — 1 пара\nСтеплер — 1 шт\nСкобы — 2 шт\nМусорные мешки — 10 шт\nЦены уточняются у поставщиков.",
+        "warning": "Расчёт предварительный. Количество материалов нужно уточнить по проекту и фактическим условиям.",
+        "master_template_items": [
+          {
+            "title": "Наливной пол 25 кг",
+            "default_quantity": 1.0,
+            "unit": "мешков"
+          },
+          {
+            "title": "Грунтовка 10 кг",
+            "default_quantity": 1.0,
+            "unit": "шт"
+          },
+          {
+            "title": "Маяк фиксатор",
+            "default_quantity": 1.0,
+            "unit": "шт"
+          },
+          {
+            "title": "Демпферная лента",
+            "default_quantity": 1.0,
+            "unit": "м"
+          },
+          {
+            "title": "Ведро строительное",
+            "default_quantity": 1.0,
+            "unit": "шт"
+          },
+          {
+            "title": "Валик",
+            "default_quantity": 1.0,
+            "unit": "шт"
+          },
+          {
+            "title": "Игольчатый валик 30-40 мм",
+            "default_quantity": 1.0,
+            "unit": "шт"
+          },
+          {
+            "title": "Игольчатый валик 40-50 мм",
+            "default_quantity": 1.0,
+            "unit": "шт"
+          },
+          {
+            "title": "Обувь шиповая",
+            "default_quantity": 1.0,
+            "unit": "пара"
+          },
+          {
+            "title": "Степлер",
+            "default_quantity": 1.0,
+            "unit": "шт"
+          },
+          {
+            "title": "Скобы",
+            "default_quantity": 1.0,
+            "unit": "шт"
+          },
+          {
+            "title": "Мусорные мешки",
+            "default_quantity": 1.0,
+            "unit": "шт"
+          }
+        ],
+        "metrics": [
+          {
+            "label": "Площадь пола",
+            "value": 1.0,
+            "unit": "м²"
+          },
+          {
+            "label": "Толщина",
+            "value": 0.1,
+            "unit": "см"
+          },
+          {
+            "label": "Общий расход смеси",
+            "value": 1.5,
+            "unit": "кг"
+          }
+        ],
+        "price_note": "Цены ориентировочные",
+        "meta": {
+          "area": 1.0,
+          "thickness": 0.1,
+          "rooms": 1,
+          "segment": "comfort",
+          "input": {
+            "area": "1",
+            "thickness": "0.1",
+            "_metrics": [
+              {
+                "label": "Площадь пола",
+                "value": 1.0,
+                "unit": "м²"
+              },
+              {
+                "label": "Толщина",
+                "value": 0.1,
+                "unit": "см"
+              },
+              {
+                "label": "Общий расход смеси",
+                "value": 1.5,
+                "unit": "кг"
+              }
+            ],
+            "_price_note": "Цены ориентировочные"
+          }
+        }
+      }
+    },
+    {
+      "input": {
+        "area": "36.5",
+        "thickness": "1.25"
+      },
+      "result": {
+        "materials": [
+          {
+            "title": "Наливной пол 25 кг",
+            "quantity": 28,
+            "unit": "мешков",
+            "reference_price": 2900,
+            "reference_total": 81200,
+            "price": 2900,
+            "total": 81200
+          },
+          {
+            "title": "Грунтовка 10 кг",
+            "quantity": 19,
+            "unit": "шт",
+            "reference_price": 400,
+            "reference_total": 7600,
+            "price": 400,
+            "total": 7600
+          },
+          {
+            "title": "Маяк фиксатор",
+            "quantity": 53,
+            "unit": "шт",
+            "reference_price": 80,
+            "reference_total": 4240,
+            "price": 80,
+            "total": 4240
+          },
+          {
+            "title": "Демпферная лента",
+            "quantity": 27,
+            "unit": "м",
+            "reference_price": 100,
+            "reference_total": 2700,
+            "price": 100,
+            "total": 2700
+          },
+          {
+            "title": "Ведро строительное",
+            "quantity": 4,
+            "unit": "шт",
+            "reference_price": 1000,
+            "reference_total": 4000,
+            "price": 1000,
+            "total": 4000
+          },
+          {
+            "title": "Валик",
+            "quantity": 1,
+            "unit": "шт",
+            "reference_price": 1500,
+            "reference_total": 1500,
+            "price": 1500,
+            "total": 1500
+          },
+          {
+            "title": "Игольчатый валик 30-40 мм",
+            "quantity": 1,
+            "unit": "шт",
+            "reference_price": 3500,
+            "reference_total": 3500,
+            "price": 3500,
+            "total": 3500
+          },
+          {
+            "title": "Обувь шиповая",
+            "quantity": 1,
+            "unit": "пара",
+            "reference_price": 5000,
+            "reference_total": 5000,
+            "price": 5000,
+            "total": 5000
+          },
+          {
+            "title": "Степлер",
+            "quantity": 1,
+            "unit": "шт",
+            "reference_price": 3500,
+            "reference_total": 3500,
+            "price": 3500,
+            "total": 3500
+          },
+          {
+            "title": "Скобы",
+            "quantity": 54,
+            "unit": "шт",
+            "reference_price": 10,
+            "reference_total": 540,
+            "price": 10,
+            "total": 540
+          },
+          {
+            "title": "Мусорные мешки",
+            "quantity": 10,
+            "unit": "шт",
+            "reference_price": 50,
+            "reference_total": 500,
+            "price": 50,
+            "total": 500
+          }
+        ],
+        "materials_count": 11,
+        "reference_total": 114280,
+        "reference_labor_total": 0,
+        "reference_grand_total": 114280,
+        "materials_total": 114280,
+        "labor_total": 0,
+        "grand_total": 114280,
+        "segment_label": "Предварительно",
+        "summary": "Наливной Пол · 36.5 м² · 1.25 см",
+        "saved_list": "Наливной пол 25 кг — 28 мешков\nГрунтовка 10 кг — 19 шт\nМаяк фиксатор — 53 шт\nДемпферная лента — 27 м\nВедро строительное — 4 шт\nВалик — 1 шт\nИгольчатый валик 30-40 мм — 1 шт\nОбувь шиповая — 1 пара\nСтеплер — 1 шт\nСкобы — 54 шт\nМусорные мешки — 10 шт",
+        "whatsapp_text": "ESEPTEP: Наливной Пол · 36.5 м² · 1.25 см. Материалы:\nНаливной пол 25 кг — 28 мешков\nГрунтовка 10 кг — 19 шт\nМаяк фиксатор — 53 шт\nДемпферная лента — 27 м\nВедро строительное — 4 шт\nВалик — 1 шт\nИгольчатый валик 30-40 мм — 1 шт\nОбувь шиповая — 1 пара\nСтеплер — 1 шт\nСкобы — 54 шт\nМусорные мешки — 10 шт\nЦены уточняются у поставщиков.",
+        "warning": "Расчёт предварительный. Количество материалов нужно уточнить по проекту и фактическим условиям.",
+        "master_template_items": [
+          {
+            "title": "Наливной пол 25 кг",
+            "default_quantity": 1.0,
+            "unit": "мешков"
+          },
+          {
+            "title": "Грунтовка 10 кг",
+            "default_quantity": 1.0,
+            "unit": "шт"
+          },
+          {
+            "title": "Маяк фиксатор",
+            "default_quantity": 1.0,
+            "unit": "шт"
+          },
+          {
+            "title": "Демпферная лента",
+            "default_quantity": 1.0,
+            "unit": "м"
+          },
+          {
+            "title": "Ведро строительное",
+            "default_quantity": 1.0,
+            "unit": "шт"
+          },
+          {
+            "title": "Валик",
+            "default_quantity": 1.0,
+            "unit": "шт"
+          },
+          {
+            "title": "Игольчатый валик 30-40 мм",
+            "default_quantity": 1.0,
+            "unit": "шт"
+          },
+          {
+            "title": "Игольчатый валик 40-50 мм",
+            "default_quantity": 1.0,
+            "unit": "шт"
+          },
+          {
+            "title": "Обувь шиповая",
+            "default_quantity": 1.0,
+            "unit": "пара"
+          },
+          {
+            "title": "Степлер",
+            "default_quantity": 1.0,
+            "unit": "шт"
+          },
+          {
+            "title": "Скобы",
+            "default_quantity": 1.0,
+            "unit": "шт"
+          },
+          {
+            "title": "Мусорные мешки",
+            "default_quantity": 1.0,
+            "unit": "шт"
+          }
+        ],
+        "metrics": [
+          {
+            "label": "Площадь пола",
+            "value": 36,
+            "unit": "м²"
+          },
+          {
+            "label": "Толщина",
+            "value": 1.2,
+            "unit": "см"
+          },
+          {
+            "label": "Общий расход смеси",
+            "value": 684,
+            "unit": "кг"
+          }
+        ],
+        "price_note": "Цены ориентировочные",
+        "meta": {
+          "area": 36.5,
+          "thickness": 1.25,
+          "rooms": 1,
+          "segment": "comfort",
+          "input": {
+            "area": "36.5",
+            "thickness": "1.25",
+            "_metrics": [
+              {
+                "label": "Площадь пола",
+                "value": 36,
+                "unit": "м²"
+              },
+              {
+                "label": "Толщина",
+                "value": 1.2,
+                "unit": "см"
+              },
+              {
+                "label": "Общий расход смеси",
+                "value": 684,
+                "unit": "кг"
+              }
+            ],
+            "_price_note": "Цены ориентировочные"
+          }
+        }
+      }
+    },
+    {
+      "input": {
+        "area": "10000",
+        "thickness": "20"
+      },
+      "result": {
+        "materials": [
+          {
+            "title": "Наливной пол 25 кг",
+            "quantity": 120000,
+            "unit": "мешков",
+            "reference_price": 2900,
+            "reference_total": 348000000,
+            "price": 2900,
+            "total": 348000000
+          },
+          {
+            "title": "Грунтовка 10 кг",
+            "quantity": 5000,
+            "unit": "шт",
+            "reference_price": 400,
+            "reference_total": 2000000,
+            "price": 400,
+            "total": 2000000
+          },
+          {
+            "title": "Маяк фиксатор",
+            "quantity": 14334,
+            "unit": "шт",
+            "reference_price": 80,
+            "reference_total": 1146720,
+            "price": 80,
+            "total": 1146720
+          },
+          {
+            "title": "Демпферная лента",
+            "quantity": 5167,
+            "unit": "м",
+            "reference_price": 100,
+            "reference_total": 516700,
+            "price": 100,
+            "total": 516700
+          },
+          {
+            "title": "Ведро строительное",
+            "quantity": 4,
+            "unit": "шт",
+            "reference_price": 1000,
+            "reference_total": 4000,
+            "price": 1000,
+            "total": 4000
+          },
+          {
+            "title": "Валик",
+            "quantity": 1,
+            "unit": "шт",
+            "reference_price": 1500,
+            "reference_total": 1500,
+            "price": 1500,
+            "total": 1500
+          },
+          {
+            "title": "Игольчатый валик 40-50 мм",
+            "quantity": 1,
+            "unit": "шт",
+            "reference_price": 4500,
+            "reference_total": 4500,
+            "price": 4500,
+            "total": 4500
+          },
+          {
+            "title": "Обувь шиповая",
+            "quantity": 1,
+            "unit": "пара",
+            "reference_price": 5000,
+            "reference_total": 5000,
+            "price": 5000,
+            "total": 5000
+          },
+          {
+            "title": "Степлер",
+            "quantity": 1,
+            "unit": "шт",
+            "reference_price": 3500,
+            "reference_total": 3500,
+            "price": 3500,
+            "total": 3500
+          },
+          {
+            "title": "Скобы",
+            "quantity": 10334,
+            "unit": "шт",
+            "reference_price": 10,
+            "reference_total": 103340,
+            "price": 10,
+            "total": 103340
+          },
+          {
+            "title": "Мусорные мешки",
+            "quantity": 10,
+            "unit": "шт",
+            "reference_price": 50,
+            "reference_total": 500,
+            "price": 50,
+            "total": 500
+          }
+        ],
+        "materials_count": 11,
+        "reference_total": 351785760,
+        "reference_labor_total": 0,
+        "reference_grand_total": 351785760,
+        "materials_total": 351785760,
+        "labor_total": 0,
+        "grand_total": 351785760,
+        "segment_label": "Предварительно",
+        "summary": "Наливной Пол · 10000 м² · 20 см",
+        "saved_list": "Наливной пол 25 кг — 120000 мешков\nГрунтовка 10 кг — 5000 шт\nМаяк фиксатор — 14334 шт\nДемпферная лента — 5167 м\nВедро строительное — 4 шт\nВалик — 1 шт\nИгольчатый валик 40-50 мм — 1 шт\nОбувь шиповая — 1 пара\nСтеплер — 1 шт\nСкобы — 10334 шт\nМусорные мешки — 10 шт",
+        "whatsapp_text": "ESEPTEP: Наливной Пол · 10000 м² · 20 см. Материалы:\nНаливной пол 25 кг — 120000 мешков\nГрунтовка 10 кг — 5000 шт\nМаяк фиксатор — 14334 шт\nДемпферная лента — 5167 м\nВедро строительное — 4 шт\nВалик — 1 шт\nИгольчатый валик 40-50 мм — 1 шт\nОбувь шиповая — 1 пара\nСтеплер — 1 шт\nСкобы — 10334 шт\nМусорные мешки — 10 шт\nЦены уточняются у поставщиков.",
+        "warning": "Расчёт предварительный. Количество материалов нужно уточнить по проекту и фактическим условиям.",
+        "master_template_items": [
+          {
+            "title": "Наливной пол 25 кг",
+            "default_quantity": 1.0,
+            "unit": "мешков"
+          },
+          {
+            "title": "Грунтовка 10 кг",
+            "default_quantity": 1.0,
+            "unit": "шт"
+          },
+          {
+            "title": "Маяк фиксатор",
+            "default_quantity": 1.0,
+            "unit": "шт"
+          },
+          {
+            "title": "Демпферная лента",
+            "default_quantity": 1.0,
+            "unit": "м"
+          },
+          {
+            "title": "Ведро строительное",
+            "default_quantity": 1.0,
+            "unit": "шт"
+          },
+          {
+            "title": "Валик",
+            "default_quantity": 1.0,
+            "unit": "шт"
+          },
+          {
+            "title": "Игольчатый валик 30-40 мм",
+            "default_quantity": 1.0,
+            "unit": "шт"
+          },
+          {
+            "title": "Игольчатый валик 40-50 мм",
+            "default_quantity": 1.0,
+            "unit": "шт"
+          },
+          {
+            "title": "Обувь шиповая",
+            "default_quantity": 1.0,
+            "unit": "пара"
+          },
+          {
+            "title": "Степлер",
+            "default_quantity": 1.0,
+            "unit": "шт"
+          },
+          {
+            "title": "Скобы",
+            "default_quantity": 1.0,
+            "unit": "шт"
+          },
+          {
+            "title": "Мусорные мешки",
+            "default_quantity": 1.0,
+            "unit": "шт"
+          }
+        ],
+        "metrics": [
+          {
+            "label": "Площадь пола",
+            "value": 10000,
+            "unit": "м²"
+          },
+          {
+            "label": "Толщина",
+            "value": 20,
+            "unit": "см"
+          },
+          {
+            "label": "Общий расход смеси",
+            "value": 3000000,
+            "unit": "кг"
+          }
+        ],
+        "price_note": "Цены ориентировочные",
+        "meta": {
+          "area": 10000.0,
+          "thickness": 20.0,
+          "rooms": 1,
+          "segment": "comfort",
+          "input": {
+            "area": "10000",
+            "thickness": "20",
+            "_metrics": [
+              {
+                "label": "Площадь пола",
+                "value": 10000,
+                "unit": "м²"
+              },
+              {
+                "label": "Толщина",
+                "value": 20,
+                "unit": "см"
+              },
+              {
+                "label": "Общий расход смеси",
+                "value": 3000000,
+                "unit": "кг"
+              }
+            ],
+            "_price_note": "Цены ориентировочные"
+          }
+        }
+      }
+    }
+  ]
+}

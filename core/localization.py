@@ -21,7 +21,7 @@ def system_tree(value, key=''):
         if 'metrics' in translated:
             for metric in translated['metrics']:
                 metric['value'] = system_text(metric.get('value'))
-        if 'variants' in translated:
+        if translated.get('variants'):
             translated['variant_heading'] = ' / '.join(v['title'] for v in translated['variants'])
         return translated
     if isinstance(value, (list, tuple)):
@@ -43,6 +43,8 @@ def render(request, template_name, context=None, *args, **kwargs):
     if context.get('result') and context.get('form_fields'):
         result = dict(context['result'])
         labels = {field['label'] for field in context['form_fields']}
+        if context.get('calculator', {}).get('slug') == 'nalivnoy-pol':
+            labels.update({'Площадь пола', 'Толщина'})
         result['metrics'] = [dict(metric) for metric in result.get('metrics', [])
                              if metric['label'] not in labels
                              and metric['label'] != 'Площадь укладки']

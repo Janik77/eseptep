@@ -81,7 +81,10 @@ class CalculatorValidationTests(TestCase):
         project = ClientProject.objects.create(user=user, title='Synthetic', city='Test', area_m2=60, rooms=2)
         for calculator in CALCULATORS:
             with self.subTest(slug=calculator['slug']):
-                response = self.client.post(reverse('calculators:detail', args=[calculator['slug']]), {**defaults(calculator), 'action': 'save_estimate', 'project_id': project.pk})
+                url = reverse('calculators:detail', args=[calculator['slug']])
+                preview = self.client.post(url, defaults(calculator))
+                parameter_version = (preview.context['result'].get('parameter_snapshot') or {}).get('version', '')
+                response = self.client.post(url, {**defaults(calculator), 'action': 'save_estimate', 'project_id': project.pk, 'parameter_version': parameter_version})
                 self.assertEqual(response.status_code, 302)
                 saved = Calculation.objects.latest('pk')
                 saved.full_clean()

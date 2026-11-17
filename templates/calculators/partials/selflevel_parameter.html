@@ -1,0 +1,10 @@
+{% load i18n eseptep_i18n %}
+<section class="result-warning selflevel-parameter">
+<h3>{% translate 'Параметр расхода смеси' %}</h3>
+{% if parameter %}
+<p><b>{{ parameter.consumption|money }} {% translate 'кг на 1 м² при толщине 1 см' %}</b> · {% translate 'Мешок:' %} {{ parameter.bag_mass_kg }} {% translate 'кг' %}</p>
+{% if parameter.source_kind == 'historical' %}<p>{% translate 'Исторический коэффициент из кода, не универсальная норма для любого продукта.' %}</p>{% else %}<p>{{ parameter.source_note }} · {{ parameter.source_date }}</p>{% endif %}
+<small>{% translate 'Версия:' %} {{ parameter.version }}</small>
+<p>{% translate 'Настраивается только расход основной смеси. Упаковка 25 кг, округление вверх и сопутствующие материалы не изменены. Проверьте применимость по документации конкретного продукта; сервис её не подтверждает.' %}</p>
+{% else %}<p>{% translate 'Версия параметра в этой старой смете не сохранена. Исторический результат не пересчитывается.' %}</p>{% endif %}
+</section>

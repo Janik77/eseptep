@@ -142,3 +142,42 @@ class RenovationRateEditionAdmin(PriceBookAdmin):
             edition.published_at = edition.published_at or timezone.now()
             edition.save(update_fields=['is_active', 'published_at'])
         self.message_user(request, 'Renovation rates activated. Historical snapshots remain unchanged.')
+
+
+from .models import SelfLevelMixEdition
+
+
+@admin.register(SelfLevelMixEdition)
+class SelfLevelMixEditionAdmin(PriceBookAdmin):
+    def get_form(self, request, obj=None, **kwargs):
+        form = super().get_form(request, obj, **kwargs)
+        if 'consumption' in form.base_fields:
+            from django.utils.translation import gettext
+            form.base_fields['consumption'].help_text = gettext('Единица: кг/(м²·см), мешок 25 кг. Если источник указан в кг/(м²·мм), перед вводом переведите значение ×10. Автоматической конверсии нет. Диапазон 0,01–99,99 технический, не нормативный.')
+        return form
+
+    list_display = ('version', 'consumption', 'unit', 'source_date', 'is_active', 'published_at')
+    inlines = []
+
+    def get_readonly_fields(self, request, obj=None):
+        if obj and obj.published_at:
+            return ('version', 'source_note', 'source_date', 'consumption', 'unit', 'is_active', 'published_at')
+        return ('unit', 'is_active', 'published_at')
+
+    @admin.action(description='Publish one consumption edition: kg/(m²·cm), fixed 25 kg bag', permissions=['change'])
+    def activate(self, request, queryset):
+        if queryset.count() != 1:
+            self.message_user(request, 'Select exactly one edition.', level='ERROR')
+            return
+        with transaction.atomic():
+            lock_price_configuration()
+            edition = queryset.select_for_update().get()
+            if edition.source_date > timezone.localdate():
+                self.message_user(request, 'A future source date cannot be activated.', level='ERROR')
+                return
+            edition.full_clean()
+            SelfLevelMixEdition.objects.filter(is_active=True).update(is_active=False)
+            edition.is_active = True
+            edition.published_at = edition.published_at or timezone.now()
+            edition.save(update_fields=['is_active', 'published_at'])
+        self.message_user(request, 'Consumption edition activated. Verify applicability against product documentation.')

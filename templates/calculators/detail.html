@@ -71,6 +71,7 @@
                         {% endfor %}
                     </div>
 
+                    {% if result.parameter_snapshot %}{% include 'calculators/partials/selflevel_parameter.html' with parameter=result.parameter_snapshot %}{% endif %}
                     {% if result.variants %}
                         <div class="variant-result" data-variant-result>
                             <div class="variant-result__head">
@@ -154,6 +155,7 @@
                     {% if can_save_calculation %}
                     <form method="post" class="result-actions result-actions--backend result-actions--primary">
                         {% csrf_token %}
+                        <input type="hidden" name="parameter_version" value="{{ result.parameter_snapshot.version|default:'' }}">
                         <input type="hidden" name="price_book_version" value="{{ result.admin_quote.version|default:'' }}">
                         {% for field in form_fields %}<input type="hidden" name="{{ field.name }}" value="{{ field.value }}">{% endfor %}
                         {% if result.variants %}<input type="hidden" name="selected_variant" value="{{ result.selected_variant }}" data-selected-variant-input>{% endif %}

@@ -55,6 +55,8 @@ def _persist_calculation(user, slug, result, project_id):
     # Lock before any transactional SELECT to avoid SQLite read-to-write upgrade.
     from .pricing import validate_snapshot_version
     validate_snapshot_version(result)
+    from .self_level_parameters import validate_snapshot
+    validate_snapshot(slug, result)
     project_id = parse_positive_id(project_id)
     if project_id is None:
         raise ValidationError('Выберите проект для сохранения расчёта.')
@@ -77,6 +79,7 @@ def _persist_calculation(user, slug, result, project_id):
         grand_total=result['grand_total'],
         result_data={
             'admin_quote': result.get('admin_quote'),
+            'parameter_snapshot': result.get('parameter_snapshot'),
             'materials': result['materials'],
             'variants': result.get('variants'),
             'selected_variant': result.get('selected_variant'),
@@ -774,7 +777,10 @@ SELF_LEVEL_AREA_DEPENDENT = {'primer', 'beacons', 'damper', 'staples'}
 def _calculate_nalivnoy_pol(calculator, form_data):
     area = to_float(form_data.get('area'), 0)
     thickness = max(to_float(form_data.get('thickness'), 2), 0)
-    total_consumption = area * thickness * 15
+    from .self_level_parameters import current_parameters
+    parameters = current_parameters()
+    # Preserve existing floating-point operation order and ceil(/25) policy.
+    total_consumption = area * thickness * float(parameters['consumption'])
     mixture_bags = ceil(total_consumption / 25) if total_consumption > 0 else 0
     reference_key, reference = _self_level_reference(area, thickness)
     is_exact_reference = reference_key in SELF_LEVEL_REFERENCE_MATRIX and area == reference_key[0] and thickness == reference_key[1]
@@ -806,7 +812,7 @@ def _calculate_nalivnoy_pol(calculator, form_data):
         ],
         '_price_note': 'Цены ориентировочные',
     }
-    return _build_result(
+    result = _build_result(
         calculator,
         materials,
         self_level_form_data,
@@ -817,6 +823,9 @@ def _calculate_nalivnoy_pol(calculator, form_data):
         _plain_segment(),
         f"{calculator['title']} · {area:g} м² · {thickness:g} см",
     )
+
+    result['parameter_snapshot'] = parameters
+    return result
 
 
 def _self_level_reference(area, thickness):
