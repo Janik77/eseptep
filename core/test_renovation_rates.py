@@ -82,3 +82,16 @@ class TypedRenovationRatesTests(TestCase):
         # divisible by 100, so the exact new Decimal total is an integer.
         for rate in [120000,170000,250000]:
             self.assertTrue(all(round((cents / 100) * rate) == cents * rate // 100 for cents in range(100,1000001)))
+
+    def test_system_demo_status_translates_without_changing_user_comment(self):
+        from projects.views import DEMO_AI_SUMMARY
+        self.upload.ai_summary=DEMO_AI_SUMMARY
+        self.upload.comment='требуется подтверждение площади'
+        self.upload.save(update_fields=['ai_summary','comment'])
+        self.client.cookies['django_language']='kk'
+        response=self.client.get(f'/projects/upload/?upload_id={self.upload.pk}')
+        self.assertEqual(response.context['ai_summary']['status'],'Ауданды растау қажет')
+        self.assertEqual(response.context['upload'].comment,'требуется подтверждение площади')
+        self.upload.refresh_from_db()
+        self.assertEqual(self.upload.ai_summary,DEMO_AI_SUMMARY)
+        self.assertEqual(self.upload.comment,'требуется подтверждение площади')

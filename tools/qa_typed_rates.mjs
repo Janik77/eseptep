@@ -9,7 +9,7 @@ const base='http://127.0.0.1:8197';const checks=[];
 const browser=await chromium.launch({channel:'chrome',chromiumSandbox:true});
 const context=await browser.newContext({viewport:{width:1440,height:1000},recordVideo:{dir:'browser-evidence/typed-rates-video'}});
 const page=await context.newPage();
-const customer=await browser.newContext({viewport:{width:390,height:900}});const client=await customer.newPage();
+const customer=await browser.newContext({viewport:{width:390,height:900},recordVideo:{dir:'browser-evidence/typed-rates-client-video'}});const client=await customer.newPage();
 const raw=execFileSync(process.env.PYTHON||'python',['manage.py','shell','-c','from projects.models import ProjectUpload; print("UPLOAD_ID="+str(ProjectUpload.objects.get(comment="typed-pricing-legacy").pk))'],{encoding:'utf8'});
 const uploadId=raw.match(/UPLOAD_ID=(\d+)/)[1];
 async function activate(version){await page.goto(base+'/admin/calculators/renovationrateedition/');await page.locator('#result_list tbody tr').filter({hasText:version}).locator('input.action-select').check();await page.locator('select[name=action]').first().selectOption('activate');await page.locator('button[name=index]').first().click();await page.locator('.messagelist').getByText('Renovation rates activated. Historical snapshots remain unchanged.',{exact:true}).waitFor();}
