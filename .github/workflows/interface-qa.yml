@@ -47,6 +47,7 @@ jobs:
           PLAYWRIGHT_PACKAGE=/tmp/eseptep-browser-driver/node_modules/playwright node tools/qa_browser.mjs
           PLAYWRIGHT_PACKAGE=/tmp/eseptep-browser-driver/node_modules/playwright node tools/qa_material_prices.mjs
           PLAYWRIGHT_PACKAGE=/tmp/eseptep-browser-driver/node_modules/playwright node tools/qa_supplier_publication.mjs
+          PLAYWRIGHT_PACKAGE=/tmp/eseptep-browser-driver/node_modules/playwright node tools/qa_typed_rates.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:

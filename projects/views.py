@@ -1,4 +1,7 @@
 from core.localization import render
+from core.renovation_rates import rate_configuration, renovation_estimate, LEGACY_VERSION, LEGACY_RATES
+from django.db import transaction
+from calculators.pricing import lock_price_configuration
 from django.utils.translation import gettext as _
 from django.contrib import messages
 from django.http import FileResponse, Http404
@@ -16,11 +19,7 @@ DEMO_AI_SUMMARY = {
     'sections': ['Демонтаж', 'Электрика', 'Сантехника', 'Полы', 'Стены', 'Потолок', 'Двери'],
     'next_step': 'Укажите площадь и желаемый уровень ремонта, чтобы получить предварительную смету.',
 }
-REPAIR_LEVEL_RATES = {
-    ProjectUpload.RepairLevel.ECONOMY: 120000,
-    ProjectUpload.RepairLevel.STANDARD: 170000,
-    ProjectUpload.RepairLevel.PREMIUM: 250000,
-}
+REPAIR_LEVEL_RATES = {key: int(value) for key, value in LEGACY_RATES.items()}
 
 
 def projects_home(request):
@@ -54,6 +53,7 @@ def project_download(request, pk):
 def project_upload(request):
     upload = None
     estimate = None
+    rate_config = rate_configuration()
     upload_form = ProjectUploadForm()
     estimate_form = ProjectEstimateForm(initial={'repair_level': ProjectUpload.RepairLevel.STANDARD})
     if request.method == 'GET' and request.GET.get('upload_id'):
@@ -63,9 +63,9 @@ def project_upload(request):
             raise Http404('Upload unavailable')
         upload = get_object_or_404(accessible_uploads(request), pk=pk)
         estimate_form = ProjectEstimateForm(initial={'area': upload.area, 'repair_level': upload.repair_level})
-        if upload.area:
-            estimate = {'area': upload.area, 'repair_level': upload.get_repair_level_display(),
-                        'total': round(upload.area * REPAIR_LEVEL_RATES[upload.repair_level])}
+        if upload.area and upload.repair_level in LEGACY_RATES:
+            estimate = dict(upload.estimate_snapshot) if upload.estimate_snapshot else renovation_estimate(upload.area, upload.repair_level, rate_configuration(historical=True))
+            estimate['repair_level'] = dict(ProjectUpload.RepairLevel.choices)[estimate['repair_level_key']]
     if request.method == 'POST' and request.POST.get('action') == 'estimate':
         try:
             pk = int(request.POST.get('upload_id', ''))
@@ -76,12 +76,22 @@ def project_upload(request):
         data['area'] = data.get('area', '').replace(',', '.')
         estimate_form = ProjectEstimateForm(data)
         if estimate_form.is_valid():
-            upload.area = estimate_form.cleaned_data['area']
-            upload.repair_level = estimate_form.cleaned_data['repair_level']
-            upload.save(update_fields=['area', 'repair_level'])
-            estimate = {'area': upload.area, 'repair_level': upload.get_repair_level_display(),
-                        'total': round(upload.area * REPAIR_LEVEL_RATES[upload.repair_level])}
-            messages.success(request, _('Предварительный расчёт готов.'))
+            with transaction.atomic():
+                lock_price_configuration()
+                rate_config = rate_configuration()
+                expected = request.POST.get('rate_version', LEGACY_VERSION)
+                if expected != rate_config['version']:
+                    estimate_form.add_error(None, _('Версия ставок изменилась. Проверьте условия и рассчитайте снова.'))
+                    if upload.estimate_snapshot:
+                        estimate = dict(upload.estimate_snapshot)
+                        estimate['repair_level'] = dict(ProjectUpload.RepairLevel.choices)[estimate['repair_level_key']]
+                else:
+                    upload.area = estimate_form.cleaned_data['area']
+                    upload.repair_level = estimate_form.cleaned_data['repair_level']
+                    upload.estimate_snapshot = renovation_estimate(upload.area, upload.repair_level, rate_config)
+                    upload.save(update_fields=['area', 'repair_level', 'estimate_snapshot'])
+                    estimate = {**upload.estimate_snapshot, 'repair_level': upload.get_repair_level_display()}
+                    messages.success(request, _('Предварительный расчёт готов.'))
     elif request.method == 'POST':
         upload_form = ProjectUploadForm(request.POST, request.FILES)
         if upload_form.is_valid():
@@ -94,6 +104,7 @@ def project_upload(request):
                 ai_status=AI_ANALYSIS_MODE, ai_summary=DEMO_AI_SUMMARY)
             messages.success(request, _('Файл принят для demo-анализа.'))
     return render(request, 'projects/upload.html', {
+        'rate_config': rate_config,
         'upload': upload, 'estimate': estimate, 'upload_form': upload_form, 'estimate_form': estimate_form,
         'ai_summary': upload.ai_summary if upload else None, 'ai_analysis_mode': AI_ANALYSIS_MODE,
         'allowed_upload_extensions': ALLOWED_UPLOAD_EXTENSIONS,

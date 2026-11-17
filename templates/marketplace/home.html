@@ -47,6 +47,7 @@
     </div>
 </section>
 
+{% include 'core/partials/rate_source.html' with configuration=rate_config %}
 {% if results %}<span data-result-ready hidden></span>
 <section class="turnkey-results" aria-label="{% translate 'Варианты ремонта под ключ' %}">
     {% for package in results %}
@@ -57,6 +58,7 @@
                 <small>{{ package.description }} · {{ package.duration }}</small>
             </summary>
             <div class="turnkey-card__body">
+                <p>{{ package.area }} {% translate 'м²' %} × {{ package.price_per_m2|money }} ₸/м²</p>
                 <p>{% translate 'Что входит:' %}</p>
                 <ul>
                     {% for item in package.items %}

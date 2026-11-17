@@ -62,11 +62,17 @@
         {% csrf_token %}
         <input type="hidden" name="action" value="estimate">
         <input type="hidden" name="upload_id" value="{{ upload.id }}">
+        <input type="hidden" name="rate_version" value="{{ rate_config.version }}">
+        <h3>{% translate 'Ставки для нового расчёта' %}</h3>
+        {% include 'core/partials/rate_source.html' with configuration=rate_config %}
         {{ estimate_form.as_p }}
         <button class="btn btn--primary" type="submit">{% translate 'Получить предварительный расчёт' %}</button>
     </form>
 
     {% if estimate %}
+        <h3>{% if upload.estimate_snapshot %}{% translate 'Сохранённый расчёт' %}{% else %}{% translate 'Историческая оценка по сохранённым параметрам' %}{% endif %}</h3>
+        {% include 'core/partials/rate_source.html' with configuration=estimate.configuration %}
+        <p>{{ estimate.area }} {% translate 'м²' %} × {{ estimate.rate_per_m2|money }} ₸/м²</p>
         <div class="grand-total project-estimate-total"><span>{{ estimate.repair_level }} · {{ estimate.area }} {% translate 'м²' %}</span><strong>₸ {{ estimate.total|money }}</strong></div>
     {% endif %}
 </section>

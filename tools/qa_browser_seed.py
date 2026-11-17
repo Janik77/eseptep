@@ -33,3 +33,14 @@ for version in ['qa-full','qa-partial']:
         rows=variant['materials'] if version=='qa-full' else variant['materials'][:1]
         for row in rows:
             MaterialPrice.objects.get_or_create(book=book,calculator_slug=definition['slug'],variant_key=variant['key'],material_key=material_key(row['title'],row['unit']),unit=row['unit'],defaults={'price':Decimal('12.34')})
+
+from calculators.models import RenovationRateEdition
+from projects.models import ProjectUpload
+from django.core.files.base import ContentFile
+import base64
+for version,standard in [('qa-rates-v1','222.00'),('qa-rates-v2','444.00')]:
+    RenovationRateEdition.objects.create(version=version,source_note='SYNTHETIC typed rate fixture, not market prices',effective_date=date(2026,1,1),economy_rate=Decimal('111.00'),standard_rate=Decimal(standard),premium_rate=Decimal('333.00'))
+from projects.views import DEMO_AI_SUMMARY
+legacy=ProjectUpload(user=user,comment='typed-pricing-legacy',area=Decimal('36.50'),repair_level='standard',ai_summary=DEMO_AI_SUMMARY)
+legacy.file.save('synthetic-typed-legacy.png',ContentFile(base64.b64decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAFgwJ/lErZAAAAAElFTkSuQmCC')),save=False)
+legacy.save()

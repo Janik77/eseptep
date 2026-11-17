@@ -46,6 +46,7 @@ class ProjectUpload(models.Model):
     repair_level = models.CharField('Уровень ремонта', max_length=20, choices=RepairLevel.choices, blank=True)
     ai_status = models.CharField('AI статус', max_length=20, default=AI_ANALYSIS_MODE)
     ai_summary = models.JSONField('AI summary', default=dict, blank=True)
+    estimate_snapshot = models.JSONField(default=dict, blank=True, editable=False)
     created_at = models.DateTimeField('Создан', auto_now_add=True)
 
     class Meta:

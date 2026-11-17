@@ -95,3 +95,30 @@ class MaterialPrice(models.Model):
 class PriceConfigurationLock(models.Model):
     """Singleton serialization row for publication and estimate persistence."""
     revision = models.PositiveIntegerField(default=0)
+
+
+class RenovationRateEdition(models.Model):
+    """Typed whole-project KZT/m² rates, not material consumption norms."""
+    version = models.CharField(max_length=60, unique=True)
+    source_note = models.CharField(max_length=255)
+    effective_date = models.DateField()
+    economy_rate = models.DecimalField(max_digits=12, decimal_places=2)
+    standard_rate = models.DecimalField(max_digits=12, decimal_places=2)
+    premium_rate = models.DecimalField(max_digits=12, decimal_places=2)
+    is_active = models.BooleanField(default=False)
+    published_at = models.DateTimeField(null=True, blank=True, editable=False)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['is_active'], condition=models.Q(is_active=True), name='one_active_renovation_rate_edition'),
+            models.CheckConstraint(condition=models.Q(economy_rate__gt=0, standard_rate__gt=0, premium_rate__gt=0), name='positive_typed_renovation_rates'),
+        ]
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        from core.renovation_rates import LEGACY_VERSION
+        if self.version == LEGACY_VERSION:
+            raise ValidationError({'version': 'Reserved historical source identifier.'})
+
+    def __str__(self):
+        return self.version
