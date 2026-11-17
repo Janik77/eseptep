@@ -30,11 +30,14 @@ try{
  await page.waitForURL(base+'/admin/');
  await page.goto(base+'/admin/calculators/pricebook/');
  await page.locator('#result_list tbody tr').filter({hasText:'qa-full'}).locator('th a').click();
+ const editedVariant=await page.locator('[name="entries-0-variant_key"]').inputValue();
  await page.locator('[name="entries-0-price"]').fill('15.25');
  await page.locator('input[name=_save]').click();
  await page.locator('.messagelist .success').waitFor();
  await publish('qa-full');
  await calculate();
+ await page.locator(`[data-variant-button=${editedVariant}]`).click();
+ assert((await page.locator('.variant-panel.is-active .admin-quote').innerText()).includes('15,25'), 'edited draft unit price reaches the actual selected quote');
  const quote=page.locator('.variant-panel.is-active .admin-quote');
  await quote.getByText('SYNTHETIC QA STORE',{exact:false}).waitFor();
  assert.equal(await quote.locator('.offer-empty').count(),0,'full coverage has no missing rows');
