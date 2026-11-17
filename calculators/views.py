@@ -146,6 +146,7 @@ def calculator_detail(request, slug):
                 project, calculation = save_calculation_for_user(request.user, slug, result, request.POST.get('project_id'))
             except ValidationError as error:
                 form_errors.extend(error.messages)
+                attach_quotation(slug, result)
             else:
                 if action == 'request_master':
                     ServiceRequest.objects.create(

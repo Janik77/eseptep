@@ -19,7 +19,7 @@ def quotation(slug, variant, materials, book):
             continue
         line_total = (quantity * price.price).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
         total += line_total
-        rows.append({'material_title': row['title'], 'unit_label': row['unit'], 'quantity': str(quantity),
+        rows.append({'material_key': price.material_key, 'material_title': row['title'], 'unit_label': row['unit'], 'quantity': str(quantity),
                      'unit_price': str(price.price), 'line_total': str(line_total)})
     return {'store_name': book.store_name, 'version': book.version, 'source_note': book.source_note,
             'price_date': book.price_date.isoformat(), 'currency': 'KZT', 'method_version': 'reference-quantities@1abbc920',
@@ -36,3 +36,25 @@ def attach_quotation(slug, result):
         result['admin_quote'] = next((v['admin_quote'] for v in variants if v['key'] == result['selected_variant']), None)
     else:
         result['admin_quote'] = quotation(slug, '', result['materials'], book)
+
+
+def lock_price_configuration():
+    """Caller must hold atomic(). A no-op UPDATE also serializes SQLite writers."""
+    from django.db import connection
+    from django.db.models import F
+    from .models import PriceConfigurationLock
+    if not connection.in_atomic_block:
+        raise RuntimeError('Price configuration lock requires an atomic transaction')
+    if PriceConfigurationLock.objects.filter(pk=1).update(revision=F('revision')) != 1:
+        raise RuntimeError('Price configuration migration is missing')
+
+
+def validate_snapshot_version(result):
+    from django.core.exceptions import ValidationError
+    from django.utils.translation import gettext
+    lock_price_configuration()
+    active = PriceBook.objects.filter(is_active=True, published_at__isnull=False).first()
+    current_version = active.version if active else ''
+    snapshot_version = (result.get('admin_quote') or {}).get('version', '')
+    if snapshot_version != current_version:
+        raise ValidationError(gettext('Прайс изменился. Проверьте новый расчёт и сохраните снова.'))

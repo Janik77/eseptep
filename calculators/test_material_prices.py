@@ -102,3 +102,32 @@ class MaterialPricingTests(TestCase):
         response=self.client.post(reverse('calculators:detail',args=['plitka-keramogranit']),data)
         self.assertEqual(response.status_code,302)
         self.assertEqual(project.calculations.count(),1)
+
+    def test_invalid_calculator_variant_cannot_validate(self):
+        from django.core.exceptions import ValidationError
+        book=PriceBook.objects.create(store_name='Synthetic',version='draft-invalid',source_note='Test',price_date=date(2026,1,1))
+        row=MaterialPrice(book=book,calculator_slug='plitka-keramogranit',variant_key='base',material_key=material_key(self.row['title'],self.row['unit']),unit=self.row['unit'],price=Decimal('12.34'))
+        with self.assertRaises(ValidationError) as raised:
+            row.full_clean()
+        self.assertIn('variant_key',raised.exception.message_dict)
+
+    def test_price_change_after_view_check_is_rejected_at_persistence(self):
+        from unittest.mock import patch
+        self.book()
+        client=User.objects.create_user('race-client');UserProfile.objects.create(user=client,role='client')
+        project=ClientProject.objects.create(user=client,title='Synthetic race',city='Test',area_m2=60,rooms=2)
+        self.client.force_login(client)
+        data={**_get_form_data(self.definition,None),'action':'save_estimate','project_id':str(project.pk),'price_book_version':'synthetic-v1'}
+        original=save_calculation_for_user
+        def publication_between_validation_and_save(*args,**kwargs):
+            from django.db import transaction
+            from calculators.pricing import lock_price_configuration
+            with transaction.atomic():
+                lock_price_configuration()
+                PriceBook.objects.filter(is_active=True).update(is_active=False)
+                PriceBook.objects.create(store_name='Synthetic',version='race-v2',source_note='Test',price_date=date(2026,1,1),published_at=timezone.now(),is_active=True)
+            return original(*args,**kwargs)
+        with patch('calculators.views.save_calculation_for_user', side_effect=publication_between_validation_and_save):
+            response=self.client.post(reverse('calculators:detail',args=['plitka-keramogranit']),data)
+        self.assertEqual(response.status_code,200)
+        self.assertEqual(project.calculations.count(),0)

@@ -29,7 +29,7 @@ try{
  await page.locator('input[type=submit]').click();
  await page.waitForURL(base+'/admin/');
  await page.goto(base+'/admin/calculators/pricebook/');
- await page.getByRole('link',{name:'SYNTHETIC QA STORE / qa-full',exact:true}).click();
+ await page.locator('#result_list tbody tr').filter({hasText:'qa-full'}).locator('th a').click();
  await page.locator('[name="entries-0-price"]').fill('15.25');
  await page.locator('input[name=_save]').click();
  await page.locator('.messagelist .success').waitFor();
@@ -54,7 +54,7 @@ try{
  await page.screenshot({path:'browser-evidence/material-price-partial.png',fullPage:true});
  checks.push('partial edition never presented as complete total');
  await page.goto(base+'/admin/calculators/pricebook/');
- await page.getByRole('link',{name:'SYNTHETIC QA STORE / qa-full',exact:true}).click();
+ await page.locator('#result_list tbody tr').filter({hasText:'qa-full'}).locator('th a').click();
  assert.equal(await page.locator('[name="entries-0-price"]').count(),0,'published prices read-only');
  checks.push('published edition immutable in admin');
 } finally {

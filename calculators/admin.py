@@ -22,6 +22,7 @@ class CalculatorTemplateAdmin(admin.ModelAdmin):
 from django.db import transaction
 from django.utils import timezone
 from .models import PriceBook, MaterialPrice
+from .pricing import lock_price_configuration
 
 
 from django import forms
@@ -73,6 +74,7 @@ class PriceBookAdmin(admin.ModelAdmin):
             self.message_user(request, 'Select exactly one edition.', level='ERROR')
             return
         with transaction.atomic():
+            lock_price_configuration()
             book = queryset.select_for_update().get()
             if not book.entries.exists():
                 self.message_user(request, 'Add real price entries before publication.', level='ERROR')
@@ -85,4 +87,6 @@ class PriceBookAdmin(admin.ModelAdmin):
 
     @admin.action(description='Deactivate selected editions', permissions=['change'])
     def deactivate(self, request, queryset):
-        queryset.update(is_active=False)
+        with transaction.atomic():
+            lock_price_configuration()
+            queryset.update(is_active=False)

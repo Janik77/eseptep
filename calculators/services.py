@@ -2,6 +2,7 @@ from accounts.identifiers import parse_positive_id
 """Server-side calculator services for ESEPTEP."""
 
 from math import ceil, sqrt
+from django.db import transaction
 
 from accounts.models import Calculation, ClientProject, UserProfile
 from django.core.exceptions import PermissionDenied, ValidationError
@@ -46,6 +47,14 @@ def save_calculation_for_user(user, slug, result, project_id=None):
     """Save only to an explicitly selected, owned, editable client project."""
     if not user.is_authenticated or getattr(getattr(user, 'profile', None), 'role', None) != UserProfile.Role.CLIENT:
         raise PermissionDenied('Сохранять расчёты может только клиент.')
+    return _persist_calculation(user, slug, result, project_id)
+
+
+@transaction.atomic
+def _persist_calculation(user, slug, result, project_id):
+    # Lock before any transactional SELECT to avoid SQLite read-to-write upgrade.
+    from .pricing import validate_snapshot_version
+    validate_snapshot_version(result)
     project_id = parse_positive_id(project_id)
     if project_id is None:
         raise ValidationError('Выберите проект для сохранения расчёта.')

@@ -85,5 +85,13 @@ class MaterialPrice(models.Model):
             raise ValidationError({'material_key': 'Unknown material key or mismatched unit.'})
         if self.calculator_slug not in CALCULATORS_BY_SLUG:
             raise ValidationError({'calculator_slug': 'Unknown calculator key.'})
+        from .material_keys import variant_keys
+        if self.variant_key not in variant_keys(self.calculator_slug):
+            raise ValidationError({'variant_key': 'Variant does not belong to this calculator.'})
         if self.book_id and self.book.published_at:
             raise ValidationError('Published prices are immutable. Create a new price book version.')
+
+
+class PriceConfigurationLock(models.Model):
+    """Singleton serialization row for publication and estimate persistence."""
+    revision = models.PositiveIntegerField(default=0)
