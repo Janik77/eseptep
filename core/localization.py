@@ -21,7 +21,7 @@ def system_tree(value, key=''):
         if 'metrics' in translated:
             for metric in translated['metrics']:
                 metric['value'] = system_text(metric.get('value'))
-        if 'variants' in translated:
+        if translated.get('variants'):
             translated['variant_heading'] = ' / '.join(v['title'] for v in translated['variants'])
         return translated
     if isinstance(value, (list, tuple)):
