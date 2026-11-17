@@ -27,5 +27,6 @@ urlpatterns = [
     path('dashboard/master/profile/', master_profile_edit, name='master_profile_edit'),
     path('dashboard/supplier/', supplier_dashboard, name='dashboard_supplier'),
     path('dashboard/supplier/profile/', supplier_profile_edit, name='supplier_profile_edit'),
+    path('dashboard/supplier/materials/<int:material_id>/edit/', supplier_material_create, name='supplier_material_edit'),
     path('dashboard/supplier/materials/create/', supplier_material_create, name='supplier_material_create'),
 ]

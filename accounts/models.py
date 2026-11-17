@@ -129,6 +129,8 @@ class SupplierMaterial(models.Model):
     unit = models.CharField(max_length=30)
     price = models.DecimalField(max_digits=12, decimal_places=2)
     stock_status = models.CharField(max_length=120)
+    is_published = models.BooleanField(default=False)
+    updated_at = models.DateTimeField(auto_now=True)
     delivery_time = models.CharField(max_length=120, blank=True)
 
     class Meta:

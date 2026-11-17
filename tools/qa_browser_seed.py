@@ -15,3 +15,21 @@ ClientProject.objects.create(user=user, title='QA project Ә Ғ Қ Ң Ө Ұ Ү �
 for role in ('master', 'supplier'):
     member = User.objects.create_user(username=f'{role}@example.test', email=f'{role}@example.test', password='Synthetic-QA-Only-815!')
     UserProfile.objects.create(user=member, role=role)
+
+# Isolated price-admin scenarios only. Never production prices or real stores.
+from datetime import date
+from decimal import Decimal
+from calculators.models import PriceBook, MaterialPrice
+from calculators.definitions import CALCULATORS_BY_SLUG
+from calculators.views import _get_form_data
+from calculators.services import calculate_materials
+from calculators.material_keys import material_key
+User.objects.create_superuser(username='price-admin@example.test',email='price-admin@example.test',password='Synthetic-Price-Admin-815!')
+definition=CALCULATORS_BY_SLUG['plitka-keramogranit']
+result=calculate_materials(definition,_get_form_data(definition,None))
+for version in ['qa-full','qa-partial']:
+    book=PriceBook.objects.create(store_name='SYNTHETIC QA STORE',version=version,source_note='Synthetic browser fixture, not market prices',price_date=date(2026,1,1))
+    for variant in result['variants']:
+        rows=variant['materials'] if version=='qa-full' else variant['materials'][:1]
+        for row in rows:
+            MaterialPrice.objects.get_or_create(book=book,calculator_slug=definition['slug'],variant_key=variant['key'],material_key=material_key(row['title'],row['unit']),unit=row['unit'],defaults={'price':Decimal('12.34')})

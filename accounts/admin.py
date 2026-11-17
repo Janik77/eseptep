@@ -58,7 +58,7 @@ class SupplierProfileAdmin(admin.ModelAdmin):
 
 @admin.register(SupplierMaterial)
 class SupplierMaterialAdmin(admin.ModelAdmin):
-    list_display = ('name', 'supplier', 'category', 'unit', 'price', 'stock_status', 'delivery_time')
+    list_display = ('name', 'supplier', 'category', 'unit', 'price', 'is_published', 'updated_at')
     list_filter = ('category', 'stock_status', 'supplier__city')
     search_fields = ('name', 'supplier__company_name', 'category', 'supplier__city')
     ordering = ('name',)

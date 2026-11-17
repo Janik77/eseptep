@@ -1,0 +1,19 @@
+{% load i18n eseptep_i18n %}
+<details class="material-offers" aria-label="{% translate 'Товары поставщиков' %}">
+  <summary>{% translate 'Товары поставщиков' %}</summary>
+  <p>{% translate 'Совпадают только название и единица. Проверьте характеристики и упаковку с поставщиком. Это не подтверждение совместимости.' %}</p>
+  <p>{% translate 'Цена и наличие указаны поставщиком, сервис их не проверяет. Смета не меняется. Показано до трёх последних опубликованных товаров на позицию.' %}</p>
+  {% for group in offers %}
+  <article class="dashboard-item">
+    <b>{{ group.material_title|system_text }}</b> · {{ group.quantity }} {{ group.unit_label|system_text }}
+    {% for product in group.products %}
+    <div class="offer-candidate">
+      <b>{{ product.product_name }}</b><span>{{ product.supplier_name }}</span>
+      <strong>{{ product.price|money }} ₸ / {{ product.unit_label }}</strong>
+      <small>{% translate 'По данным поставщика:' %} {{ product.reported_stock }}{% if product.reported_delivery %} · {{ product.reported_delivery }}{% endif %}</small>
+      <small>{% translate 'Карточка обновлена:' %} {{ product.updated_at|date:'d.m.Y H:i' }} · {% translate 'Не дата проверки цены' %}</small>
+    </div>
+    {% empty %}<p class="offer-empty">{% translate 'Нет опубликованных товаров с точным названием и единицей. Уточните состав по списку материалов; автоматическая замена не выполнена.' %}</p>{% endfor %}
+  </article>
+  {% empty %}<p>{% translate 'Нет материалов для подбора.' %}</p>{% endfor %}
+</details>

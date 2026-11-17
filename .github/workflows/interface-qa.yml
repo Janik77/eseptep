@@ -38,6 +38,7 @@ jobs:
           trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
           for i in $(seq 1 30); do curl -fsS http://127.0.0.1:8197/ >/dev/null && break || sleep 1; done
           PLAYWRIGHT_PACKAGE=/tmp/eseptep-browser-driver/node_modules/playwright node tools/qa_browser.mjs
+          PLAYWRIGHT_PACKAGE=/tmp/eseptep-browser-driver/node_modules/playwright node tools/qa_material_prices.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:

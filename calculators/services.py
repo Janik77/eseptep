@@ -67,6 +67,7 @@ def save_calculation_for_user(user, slug, result, project_id=None):
         works_total=result['labor_total'],
         grand_total=result['grand_total'],
         result_data={
+            'admin_quote': result.get('admin_quote'),
             'materials': result['materials'],
             'variants': result.get('variants'),
             'selected_variant': result.get('selected_variant'),

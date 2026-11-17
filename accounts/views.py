@@ -289,17 +289,18 @@ def supplier_dashboard(request):
 
 
 @role_required(UserProfile.Role.SUPPLIER)
-def supplier_material_create(request):
+def supplier_material_create(request, material_id=None):
     supplier_profile = get_object_or_404(SupplierProfile, user=request.user)
+    material = get_object_or_404(SupplierMaterial, pk=material_id, supplier=supplier_profile) if material_id else None
     if request.method == 'POST':
-        form = SupplierMaterialForm(request.POST)
+        form = SupplierMaterialForm(request.POST, instance=material)
         if form.is_valid():
             material = form.save(commit=False)
             material.supplier = supplier_profile
             material.save()
             return redirect('accounts:dashboard_supplier')
     else:
-        form = SupplierMaterialForm()
+        form = SupplierMaterialForm(instance=material)
     return render(request, 'accounts/supplier_material_create.html', {'form': form})
 
 
@@ -351,7 +352,9 @@ def calculation_detail(request, calculation_id):
         if value is not None:
             value = next((option['label'] for option in field.get('options', []) if option['value'] == value), value)
             parameters.append({'label': field['label'], 'value': value, 'unit': field.get('unit', '')})
+    from calculators.offers import material_offers
     return render(request, 'accounts/calculation_detail.html', {
+        'material_offers': material_offers(data.get('materials', [])),
         'calculation': calculation, 'title': definition.get('title', calculation.calculator_slug),
         'parameters': parameters,
         'variant_label': data.get('selected_variant_label') or data.get('selected_variant') or data.get('segment_label'),
