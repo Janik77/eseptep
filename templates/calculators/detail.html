@@ -5,6 +5,7 @@
 {% block breadcrumbs %}<nav class="breadcrumbs"><a href="{% url 'core:home' %}">{% translate 'Главная' %}</a><span>›</span><a href="{% url 'calculators:home' %}">{% translate 'Калькуляторы' %}</a><span>›</span><b>{{ calculator.title }}</b></nav>{% endblock %}
 
 {% block content %}
+{% if plan_source %}<aside class="plan-source"><strong>{{ plan_source.name }} · {{ plan_source.area }} м²</strong><p>{% translate 'Подтверждённая площадь пола из плана' %} · <a href="{% url 'projects:plan_review' plan_source.upload_id %}">{% translate 'Проверить и изменить' %}</a></p></aside>{% endif %}
 {% translate "Выберите значение" as i18n_default_0 %}
 {% translate "Базовый / Оптимальный / Максимальный" as i18n_default_1 %}
 {% translate "Цены ориентировочные по Казахстану" as i18n_default_2 %}
@@ -22,7 +23,7 @@
     <div class="calculator-tabs__panel calculator-tabs__panel--auto">
         <section class="calculator-workspace calculator-workspace--unified">
             <form class="calc-form calc-form--panel" method="post" data-calc-form>
-                {% csrf_token %}
+                {% csrf_token %}{% if plan_token %}<input type="hidden" name="plan_token" value="{{ plan_token }}">{% endif %}
                 <div class="form-step-label"><h2>{% translate 'Параметры расчёта' %}</h2></div>
                 {% if form_errors %}
                     <div class="form-errors" role="alert">
@@ -155,7 +156,7 @@
 
                     {% if can_save_calculation %}
                     <form method="post" class="result-actions result-actions--backend result-actions--primary">
-                        {% csrf_token %}
+                        {% csrf_token %}{% if plan_token %}<input type="hidden" name="plan_token" value="{{ plan_token }}">{% endif %}
                         <input type="hidden" name="submission_token" value="{{ submission_token }}">
                         <input type="hidden" name="parameter_version" value="{{ result.parameter_snapshot.version|default:'' }}">
                         <input type="hidden" name="price_book_version" value="{{ result.admin_quote.version|default:'' }}">

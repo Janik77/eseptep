@@ -6,7 +6,7 @@
 <section class="page-hero page-hero--compact project-upload-hero">
     <span class="hero__badge">{% translate 'Загрузить проект' %}</span>
     <h1>{% translate 'Загрузите план квартиры' %}</h1>
-    <p>{% translate 'Загрузите планировку, PDF или изображение. На MVP-этапе система подготовит демо-анализ и предварительную структуру расчёта.' %}</p>
+    <p>{% translate 'Загрузите обезличенный план. Проверьте площадь ванной и рассчитайте плитку на пол.' %}</p>
 </section>
 
 <section class="project-upload-layout" aria-label="{% translate 'Загрузка проекта' %}">
@@ -15,12 +15,12 @@
         <input type="hidden" name="action" value="upload">
         {{ upload_form.as_p }}
         <p>{% translate 'PDF до 100 страниц, JPG, PNG или WEBP. До 10 МБ; изображения до 20 Мп. DWG пока не поддерживается.' %}</p>
-        <button class="btn btn--primary" type="submit">{% translate 'Загрузить и проанализировать' %}</button>
+        <button class="btn btn--primary" type="submit">{% translate 'Загрузить план' %}</button>
     </form>
 
     <aside class="project-demo-note">
-        <b>AI_ANALYSIS_MODE = "{{ ai_analysis_mode }}"</b>
-        <p>{% translate 'Реальный ИИ пока не подключён. Сейчас работает честный demo-mode: файл сохраняется, а система показывает демо-структуру анализа.' %}</p>
+        <h2>{% translate 'Вы контролируете исходные данные' %}</h2>
+        <p>{% translate 'Загрузка сама по себе не отправляет файл в OpenAI. Анализ запускается отдельно; ручной ввод доступен всегда.' %}</p>
         {% if show_auth_save_cta %}
             <div class="auth-soft-cta auth-soft-cta--compact">
                 <p>{% translate 'Войдите до загрузки, чтобы сохранить её за аккаунтом. Гостевой файл доступен только в текущей сессии; после входа загрузите его заново.' %}</p>
@@ -34,29 +34,13 @@
 </section>
 
 {% if upload %}
-<section class="project-analysis-card" aria-label="{% translate 'Демо-анализ проекта' %}">
+<section class="project-analysis-card" aria-label="{% translate 'Загруженный проект' %}">
     <div class="success-state success-state--compact">
         <span>{% translate 'Файл принят ✅' %}</span>
-        <h2>{{ upload.file.name }}</h2>
+        <h2>{{ upload.file.name }}</h2><p><a class="btn btn--primary" href="{% url 'projects:plan_review' upload.pk %}">{% translate 'От плана к смете' %}</a></p>
         <a href="{% url 'projects:download' upload.pk %}">{% translate 'Скачать свой файл' %}</a>
-        <p>{% translate 'Demo-анализ сформирован. Статус:' %} {% if upload.ai_status == 'demo' %}{% translate 'Демонстрационный анализ' %}{% else %}{% translate 'Статус анализа недоступен' %}{% endif %}</p>
+        <p>{% translate 'Файл сохранён. Анализ запускается только по вашей команде на следующем экране.' %}</p>
     </div>
-
-    <div class="analysis-grid">
-        <div><span>{% translate 'Тип объекта' %}</span><b>{{ ai_summary.object_type }}</b></div>
-        <div><span>{% translate 'Статус' %}</span><b>{{ ai_summary.status }}</b></div>
-    </div>
-
-    <div class="analysis-sections">
-        <h3>{% translate 'Обнаружены разделы для расчёта' %}</h3>
-        <div>
-            {% for section in ai_summary.sections %}
-                <span>{{ section }}</span>
-            {% endfor %}
-        </div>
-    </div>
-
-    <p class="result-warning"><b>{% translate 'Следующий шаг:' %}</b> {{ ai_summary.next_step }}</p>
 
     <form class="calc-form project-estimate-form" method="post">
         {% csrf_token %}

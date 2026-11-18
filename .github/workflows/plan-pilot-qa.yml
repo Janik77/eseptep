@@ -1,0 +1,53 @@
+name: Plan pilot manual fallback QA
+on:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  plan:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      DJANGO_ENV: test
+      DJANGO_DB_PATH: /tmp/eseptep-plan-browser-qa.sqlite3
+      DJANGO_PRIVATE_MEDIA_ROOT: /tmp/eseptep-plan-browser-qa-media
+      DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1,testserver
+      ESEPTEP_BROWSER_QA: '1'
+      PLAN_AI_ENABLED: '0'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: python -m pip install -r requirements.txt
+      - run: python manage.py test projects.test_plan_analysis
+      - name: Concurrent plan reservations and duplicate requests (mock provider)
+        env:
+          DJANGO_DB_PATH: /tmp/eseptep-plan-browser-qa-concurrency.sqlite3
+        run: |
+          python manage.py migrate --noinput
+          PYTHONPATH=. python tools/qa_plan_concurrency.py
+      - run: npm install --prefix /tmp/eseptep-browser-driver playwright@1.65.0
+      - run: /tmp/eseptep-browser-driver/node_modules/.bin/playwright install ffmpeg
+      - run: python manage.py migrate --noinput && PYTHONPATH=. python tools/qa_browser_seed.py
+      - name: Publish synthetic fixture only
+        run: python manage.py shell -c "from calculators.models import PriceBook; from django.utils import timezone; PriceBook.objects.filter(version='qa-partial').update(is_active=True,published_at=timezone.now())"
+      - name: Browser manual fallback RU KK desktop mobile
+        run: |
+          python manage.py runserver 127.0.0.1:8207 --noreload > /tmp/eseptep-plan-server.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
+          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:8207/ >/dev/null && break || sleep 1; done
+          PLAYWRIGHT_PACKAGE=/tmp/eseptep-browser-driver/node_modules/playwright node tools/qa_plan_pilot.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: plan-pilot-manual-fallback-evidence
+          path: |
+            /tmp/eseptep-plan-evidence/
+            /tmp/eseptep-plan-server.log
+          retention-days: 14

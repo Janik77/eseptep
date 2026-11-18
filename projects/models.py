@@ -56,3 +56,29 @@ class ProjectUpload(models.Model):
 
     def __str__(self):
         return f'Загрузка проекта #{self.pk or "new"}'
+
+
+class PlanAnalysisBudget(models.Model):
+    """Persistent, pessimistic pilot spending reservation. Never automatically refunded."""
+    id = models.PositiveSmallIntegerField(primary_key=True, default=1, editable=False)
+    reserved_cents = models.PositiveIntegerField(default=0)
+
+
+class PlanAnalysis(models.Model):
+    # Identity includes owner/session; identical file reuploads cannot trigger another charge.
+    identity = models.CharField(max_length=64, unique=True)
+    upload = models.ForeignKey(ProjectUpload, on_delete=models.CASCADE)
+    status = models.CharField(max_length=16, default='running')
+    rooms = models.JSONField(default=list)
+    model = models.CharField(max_length=80, default='gpt-4.1-mini-2025-04-14')
+    usage = models.JSONField(default=dict)
+    elapsed_ms = models.PositiveIntegerField(default=0)
+    request_id = models.CharField(max_length=160, blank=True)
+    error_code = models.CharField(max_length=40, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
+class PlanConfirmation(models.Model):
+    upload = models.ForeignKey(ProjectUpload, on_delete=models.CASCADE)
+    snapshot = models.JSONField()
+    created_at = models.DateTimeField(auto_now_add=True)

@@ -13,3 +13,5 @@ private_media/
 
 review.sqlite3
 .venv/
+plan-ai-pilot.sqlite3
+plan-ai-private-media/

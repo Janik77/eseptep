@@ -27,7 +27,7 @@ class DemolitionParameterTests(TestCase):
         return DemolitionFilmEdition.objects.create(version=v,consumption=Decimal(value),source_note='SYNTHETIC preliminary parameter',source_date=date(2026,1,1),**extra)
 
     def test_45_legacy_results_exact_parity(self):
-        fixture=json.loads(Path(__file__).with_name('fixtures').joinpath('demolition_baseline.json').read_text())
+        fixture=json.loads(Path(__file__).with_name('fixtures').joinpath('demolition_baseline.json').read_text(encoding='utf-8'))
         for case in fixture['cases']:
             result=calculate_materials(self.definition,case['input'])
             params=result.pop('parameter_snapshot')

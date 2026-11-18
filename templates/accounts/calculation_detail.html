@@ -1,6 +1,7 @@
 {% extends 'base.html' %}{% load i18n eseptep_i18n %}
 {% block title %}{% translate 'Сохранённая смета — ESEPTEP' %}{% endblock %}
 {% block content %}
+{% if calculation.result_data.plan_source %}<aside class="notice"><strong>{% translate 'Подтверждённая площадь пола из плана' %}</strong><p>{{ calculation.result_data.plan_source.name }} · {{ calculation.result_data.plan_source.area }} м²</p></aside>{% endif %}
 <section class="dashboard saved-estimate">
   <div class="dashboard-card">
     <a class="back-link" href="{% url 'accounts:dashboard_client' %}">{% translate '← Кабинет клиента' %}</a>

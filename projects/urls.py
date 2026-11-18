@@ -9,3 +9,9 @@ urlpatterns = [
     path('', projects_home, name='home'),
     path('upload/', project_upload, name='upload'),
 ]
+
+from .plan_views import plan_review, plan_image
+urlpatterns += [
+    path('<int:pk>/plan/', plan_review, name='plan_review'),
+    path('<int:pk>/plan/page/<int:page>/', plan_image, name='plan_image'),
+]
