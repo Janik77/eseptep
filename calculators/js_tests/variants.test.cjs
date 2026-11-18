@@ -137,3 +137,23 @@ test('result flow respects reduced motion when scrolling to the result', () => {
     }
     assert.match(fs.readFileSync('static/js/app.js', 'utf8'), /initResultFlow\(prefersReducedMotion\);/);
 });
+
+
+test('stale result ignores project selection and equivalent decimal formatting', () => {
+    const form = node(), stale = node(), save = node();
+    const values = {area: '4.80', zone: 'floor', project_id: ''};
+    form.elements = {namedItem: name => ({inputMode: name === 'area' ? 'decimal' : ''})};
+    form.querySelectorAll = () => [];
+    const context = {
+        document: {documentElement: node(), addEventListener() {},
+            querySelector: selector => selector === '[data-calc-form]' ? form : stale,
+            querySelectorAll: () => [save]},
+        FormData: function() {return Object.entries(values);},
+    };
+    vm.createContext(context);vm.runInContext(fs.readFileSync('static/js/app.js','utf8'),context);
+    context.initCalculatorForm();
+    values.project_id = '12';values.area = '5.8';form.handlers.input();assert.equal(save.disabled,true);
+    values.area = '4.8';form.handlers.input();assert.equal(save.disabled,false);
+    values.area = '4,80';form.handlers.input();assert.equal(save.disabled,false);
+    values.area = '';form.handlers.input();assert.equal(save.disabled,true);
+});
