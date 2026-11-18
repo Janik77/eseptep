@@ -86,3 +86,59 @@ class SubmissionTests(TestCase):
         with self.assertRaises(IntegrityError), transaction.atomic():
             CalculationSubmission.objects.create(user=self.user, nonce=receipt.nonce,
                 action=receipt.action, fingerprint=receipt.fingerprint)
+
+    def test_token_for_another_calculator_is_rejected(self):
+        from calculators.submissions import result_token
+        data = self.payload()
+        # Even an otherwise valid signature and identical fields must not cross slugs.
+        data['submission_token'] = result_token(self.user, 'santehnika', self.inputs)
+        response = self.client.post(self.url, data)
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.context['form_errors'])
+        self.assertEqual(CalculationSubmission.objects.count(), 0)
+        self.assertEqual(Calculation.objects.count(), 0)
+
+    def test_foreign_and_closed_projects_roll_back_receipt(self):
+        other = get_user_model().objects.create_user('foreign-project-owner')
+        foreign = ClientProject.objects.create(user=other, title='Foreign', area_m2=60, rooms=2)
+        closed = ClientProject.objects.create(user=self.user, title='Closed', area_m2=60, rooms=2, status='done')
+        for project in (foreign, closed):
+            data = {**self.payload('request_supplier'), 'project_id': str(project.pk)}
+            response = self.client.post(self.url, data)
+            self.assertEqual(response.status_code, 200)
+            self.assertTrue(response.context['form_errors'])
+            self.assertEqual(CalculationSubmission.objects.count(), 0)
+            self.assertEqual(Calculation.objects.count(), 0)
+            self.assertEqual(ServiceRequest.objects.count(), 0)
+
+    def test_consumed_token_cannot_change_project(self):
+        second = ClientProject.objects.create(user=self.user, title='Second', area_m2=60, rooms=2)
+        data = self.payload()
+        self.assertEqual(self.client.post(self.url, data).status_code, 302)
+        response = self.client.post(self.url, {**data, 'project_id': str(second.pk)})
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.context['form_errors'])
+        self.assertEqual(Calculation.objects.count(), 1)
+        self.assertEqual(second.calculations.count(), 0)
+
+    def test_completed_replay_after_real_price_publication_keeps_old_snapshot(self):
+        from datetime import date
+        from django.utils import timezone
+        from calculators.models import PriceBook
+        first_book = PriceBook.objects.create(store_name='Synthetic', version='submission-price-v1',
+            source_note='Synthetic', price_date=date(2026, 1, 1), published_at=timezone.now(), is_active=True)
+        data = {**self.payload('request_master'), 'price_book_version': first_book.version}
+        first = self.client.post(self.url, data)
+        self.assertEqual(first.status_code, 302)
+        before = Calculation.objects.get().result_data
+        PriceBook.objects.filter(pk=first_book.pk).update(is_active=False)
+        PriceBook.objects.create(store_name='Synthetic', version='submission-price-v2',
+            source_note='Synthetic', price_date=date(2026, 1, 2), published_at=timezone.now(), is_active=True)
+        replay = self.client.post(self.url, data)
+        self.assertEqual(replay.status_code, 302)
+        self.assertEqual(first.url, replay.url)
+        self.assertEqual(Calculation.objects.count(), 1)
+        self.assertEqual(ServiceRequest.objects.count(), 1)
+        self.assertEqual(Calculation.objects.get().result_data, before)
+        self.assertEqual(before['admin_quote']['version'], 'submission-price-v1')
+        self.assertEqual(before['admin_quote']['method_version'], 'reference-quantities@pilot-exact-match-v2')
