@@ -1,4 +1,4 @@
-{% extends 'base.html' %}{% load i18n eseptep_i18n %}
+{% extends 'base.html' %}{% load i18n eseptep_i18n static %}
 
 {% block title %}{% translate 'Загрузить проект — ESEPTEP' %}{% endblock %}
 
@@ -9,14 +9,14 @@
     <p>{% translate 'Загрузите обезличенный план. Проверьте площадь ванной и рассчитайте плитку на пол.' %}</p>
 </section>
 
-{% if demo_mode %}<section class="meeting-examples" aria-label="{% translate 'Обезличенные примеры' %}"><h2>{% translate 'Начните с готового примера' %}</h2><p>{% translate 'Учебный план: ванная 4,8 м². Вы увидите оригинал и сами подтвердите площадь. Выбор примера не запускает ИИ.' %}</p><div class="result-actions"><form method="post" action="{% url 'projects:choose_sample' %}">{% csrf_token %}<input type="hidden" name="sample" value="clear"><button class="btn btn--primary" type="submit">{% translate 'Открыть учебный план' %}</button></form><form method="post" action="{% url 'projects:choose_sample' %}">{% csrf_token %}<input type="hidden" name="sample" value="unreadable"><button class="btn btn--secondary" type="submit">{% translate 'Пример без читаемой площади' %}</button></form></div></section>{% endif %}
+<div class="result-actions"><a class="btn btn--primary" href="#own-plan">{% translate 'Загрузить свой план' %}</a>{% if demo_mode %}<a class="btn btn--secondary" href="#typical-plans">{% translate 'Выбрать типовую планировку' %}</a>{% endif %}</div>
 <section class="project-upload-layout" aria-label="{% translate 'Загрузка проекта' %}">
-    <form class="calc-form project-upload-form" method="post" enctype="multipart/form-data">
+    <form id="own-plan" class="calc-form project-upload-form" method="post" enctype="multipart/form-data">
         {% csrf_token %}
         <input type="hidden" name="action" value="upload">
         {{ upload_form.as_p }}
         <p>{% translate 'PDF до 100 страниц, JPG, PNG или WEBP. До 10 МБ; изображения до 20 Мп. DWG пока не поддерживается.' %}</p>
-        <button class="btn btn--primary" type="submit">{% translate 'Загрузить план' %}</button>
+        <button class="btn btn--primary" type="submit">{% translate 'Загрузить свой план' %}</button>
     </form>
 
     <aside class="project-demo-note">
@@ -33,6 +33,8 @@
         {% endif %}
     </aside>
 </section>
+
+{% if demo_mode %}<details id="typical-plans" class="typical-plans"><summary>{% translate 'Выбрать типовую планировку' %}</summary><p>{% translate 'Собственные демонстрационные схемы. Выбор откроет предпросмотр; анализ запускается отдельно.' %}</p><div class="typical-grid">{% for plan in typical_plans %}<article class="typical-card"><a href="{% static plan.preview %}" target="_blank" rel="noopener" aria-label="{% translate 'Увеличить чертёж' %}"><img src="{% static plan.preview %}" alt="{{ plan.title|system_text }}" loading="lazy" width="1400" height="1400"></a><h3>{{ plan.title|system_text }}</h3><p>{{ plan.rooms }} {% translate 'комн.' %} · {{ plan.area }} {% translate 'м²' %}</p><form method="post" action="{% url 'projects:choose_sample' %}">{% csrf_token %}<input type="hidden" name="sample" value="{{ plan.key }}"><button class="btn btn--secondary" type="submit">{% translate 'Открыть план' %}</button></form></article>{% endfor %}</div></details>{% endif %}
 
 {% if upload %}
 <section class="project-analysis-card" aria-label="{% translate 'Загруженный проект' %}">

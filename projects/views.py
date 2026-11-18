@@ -103,7 +103,9 @@ def project_upload(request):
                 file=upload_form.cleaned_data['file'], comment=upload_form.cleaned_data['comment'],
                 ai_status=AI_ANALYSIS_MODE, ai_summary=DEMO_AI_SUMMARY)
             messages.success(request, _('Файл сохранён. Теперь откройте план и подтвердите площадь.'))
+    from .demo_samples import typical_plans
     return render(request, 'projects/upload.html', {
+        'typical_plans': typical_plans(),
         'rate_config': rate_config,
         'upload': upload, 'estimate': estimate, 'upload_form': upload_form, 'estimate_form': estimate_form,
         'ai_summary': upload.ai_summary if upload else None, 'ai_analysis_mode': AI_ANALYSIS_MODE,

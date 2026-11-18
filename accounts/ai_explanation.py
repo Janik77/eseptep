@@ -12,11 +12,11 @@ from calculators.definitions import CALCULATORS_BY_SLUG
 def minimized_snapshot(calculation):
     data = calculation.result_data
     # Deliberately omit project/client names, contacts, source plan, files and IDs.
-    rows = [{k: row.get(k) for k in ('title','quantity','unit','price','total','quantity_basis')}
+    rows = [{k: row.get(k) for k in ('title','quantity','unit','reference_price','reference_total','quantity_basis')}
             for row in data.get('materials', [])[:30]]
     return {'calculator': calculation.calculator_slug, 'parameters': {field['name']: data.get('input', {}).get(field['name']) for field in CALCULATORS_BY_SLUG.get(calculation.calculator_slug, {}).get('fields', [])},
             'materials': rows, 'reference_total': str(calculation.grand_total),
-            'quote': {k: data.get('admin_quote', {}).get(k) for k in ('version','total','priced_count','missing_count')},
+            'quote': {k: (data.get('admin_quote') or {}).get(k) for k in ('version','subtotal','coverage','required')},
             'warning': data.get('warning', '')}
 
 
@@ -38,7 +38,7 @@ def explain(calculation, language):
             defaults={'model': settings.OPENAI_MODEL})
         if not created:
             return result
-        if not PlanAnalysisBudget.objects.filter(pk=1, reserved_cents__lte=180).update(reserved_cents=F('reserved_cents')+20):
+        if not PlanAnalysisBudget.objects.filter(pk=1, reserved_cents__lte=settings.OPENAI_PILOT_MAX_RESERVED_CENTS-20).update(reserved_cents=F('reserved_cents')+20):
             result.status, result.error_code = 'failed', 'budget_limit'
             result.save()
             return result
