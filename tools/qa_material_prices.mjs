@@ -14,7 +14,7 @@ async function publish(version){
  await row.locator('input.action-select').check();
  await page.locator('select[name=action]').first().selectOption('activate');
  await page.locator('button[name=index]').first().click();
- await page.locator('.messagelist').getByText('Прайс опубликован. Сохранённые сметы не изменились.',{exact:true}).waitFor();
+ await page.locator('.messagelist').getByText((await page.locator('html').getAttribute('lang'))==='kk'?'Бағалар жарияланды. Сақталған сметалар өзгерген жоқ.':'Прайс опубликован. Сохранённые сметы не изменились.',{exact:true}).waitFor();
 }
 async function calculate(){
  await page.goto(base+'/calculators/plitka-keramogranit/');
