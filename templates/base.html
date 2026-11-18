@@ -12,6 +12,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{% static 'css/app.css' %}">
     <link rel="stylesheet" href="{% static 'css/minimal.css' %}">
+    <link rel="stylesheet" href="{% static 'css/meeting-demo.css' %}">
     {% block extra_css %}{% endblock %}
 </head>
 <body class="{% block body_class %}{% endblock %}">
@@ -37,6 +38,7 @@
         </header>
 
 
+        {% if demo_mode %}<div class="demo-banner" role="note">{% translate 'Демонстрация: учебные данные и цены. Заявки не отправляются реальным людям.' %}</div>{% endif %}
         {% if messages %}
         <div class="toast-stack" aria-live="polite">
             {% for message in messages %}
@@ -55,6 +57,7 @@
     <script src="{% url 'javascript-catalog' %}"></script>
     <script src="{% static 'js/language.js' %}" defer></script>
     <script src="{% static 'js/app.js' %}" defer></script>
+    <script src="{% static 'js/meeting-demo.js' %}" defer></script>
     {% block extra_js %}{% endblock %}
 </body>
 </html>

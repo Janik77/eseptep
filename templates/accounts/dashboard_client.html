@@ -52,6 +52,7 @@
       {% for req in service_requests %}
       <article class="dashboard-item">
         <b>{{ req.get_request_type_display|system_text }}</b>
+        {% if req.target_supplier_id %}<p>{{ req.target_supplier.company_name }} · <a href="{% url 'accounts:supplier_request_detail' req.pk %}">{% translate 'Открыть заявку' %} #{{ req.pk }}</a></p>{% endif %}
         <p>
           <span class="status-badge status-badge--{{ req.status }}">{{ req.get_status_display|system_text }}</span>
           · {{ req.created_at|date:'d.m.Y' }}

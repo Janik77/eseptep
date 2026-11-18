@@ -120,7 +120,14 @@ function initCalculatorForm() {
     }
 
     const stale = document.querySelector('[data-result-stale]');
-    const inputSignature = () => JSON.stringify([...new FormData(form)].filter(([name]) => !['csrfmiddlewaretoken','action'].includes(name)));
+    const inputSignature = () => JSON.stringify([...new FormData(form)]
+        .filter(([name]) => !['csrfmiddlewaretoken','action','project_id'].includes(name))
+        .map(([name, value]) => {
+            const field = form.elements.namedItem(name);
+            const decimal = typeof value === 'string' ? value.trim().replace(',', '.') : value;
+            return [name, field?.inputMode === 'decimal' && /^-?\d+(?:\.\d+)?$/.test(decimal)
+                ? String(Number(decimal)) : value];
+        }));
     const originalSignature = inputSignature();
     const updateStale = () => {
         if (!stale) return;

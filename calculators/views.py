@@ -186,7 +186,7 @@ def calculator_detail(request, slug):
             'material_sellers': MATERIAL_SELLERS,
             'client_projects': ClientProject.objects.filter(user=request.user, status__in=['draft', 'calculated']) if request.user.is_authenticated else ClientProject.objects.none(),
             'can_save_calculation': request.user.is_authenticated and getattr(getattr(request.user, 'profile', None), 'role', None) == UserProfile.Role.CLIENT,
-            'selected_project_id': request.POST.get('project_id', ''),
+            'selected_project_id': (source or {}).get('project_id', ''),
             'show_auth_save_cta': not request.user.is_authenticated,
         },
     )

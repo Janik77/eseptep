@@ -1,0 +1,20 @@
+{% extends 'base.html' %}{% load i18n %}
+{% block title %}{% translate 'Запросить предложение — ESEPTEP' %}{% endblock %}
+{% block content %}
+<section class="dashboard saved-estimate">
+  <div class="dashboard-card">
+    <a class="back-link" href="{% url 'accounts:calculation_detail' calculation.pk %}">{% translate 'Вернуться к смете' %}</a>
+    <h1>{% translate 'Запросить предложение' %}</h1>
+    <p>{% translate 'Получатель:' %} <strong>{{ supplier.company_name }}</strong></p>
+    <p>{% translate 'Демонстрационная заявка. Она появится только в тестовом кабинете поставщика. Внешние сообщения отключены.' %}</p>
+    {% if request_error %}<p role="alert">{{ request_error }}</p>{% endif %}
+  </div>
+  {% include 'accounts/partials/request_snapshot.html' %}
+  <form method="post" class="dashboard-card">
+    {% csrf_token %}<input type="hidden" name="request_token" value="{{ request_token }}">
+    <input type="hidden" name="confirm" value="yes">
+    <p>{% translate 'Проверьте получателя, материалы и количество перед отправкой.' %}</p>
+    <button class="btn btn--primary" type="submit">{% translate 'Отправить тестовый запрос' %}</button>
+  </form>
+</section>
+{% endblock %}

@@ -15,7 +15,7 @@ def quotation(slug, variant, materials, book):
             continue
         price = entries.get((material_key(row['title'], row['unit']), row['unit']))
         if price is None:
-            missing.append({'material_title': row['title'], 'unit_label': row['unit']})
+            missing.append({'material_title': row['title'], 'unit_label': row['unit'], 'quantity': str(quantity)})
             continue
         line_total = (quantity * price.price).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
         total += line_total

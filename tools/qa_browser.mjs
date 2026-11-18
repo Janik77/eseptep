@@ -129,11 +129,11 @@ try {
   const variant=page.locator('[data-variant-button]').last();
   await variant.click();
   const chosen=await variant.getAttribute('data-variant-button');
-  await page.locator('[name=project_id]').selectOption({label:'QA project Ә Ғ Қ Ң Ө Ұ Ү Һ І'});
-  const project=await page.locator('[name=project_id]').inputValue();
+  await page.locator('select[name=project_id]').selectOption({label:'QA project Ә Ғ Қ Ң Ө Ұ Ү Һ І'});
+  const project=await page.locator('select[name=project_id]').inputValue();
   await switchLanguage(page,'ru');
   assert.equal(await page.locator('[data-calc-form] [name=area]').inputValue(),'36.5');
-  assert.equal(await page.locator('[name=project_id]').inputValue(),project);
+  assert.equal(await page.locator('select[name=project_id]').inputValue(),project);
   assert.equal(await page.locator('[data-selected-variant-input]').inputValue(),chosen);
   assert.equal(countCalculations(),before,'language switch must not save');
   await page.locator('[data-copy-variant]').click();

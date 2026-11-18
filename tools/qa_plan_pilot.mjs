@@ -38,7 +38,7 @@ await page.screenshot({path:`${output}/tile-${lang}-${width}.png`,fullPage:true}
 await page.locator('button[name=action][value=save_estimate]').scrollIntoViewIfNeeded();
 await page.waitForTimeout(1200);
 assert(await page.locator('body').innerText().then(x=>x.includes('SYNTHETIC QA STORE')));
-await page.locator('[name=project_id]').selectOption({index:1});
+await page.locator('select[name=project_id]').selectOption({index:1});
 await page.locator('button[name=action][value=save_estimate]').click();
 await page.waitForURL(/calculations/);
 assert(await page.locator('body').innerText().then(x=>x.includes('5.25')));

@@ -5,7 +5,7 @@
 <section class="dashboard saved-estimate">
   <div class="dashboard-card">
     <a class="back-link" href="{% url 'accounts:dashboard_client' %}">{% translate '← Кабинет клиента' %}</a>
-    <h1>{{ title }}</h1>
+    <h1>{{ title }}</h1><p><a class="btn btn--secondary" href="{% url 'calculators:saved_pdf' calculation.pk %}">{% translate 'Скачать PDF' %}</a></p>
     <p>{% translate 'Сохранённая смета ·' %} {{ calculation.created_at|date:'d.m.Y H:i' }}</p>
     <p>{% translate 'Проект:' %} <b>{{ calculation.project.title }}</b>{% if variant_label %} {% translate '· Вариант:' %} <b>{{ variant_label }}</b>{% endif %}</p>
     <p>{% translate 'Это сохранённые данные расчёта, без пересчёта по текущим ценам.' %}</p>
@@ -28,7 +28,21 @@
     {% if calculation.calculator_slug == 'nalivnoy-pol' %}{% include 'calculators/partials/selflevel_parameter.html' with parameter=calculation.result_data.parameter_snapshot %}{% elif calculation.calculator_slug == 'demontazh' %}{% include 'calculators/partials/demolition_parameter.html' with parameter=calculation.result_data.parameter_snapshot %}{% endif %}
     {% include 'calculators/partials/admin_quote.html' with quote=calculation.result_data.admin_quote %}
     {% include 'calculators/partials/material_offers.html' with offers=material_offers %}
+    {% if meeting_supplier_available %}<p><a class="btn btn--primary" href="{% url 'accounts:supplier_request_preview' calculation.pk %}">{% translate 'Запросить предложение' %}</a></p>{% endif %}
+    {% for req in targeted_requests %}<p><a href="{% url 'accounts:supplier_request_detail' req.pk %}">{% translate 'Тестовая заявка' %} #{{ req.pk }}</a> · {{ req.get_status_display|system_text }}</p>{% endfor %}
     <a class="btn btn--secondary" href="{% url 'calculators:detail' calculation.calculator_slug %}">{% translate 'Начать новый расчёт' %}</a>
+  </div>
+  <div class="dashboard-card">
+    <h2>{% translate 'Объяснение сметы с ИИ' %}</h2>
+    {% if ai_explanation %}
+      {% if ai_explanation.status == 'completed' %}<div style="white-space:pre-wrap">{{ ai_explanation.text }}</div>
+      {% elif ai_explanation.status == 'running' %}<p>{% translate 'Запрос уже принят. Обновите страницу позже; повторная отправка не нужна.' %}</p>
+      {% else %}<p role="alert">{% translate 'Ответ не получен или лимит исчерпан. Автоматического повтора нет. Смета не изменена.' %}</p>{% endif %}
+    {% else %}
+      <p>{% translate 'Параметры и материалы этой сметы будут отправлены в OpenAI. Имена, контакты и файл плана не отправляются. ИИ объясняет результат, но не меняет расчёт.' %}</p>
+      <form method="post" action="{% url 'accounts:explain_estimate' calculation.pk %}">{% csrf_token %}<button class="btn btn--secondary" type="submit">{% translate 'Объяснить смету' %}</button></form>
+    {% endif %}
+    <p>{% translate 'Ответ ИИ может содержать ошибки. Это не замена проверке специалиста.' %}</p>
   </div>
 </section>
 {% endblock %}

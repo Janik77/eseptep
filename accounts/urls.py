@@ -4,6 +4,8 @@ from .views import (
     AccountLoginView,
     client_dashboard,
     calculation_detail,
+    supplier_request_preview,
+    supplier_request_detail,
     client_project_create,
     master_dashboard,
     master_profile_edit,
@@ -14,9 +16,14 @@ from .views import (
     supplier_profile_edit,
 )
 
+from .ai_views import explain_estimate
+
 app_name = 'accounts'
 
 urlpatterns = [
+    path('calculations/<int:calculation_id>/explain/', explain_estimate, name='explain_estimate'),
+    path('calculations/<int:calculation_id>/request-offer/', supplier_request_preview, name='supplier_request_preview'),
+    path('requests/<int:request_id>/', supplier_request_detail, name='supplier_request_detail'),
     path('calculations/<str:calculation_id>/', calculation_detail, name='calculation_detail'),
     path('register/', register_view, name='register'),
     path('login/', AccountLoginView.as_view(), name='login'),

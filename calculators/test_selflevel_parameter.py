@@ -44,6 +44,16 @@ class SelfLevelParameterTests(TestCase):
             result=calculate_materials(CALCULATORS_BY_SLUG[slug],case['input'])
             # Demolition gained provenance after this older golden fixture; math stays identical.
             if slug == 'demontazh': result.pop('parameter_snapshot', None)
+            # Tile gained display-only purchase-rounding provenance. Strip that
+            # one new metadata key recursively; keep every original numeric value.
+            if slug == 'plitka-keramogranit':
+                def without_quantity_basis(value):
+                    if isinstance(value, dict):
+                        return {k: without_quantity_basis(v) for k, v in value.items() if k != 'quantity_basis'}
+                    if isinstance(value, list):
+                        return [without_quantity_basis(v) for v in value]
+                    return value
+                result = without_quantity_basis(result)
             digest=hashlib.sha256(json.dumps(result,sort_keys=True,ensure_ascii=False).encode()).hexdigest()
             self.assertEqual(digest,case['digest'],slug)
 

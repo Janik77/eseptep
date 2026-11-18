@@ -125,7 +125,7 @@ def client_dashboard(request):
     calculations = Calculation.objects.filter(project__user=request.user).select_related('project')[:10]
     requests = (
         ServiceRequest.objects.filter(client=request.user)
-        .select_related('project')
+        .select_related('project', 'target_supplier')
         .annotate(master_responses_count=Count('master_responses', distinct=True), supplier_responses_count=Count('supplier_responses', distinct=True))[:10]
     )
     master_responses = MasterResponse.objects.filter(request__client=request.user).select_related('master', 'request').order_by('-created_at')[:20]
@@ -255,7 +255,7 @@ def supplier_dashboard(request):
         request_id = parse_positive_id(request.POST.get('request_id'))
         if request_id is None:
             return HttpResponseBadRequest(translate('Некорректная заявка.'))
-        service_request = get_object_or_404(ServiceRequest.objects.filter(project__user=F('client')).exclude(client=request.user).select_related('project', 'calculation'), id=request_id,
+        service_request = get_object_or_404(ServiceRequest.objects.filter(Q(target_supplier__isnull=True) | Q(target_supplier=supplier_profile, target_supplier__is_active=True)).filter(project__user=F('client')).exclude(client=request.user).select_related('project', 'calculation'), id=request_id,
             request_type__in=[ServiceRequest.RequestType.SUPPLIER, ServiceRequest.RequestType.FULL_REPAIR],
             status__in=OPEN_REQUEST_STATUSES)
         if form.is_valid():
@@ -276,7 +276,7 @@ def supplier_dashboard(request):
     materials = SupplierMaterial.objects.filter(supplier=supplier_profile).order_by('-id')
     requests = ServiceRequest.objects.filter(
         Q(request_type=ServiceRequest.RequestType.SUPPLIER) | Q(request_type=ServiceRequest.RequestType.FULL_REPAIR)
-    ).filter(status__in=OPEN_REQUEST_STATUSES).select_related('project', 'calculation')[:12]
+    ).filter(Q(target_supplier__isnull=True) | Q(target_supplier=supplier_profile, target_supplier__is_active=True)).filter(project__user=F('client')).exclude(client=request.user).filter(status__in=OPEN_REQUEST_STATUSES).select_related('project', 'calculation', 'target_supplier')[:12]
     my_responses = SupplierResponse.objects.filter(supplier=supplier_profile).select_related('request', 'request__project').order_by('-created_at')[:12]
 
     return render(request, 'accounts/dashboard_supplier.html', {
@@ -354,8 +354,121 @@ def calculation_detail(request, calculation_id):
             parameters.append({'label': field['label'], 'value': value, 'unit': field.get('unit', '')})
     from calculators.offers import material_offers
     return render(request, 'accounts/calculation_detail.html', {
+        'meeting_supplier_available': _meeting_supplier() is not None and _meeting_estimate_supported(calculation),
+        'targeted_requests': calculation.service_requests.filter(client=request.user, target_supplier__isnull=False).select_related('target_supplier'),
         'material_offers': material_offers(data.get('materials', [])),
+        'ai_explanation': calculation.ai_explanations.filter(language='kk' if request.LANGUAGE_CODE == 'kk' else 'ru').first(),
         'calculation': calculation, 'title': definition.get('title', calculation.calculator_slug),
         'parameters': parameters,
         'variant_label': data.get('selected_variant_label') or data.get('selected_variant') or data.get('segment_label'),
+    })
+
+
+def _meeting_supplier():
+    from django.conf import settings
+    if not getattr(settings, 'ESEPTEP_DEMO_MODE', False) or getattr(settings, 'PRODUCTION', False):
+        return None
+    return SupplierProfile.objects.filter(
+        user__username='demo-supplier@example.test', user__is_active=True,
+        user__profile__role=UserProfile.Role.SUPPLIER, is_active=True,
+    ).first()
+
+
+def _meeting_estimate_supported(calculation):
+    data = calculation.result_data
+    return (calculation.calculator_slug == 'plitka-keramogranit'
+            and data.get('input', {}).get('zone') == 'floor'
+            and bool(data.get('materials')))
+
+
+def _request_snapshot(calculation, supplier):
+    from copy import deepcopy
+    return {
+        'schema': 1, 'demo': True, 'calculation_id': calculation.pk,
+        'project_title': calculation.project.title, 'city': calculation.project.city,
+        'area': str(calculation.area_m2), 'calculator_slug': calculation.calculator_slug,
+        'supplier_name': supplier.company_name,
+        'reference_total': str(calculation.grand_total),
+        'result': deepcopy(calculation.result_data),
+    }
+
+
+def _request_digest(snapshot):
+    import hashlib
+    import json
+    return hashlib.sha256(json.dumps(snapshot, sort_keys=True, ensure_ascii=True).encode()).hexdigest()
+
+
+@role_required(UserProfile.Role.CLIENT)
+def supplier_request_preview(request, calculation_id):
+    """GET is a preview only; explicit POST creates one local targeted request."""
+    from django.core import signing
+    if request.method not in {'GET', 'POST'}:
+        from django.http import HttpResponseNotAllowed
+        return HttpResponseNotAllowed(['GET', 'POST'])
+    calculation = get_object_or_404(Calculation.objects.select_related('project'),
+        pk=calculation_id, project__user=request.user)
+    supplier = _meeting_supplier()
+    if supplier is None or not _meeting_estimate_supported(calculation):
+        raise Http404
+    snapshot = _request_snapshot(calculation, supplier)
+    payload = {'user': request.user.pk, 'calculation': calculation.pk,
+               'supplier': supplier.pk, 'digest': _request_digest(snapshot)}
+    token = signing.dumps(payload, salt='meeting-supplier-request.v1')
+    error = ''
+    if request.method == 'POST':
+        try:
+            signed = signing.loads(request.POST.get('request_token', ''), salt='meeting-supplier-request.v1')
+            if signed != payload or request.POST.get('confirm') != 'yes':
+                raise ValueError
+        except (signing.BadSignature, ValueError, TypeError):
+            error = translate('Проверьте состав запроса и подтвердите отправку ещё раз.')
+        else:
+            with transaction.atomic():
+                # SQLite writer lock before SELECT; PostgreSQL also serializes this estimate.
+                Calculation.objects.filter(pk=calculation.pk).update(grand_total=F('grand_total'))
+                # Snapshot and owner are rechecked under lock, not trusted from POST.
+                locked = get_object_or_404(Calculation.objects.select_related('project'), pk=calculation.pk,
+                                          project__user=request.user)
+                if _request_digest(_request_snapshot(locked, supplier)) != payload['digest']:
+                    return HttpResponseBadRequest(translate('Смета изменилась. Откройте запрос заново.'))
+                service_request, created = ServiceRequest.objects.get_or_create(
+                    calculation=locked, target_supplier=supplier, request_type=ServiceRequest.RequestType.SUPPLIER,
+                    defaults={'client': request.user, 'project': locked.project,
+                              'request_snapshot': snapshot, 'comment': 'Demo meeting request'},
+                )
+            if created:
+                messages.success(request, translate('Тестовая заявка отправлена в кабинет поставщика. Внешних уведомлений нет.'))
+            return redirect('accounts:supplier_request_detail', request_id=service_request.pk)
+    return render(request, 'accounts/supplier_request_preview.html', {
+        'calculation': calculation, 'supplier': supplier, 'snapshot': snapshot,
+        'request_token': token, 'request_error': error,
+    })
+
+
+@login_required
+def supplier_request_detail(request, request_id):
+    """A private immutable request snapshot; unrelated suppliers get 404."""
+    profile = getattr(request.user, 'profile', None)
+    role = profile.role if profile else None
+    requests = ServiceRequest.objects.filter(target_supplier__isnull=False,
+        request_type=ServiceRequest.RequestType.SUPPLIER, project__user=F('client')).select_related('target_supplier', 'calculation', 'project')
+    if role == UserProfile.Role.CLIENT:
+        requests = requests.filter(client=request.user)
+    elif role == UserProfile.Role.SUPPLIER:
+        requests = requests.filter(target_supplier__user=request.user, target_supplier__is_active=True)
+    else:
+        return HttpResponseForbidden(translate('Недостаточно прав доступа.'))
+    service_request = get_object_or_404(requests, pk=request_id)
+    if request.method == 'POST':
+        if role != UserProfile.Role.SUPPLIER or request.POST.get('action') != 'mark_viewed':
+            return HttpResponseForbidden(translate('Недостаточно прав доступа.'))
+        requests.filter(pk=request_id, status=ServiceRequest.Status.NEW).update(status=ServiceRequest.Status.VIEWED)
+        return redirect('accounts:supplier_request_detail', request_id=request_id)
+    if request.method != 'GET':
+        from django.http import HttpResponseNotAllowed
+        return HttpResponseNotAllowed(['GET', 'POST'])
+    return render(request, 'accounts/supplier_request_detail.html', {
+        'service_request': service_request, 'snapshot': service_request.request_snapshot,
+        'is_recipient': role == UserProfile.Role.SUPPLIER,
     })

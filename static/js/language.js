@@ -37,6 +37,8 @@
         || document.querySelector('[data-variant-button].is-active')?.dataset.variantButton;
       if (variant) next.searchParams.set('selected_variant', variant);
     }
+    const selectedProject = document.querySelector('select[name=project_id]');
+    if (selectedProject?.value) next.searchParams.set('project_id', selectedProject.value);
     const upload = document.querySelector('[name=upload_id]');
     if (upload?.value) next.searchParams.set('upload_id', upload.value);
     if (sensitive) {

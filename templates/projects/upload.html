@@ -9,6 +9,7 @@
     <p>{% translate 'Загрузите обезличенный план. Проверьте площадь ванной и рассчитайте плитку на пол.' %}</p>
 </section>
 
+{% if demo_mode %}<section class="meeting-examples" aria-label="{% translate 'Обезличенные примеры' %}"><h2>{% translate 'Начните с готового примера' %}</h2><p>{% translate 'Учебный план: ванная 4,8 м². Вы увидите оригинал и сами подтвердите площадь. Выбор примера не запускает ИИ.' %}</p><div class="result-actions"><form method="post" action="{% url 'projects:choose_sample' %}">{% csrf_token %}<input type="hidden" name="sample" value="clear"><button class="btn btn--primary" type="submit">{% translate 'Открыть учебный план' %}</button></form><form method="post" action="{% url 'projects:choose_sample' %}">{% csrf_token %}<input type="hidden" name="sample" value="unreadable"><button class="btn btn--secondary" type="submit">{% translate 'Пример без читаемой площади' %}</button></form></div></section>{% endif %}
 <section class="project-upload-layout" aria-label="{% translate 'Загрузка проекта' %}">
     <form class="calc-form project-upload-form" method="post" enctype="multipart/form-data">
         {% csrf_token %}

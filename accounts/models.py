@@ -164,6 +164,11 @@ class ServiceRequest(models.Model):
         blank=True,
         related_name='service_requests',
     )
+    target_supplier = models.ForeignKey(
+        SupplierProfile, on_delete=models.PROTECT, null=True, blank=True,
+        related_name='targeted_requests',
+    )
+    request_snapshot = models.JSONField(default=dict, blank=True, editable=False)
     request_type = models.CharField(max_length=20, choices=RequestType.choices)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.NEW)
     comment = models.TextField(blank=True)
@@ -171,6 +176,11 @@ class ServiceRequest(models.Model):
 
     class Meta:
         ordering = ('-created_at',)
+        constraints = [models.UniqueConstraint(
+            fields=['calculation', 'target_supplier'],
+            condition=models.Q(request_type='supplier', target_supplier__isnull=False),
+            name='one_supplier_request_per_saved_estimate',
+        )]
         verbose_name = 'Заявка на сервис'
         verbose_name_plural = 'Заявки на сервис'
 
@@ -236,3 +246,17 @@ class CalculationSubmission(models.Model):
         constraints = [models.UniqueConstraint(
             fields=['user', 'nonce', 'action'], name='unique_calculation_submission',
         )]
+
+
+class EstimateExplanation(models.Model):
+    calculation = models.ForeignKey(Calculation, on_delete=models.PROTECT, related_name='ai_explanations')
+    language = models.CharField(max_length=2)
+    status = models.CharField(max_length=16, default='running')
+    text = models.TextField(blank=True)
+    model = models.CharField(max_length=80)
+    usage = models.JSONField(default=dict)
+    error_code = models.CharField(max_length=40, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=['calculation', 'language'], name='unique_estimate_explanation_language')]

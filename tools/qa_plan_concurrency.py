@@ -30,7 +30,7 @@ def provider(*args, **kwargs):
     global calls
     with lock:
         calls+=1
-    return io.BytesIO(json.dumps({'status':'completed','output':[{'content':[{'type':'output_text','text':'{"rooms": []}'}]}]}).encode())
+    return {'status':'completed','output':[{'content':[{'type':'output_text','text':'{"rooms": []}'}]}]}
 
 def execute(pk):
     close_old_connections()
@@ -39,7 +39,7 @@ def execute(pk):
     finally:
         close_old_connections()
 
-with override_settings(PLAN_AI_ENABLED=True,OPENAI_API_KEY='mock-only-no-network',PRODUCTION=False), patch('urllib.request.urlopen',side_effect=provider):
+with override_settings(OPENAI_LIVE_CONFIRMED=True, PLAN_AI_ENABLED=True,OPENAI_API_KEY='mock-only-no-network',PRODUCTION=False), patch('projects.plan_analysis.responses_create',side_effect=provider):
     with ThreadPoolExecutor(max_workers=8) as pool:
         results=list(pool.map(execute,[ids[0]]*8))
     assert len(set(results))==1, results
