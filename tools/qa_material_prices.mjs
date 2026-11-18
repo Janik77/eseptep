@@ -65,7 +65,7 @@ try{
  await clientPage.locator('[data-calc-form] [name=area]').fill('36.5');
  await clientPage.locator('[data-calc-form] button[type=submit]').click();
  await clientPage.locator(`[data-variant-button=${editedVariant}]`).click();
- await clientPage.locator('[name=project_id]').selectOption({label:'QA project Ә Ғ Қ Ң Ө Ұ Ү Һ І'});
+ await clientPage.locator('select[name=project_id]').selectOption({label:'QA project Ә Ғ Қ Ң Ө Ұ Ү Һ І'});
  await clientPage.locator('button[name=action][value=save_estimate]').click();
  await clientPage.waitForURL(/accounts\/calculations\//);
  const snapshotBefore=await clientPage.locator('.admin-quote').innerText();
