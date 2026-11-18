@@ -10,7 +10,8 @@ with sync_playwright() as p:
    page.goto('http://127.0.0.1:8220/projects/upload/');page.locator('[data-language-form] button[value='+lang+']').click()
    page.locator('a[href="#typical-plans"]').click();assert page.locator('#typical-plans').evaluate('(e)=>e.open')
    assert page.locator('.typical-card').count()==3
-   for img in page.locator('.typical-card img').all():assert img.evaluate('(e)=>e.complete && e.naturalWidth>0')
+   for img in page.locator('.typical-card img').all():
+    img.scroll_into_view_if_needed();page.wait_for_function('(e)=>e.complete && e.naturalWidth>0',arg=img.element_handle())
    assert page.evaluate('document.documentElement.scrollWidth<=innerWidth+1')
    page.screenshot(path=str(OUT/f'catalog-{lang}-{width}.png'),full_page=True)
    with page.expect_popup() as enlarged:page.locator('.typical-card a').first.click()
