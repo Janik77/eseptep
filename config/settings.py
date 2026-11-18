@@ -150,3 +150,5 @@ def _bounded_ai_int(name, default, minimum, maximum):
 OPENAI_MAX_OUTPUT_TOKENS = _bounded_ai_int('OPENAI_MAX_OUTPUT_TOKENS', 1800, 128, 1800)
 OPENAI_TIMEOUT_SECONDS = _bounded_ai_int('OPENAI_TIMEOUT_SECONDS', 45, 5, 60)
 ESTIMATE_AI_ENABLED = os.getenv('ESTIMATE_AI_ENABLED', '0') == '1'
+
+OPENAI_PILOT_MAX_RESERVED_CENTS = _bounded_ai_int("OPENAI_PILOT_MAX_RESERVED_CENTS", 200, 0, 200)

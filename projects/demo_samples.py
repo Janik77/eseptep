@@ -8,7 +8,14 @@ from django.views.decorators.http import require_POST
 from .models import ProjectUpload
 from .views import accessible_uploads
 
-SAMPLES={'clear':'apartment-explication.pdf','unreadable':'apartment-unreadable-area.pdf'}
+SAMPLES={'clear':'apartment-explication.pdf','unreadable':'apartment-unreadable-area.pdf',
+         'studio':'typical-studio.pdf','two-room':'typical-two-room.pdf','three-room':'typical-three-room.pdf'}
+
+def typical_plans():
+    import json
+    data=json.loads(Path(settings.BASE_DIR,'tests','fixtures','plans','typical-manifest.json').read_text(encoding='utf-8'))
+    # Ground truth is QA-only and never injected into an analysis or returned as recognized data.
+    return [{k:item[k] for k in ('key','title','rooms','area','preview')} for item in data]
 
 @require_POST
 def choose_sample(request):

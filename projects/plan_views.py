@@ -79,7 +79,7 @@ def plan_review(request, pk):
     previous = PlanConfirmation.objects.filter(upload=upload).order_by('-pk').first()
     previous_data = previous.snapshot if previous else {}
     return render(request, 'projects/plan_review.html', {'upload': upload, 'analysis': analysis,
-        'rooms': rooms, 'error': messages.get(error, error), 'previous_confirmation': previous_data,
+        'rooms': rooms, 'has_bathroom': any(r.get('kind')=='bathroom' for r in rooms), 'error': messages.get(error, error), 'previous_confirmation': previous_data,
         'entered_name': request.POST.get('name', previous_data.get('name', _('Ванная'))),
         'entered_area': request.POST.get('area', previous_data.get('area', ''))})
 

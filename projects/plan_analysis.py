@@ -4,7 +4,7 @@ import hashlib
 import io
 import json
 import time
-from core.openai_client import responses_create, validate_configuration, AIConfigurationError
+from core.openai_client import responses_create, validate_configuration, AIConfigurationError, safe_error_code
 from decimal import Decimal, InvalidOperation
 
 from django.conf import settings
@@ -101,7 +101,7 @@ def normalize_rooms(values, frames):
             source, stated = 'unknown', None
         result.append({'name': str(value.get('name') or '')[:100], 'kind': value.get('kind'),
                        'area': stated, 'source': source, 'recognition_verified': False, 'page': page,
-                       'evidence': evidence if line else '', 'line': line})
+                       'evidence': evidence if line else '', 'visual_evidence': evidence, 'line': line})
     return result
 
 
@@ -129,7 +129,7 @@ def analyze(upload):
         result, created = PlanAnalysis.objects.get_or_create(identity=identity, defaults={'upload': upload, 'model': settings.OPENAI_MODEL})
         if not created:
             return result
-        reserved = PlanAnalysisBudget.objects.filter(pk=1, reserved_cents__lte=200-RESERVATION_CENTS).update(reserved_cents=F('reserved_cents')+RESERVATION_CENTS)
+        reserved = PlanAnalysisBudget.objects.filter(pk=1, reserved_cents__lte=settings.OPENAI_PILOT_MAX_RESERVED_CENTS-RESERVATION_CENTS).update(reserved_cents=F('reserved_cents')+RESERVATION_CENTS)
         if not reserved:
             result.status, result.error_code = 'failed', 'budget_limit'
             result.save()
@@ -157,9 +157,9 @@ def analyze(upload):
         result.usage = data.get('usage', {})
         result.request_id = str(data.get('id', ''))[:160]
         result.status = 'completed'
-    except Exception:
+    except Exception as exc:
         # A timeout can still be billed. Never retry automatically, expose secrets, or refund reservation.
-        result.status, result.error_code = 'unknown', 'api_failed'
+        result.status, result.error_code = 'unknown', safe_error_code(exc)
     result.elapsed_ms = int((time.monotonic() - start) * 1000)
     result.save()
     return result

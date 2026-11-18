@@ -1,0 +1,125 @@
+[
+  {
+    "key": "studio",
+    "title": "Студия",
+    "rooms": 1,
+    "area": 36,
+    "pdf": "typical-studio.pdf",
+    "preview": "plans/typical-studio.png",
+    "ground_truth": [
+      {
+        "name": "Кухня-гостиная",
+        "area": 24,
+        "kind": "other",
+        "page": 1
+      },
+      {
+        "name": "Прихожая",
+        "area": 7.2,
+        "kind": "other",
+        "page": 1
+      },
+      {
+        "name": "Санузел",
+        "area": 4.8,
+        "kind": "bathroom",
+        "page": 1
+      }
+    ],
+    "source": "Original ESEPTEP synthetic drawing, 2026-11-18; repository project asset"
+  },
+  {
+    "key": "two-room",
+    "title": "Двухкомнатная квартира",
+    "rooms": 2,
+    "area": 72,
+    "pdf": "typical-two-room.pdf",
+    "preview": "plans/typical-two-room.png",
+    "ground_truth": [
+      {
+        "name": "Гостиная",
+        "area": 18.0,
+        "kind": "other",
+        "page": 1
+      },
+      {
+        "name": "Спальня",
+        "area": 18.0,
+        "kind": "other",
+        "page": 1
+      },
+      {
+        "name": "Коридор",
+        "area": 16.2,
+        "kind": "other",
+        "page": 1
+      },
+      {
+        "name": "Кухня",
+        "area": 13.2,
+        "kind": "other",
+        "page": 1
+      },
+      {
+        "name": "Санузел",
+        "area": 6.6,
+        "kind": "bathroom",
+        "page": 1
+      }
+    ],
+    "source": "Original ESEPTEP synthetic drawing, 2026-11-18; repository project asset"
+  },
+  {
+    "key": "three-room",
+    "title": "Трёхкомнатная квартира",
+    "rooms": 3,
+    "area": 99,
+    "pdf": "typical-three-room.pdf",
+    "preview": "plans/typical-three-room.png",
+    "ground_truth": [
+      {
+        "name": "Гостиная",
+        "area": 20,
+        "kind": "other",
+        "page": 1
+      },
+      {
+        "name": "Спальня 1",
+        "area": 17.5,
+        "kind": "other",
+        "page": 1
+      },
+      {
+        "name": "Спальня 2",
+        "area": 17.5,
+        "kind": "other",
+        "page": 1
+      },
+      {
+        "name": "Коридор",
+        "area": 16.5,
+        "kind": "other",
+        "page": 1
+      },
+      {
+        "name": "Кухня",
+        "area": 13.75,
+        "kind": "other",
+        "page": 1
+      },
+      {
+        "name": "Ванная",
+        "area": 7.5,
+        "kind": "bathroom",
+        "page": 1
+      },
+      {
+        "name": "Санузел",
+        "area": 6.25,
+        "kind": "bathroom",
+        "page": 1
+      }
+    ],
+    "source": "Original ESEPTEP synthetic drawing, 2026-11-18; repository project asset"
+  }
+]

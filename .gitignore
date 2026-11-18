@@ -27,3 +27,6 @@ meeting-demo-server-*.log
 .env.*
 !.env.example
 meeting-demo-server-*.log
+
+typical-demo.sqlite3
+typical-demo-test.sqlite3

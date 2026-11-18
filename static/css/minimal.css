@@ -32,3 +32,7 @@ button:disabled{opacity:.55;cursor:not-allowed}
 .result-card__head>strong,.quantity-value,.quantity-cell,.offer-candidate>strong{white-space:nowrap;overflow-wrap:normal;word-break:normal}
 .quantity-explanation{color:#4b5d73;font-size:12px;line-height:1.5;margin-top:5px}
 .offer-empty{overflow-wrap:break-word;word-break:normal}.offer-empty .quantity-value{display:inline-block}
+
+.typical-plans{margin:28px 0;padding:20px;border:1px solid #d8e1ec;border-radius:10px;background:#fff}.typical-plans>summary{cursor:pointer;font-weight:700;font-size:20px}.typical-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}.typical-card{min-width:0;border:1px solid #d8e1ec;border-radius:8px;padding:14px}.typical-card img{width:100%;height:auto;display:block}.typical-card h3{font-size:18px}.typical-card .btn{width:100%}@media(max-width:650px){.typical-grid{grid-template-columns:1fr}.typical-plans{padding:14px}}
+
+.skip-link:not(:focus){clip-path:inset(50%);width:1px;height:1px;overflow:hidden;white-space:nowrap}.project-upload-form textarea{min-height:100px;height:100px}

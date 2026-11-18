@@ -483,3 +483,10 @@ function showCopyFeedback(button, toast, copied, originalLabel) {
         }, 1800);
     }
 }
+
+// The secondary entry opens the catalogue, rather than just scrolling to a closed details.
+document.addEventListener('DOMContentLoaded', () => {
+ const entry=document.querySelector('a[href="#typical-plans"]');
+ const catalogue=document.getElementById('typical-plans');
+ if(entry && catalogue) entry.addEventListener('click', () => {catalogue.open=true;});
+});

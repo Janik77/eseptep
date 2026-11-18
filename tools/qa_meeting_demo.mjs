@@ -14,14 +14,17 @@ async function login(page,role){await page.goto(base+'/accounts/login/');await p
 async function logout(page){await page.locator('form[action$="/accounts/logout/"] button').click();}
 const pause=page=>page.waitForTimeout(900); // Deliberate viewing pace for acceptance video.
 try{
-for(const width of [1440,360]){
+for(const width of [1440,390]){
  const context=await browser.newContext({viewport:{width,height:900},recordVideo:{dir:output,size:{width,height:900}},acceptDownloads:true});
  const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
  await login(page,'client');
  for(const language of ['ru','kk']){
   await page.goto(base+'/projects/upload/');await lang(page,language);
   await shot(page,`upload-${language}-${width}`);
-  await page.locator('form:has(input[name=sample][value=clear]) button').click();
+  await page.locator('#typical-plans summary').click();
+  assert.equal(await page.locator('.typical-card').count(),3);
+  await shot(page,`typical-catalog-${language}-${width}`);
+  await page.locator('form:has(input[name=sample][value=studio]) button').click();
   await page.locator('.plan-image').waitFor();await pause(page);
   // Pause native submission for a UI-only pending-state check; never mock an AI response.
   await page.locator('[data-plan-analysis-form]').evaluate(form=>form.addEventListener('submit',event=>event.preventDefault(),{once:true}));
@@ -73,7 +76,7 @@ for(const width of [1440,360]){
   await shot(page,`precision-36_5-${language}-${width}`);await page.locator('button[value=save_estimate]').click();await page.waitForURL(/accounts\/calculations/);
   const pdfPromise=page.waitForEvent('download');await page.locator('a[href$="/pdf/"]').click();await (await pdfPromise).saveAs(`${output}/precision-36_5-${language}-${width}.pdf`);
   // Missing area and actual file upload stay manual, not fabricated recognition.
-  await page.goto(base+'/projects/upload/');await page.locator('form:has(input[name=sample][value=unreadable]) button').click();const previousManual=await page.locator('details [name=area]').inputValue();if(!unreadableSeen)assert.equal(previousManual,'');else assert.equal(Number(previousManual),5.25);unreadableSeen=true;
+  await page.goto(base+'/projects/upload/');const token=await page.locator('#own-plan [name=csrfmiddlewaretoken]').inputValue();const unreadable=await context.request.post(base+'/projects/examples/select/',{form:{sample:'unreadable',csrfmiddlewaretoken:token}});await page.goto(unreadable.url());const previousManual=await page.locator('details [name=area]').inputValue();if(!unreadableSeen)assert.equal(previousManual,'');else assert.equal(Number(previousManual),5.25);unreadableSeen=true;
   await page.locator('details [name=area]').fill('5.25');await page.locator('details button').click();assert.equal(Number(await page.locator('[data-calc-form] [name=area]').inputValue()),5.25);
   await page.goto(base+'/projects/upload/');await page.locator('[name=file]').setInputFiles('tests/fixtures/plans/apartment-explication.png');await page.locator('form:has(input[name=action][value=upload]) button').click();await page.locator('a[href$="/plan/"]').click();await page.locator('.plan-image').waitFor();
   await page.goto(base+'/marketplace/');await page.locator('[name=area]').fill('36.5');await page.locator('[data-preview-form] button').click();await shot(page,`turnkey-${language}-${width}`);assert(await page.locator('.turnkey-card').count()===3);
