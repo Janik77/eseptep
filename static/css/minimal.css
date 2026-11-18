@@ -26,3 +26,5 @@ body{font-family:'Noto Sans',system-ui,sans-serif;font-size:15px;line-height:1.6
 .result-stale{padding:12px;border:1px solid #c99538;background:#fff8e8;color:#65480f;border-radius:6px;font-size:13px}
 .result-stale[hidden]{display:none}
 button:disabled{opacity:.55;cursor:not-allowed}
+
+.quantity-cell{display:flex;flex-direction:column;align-items:flex-end;gap:5px}.materials-table--priced .quantity-cell .material-line-total{margin-top:0}

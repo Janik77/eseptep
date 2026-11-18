@@ -102,8 +102,8 @@
                                         {% for material in variant.materials %}
                                             <div class="materials-table__row">
                                                 <div><b>{{ forloop.counter }}. {{ material.title }}</b><small>{% blocktranslate with amount=material.reference_price|money unit=material.unit %}₸ {{ amount }} за {{ unit }}{% endblocktranslate %}</small></div>
-                                                <strong class="quantity-value">{{ material.quantity }}&nbsp;{{ material.unit }}</strong>
-                                                <small class="material-line-total">₸ {{ material.reference_total|money }}</small>
+                                                <div class="quantity-cell"><strong class="quantity-value">{{ material.quantity }}&nbsp;{{ material.unit }}</strong>
+                                                <small class="material-line-total">₸ {{ material.reference_total|money }}</small></div>
                                             </div>
                                         {% endfor %}
                                     </div>
@@ -132,8 +132,8 @@
                             {% for material in result.materials %}
                                 <div class="materials-table__row">
                                     <div><b>{{ material.title }}</b><small>{% blocktranslate with amount=material.reference_price|money unit=material.unit %}Справочно ₸ {{ amount }} за {{ unit }}{% endblocktranslate %}</small></div>
-                                    <strong class="quantity-value">{{ material.quantity }}&nbsp;{{ material.unit }}</strong>
-                                    <small class="material-line-total">₸ {{ material.reference_total|money }}</small>
+                                    <div class="quantity-cell"><strong class="quantity-value">{{ material.quantity }}&nbsp;{{ material.unit }}</strong>
+                                    <small class="material-line-total">₸ {{ material.reference_total|money }}</small></div>
                                 </div>
                             {% endfor %}
                         </div>
