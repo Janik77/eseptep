@@ -19,3 +19,11 @@ plan-ai-private-media/
 meeting-demo.sqlite3
 meeting-demo-private-media/
 meeting-demo-data/
+
+.env.*
+!.env.example
+meeting-demo-server-*.log
+
+.env.*
+!.env.example
+meeting-demo-server-*.log

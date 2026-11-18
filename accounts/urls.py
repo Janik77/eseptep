@@ -16,9 +16,12 @@ from .views import (
     supplier_profile_edit,
 )
 
+from .ai_views import explain_estimate
+
 app_name = 'accounts'
 
 urlpatterns = [
+    path('calculations/<int:calculation_id>/explain/', explain_estimate, name='explain_estimate'),
     path('calculations/<int:calculation_id>/request-offer/', supplier_request_preview, name='supplier_request_preview'),
     path('requests/<int:request_id>/', supplier_request_detail, name='supplier_request_detail'),
     path('calculations/<str:calculation_id>/', calculation_detail, name='calculation_detail'),

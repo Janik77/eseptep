@@ -357,6 +357,7 @@ def calculation_detail(request, calculation_id):
         'meeting_supplier_available': _meeting_supplier() is not None and _meeting_estimate_supported(calculation),
         'targeted_requests': calculation.service_requests.filter(client=request.user, target_supplier__isnull=False).select_related('target_supplier'),
         'material_offers': material_offers(data.get('materials', [])),
+        'ai_explanation': calculation.ai_explanations.filter(language='kk' if request.LANGUAGE_CODE == 'kk' else 'ru').first(),
         'calculation': calculation, 'title': definition.get('title', calculation.calculator_slug),
         'parameters': parameters,
         'variant_label': data.get('selected_variant_label') or data.get('selected_variant') or data.get('segment_label'),

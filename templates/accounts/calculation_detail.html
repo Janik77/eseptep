@@ -32,5 +32,17 @@
     {% for req in targeted_requests %}<p><a href="{% url 'accounts:supplier_request_detail' req.pk %}">{% translate 'Тестовая заявка' %} #{{ req.pk }}</a> · {{ req.get_status_display|system_text }}</p>{% endfor %}
     <a class="btn btn--secondary" href="{% url 'calculators:detail' calculation.calculator_slug %}">{% translate 'Начать новый расчёт' %}</a>
   </div>
+  <div class="dashboard-card">
+    <h2>{% translate 'Объяснение сметы с ИИ' %}</h2>
+    {% if ai_explanation %}
+      {% if ai_explanation.status == 'completed' %}<div style="white-space:pre-wrap">{{ ai_explanation.text }}</div>
+      {% elif ai_explanation.status == 'running' %}<p>{% translate 'Запрос уже принят. Обновите страницу позже; повторная отправка не нужна.' %}</p>
+      {% else %}<p role="alert">{% translate 'Ответ не получен или лимит исчерпан. Автоматического повтора нет. Смета не изменена.' %}</p>{% endif %}
+    {% else %}
+      <p>{% translate 'Параметры и материалы этой сметы будут отправлены в OpenAI. Имена, контакты и файл плана не отправляются. ИИ объясняет результат, но не меняет расчёт.' %}</p>
+      <form method="post" action="{% url 'accounts:explain_estimate' calculation.pk %}">{% csrf_token %}<button class="btn btn--secondary" type="submit">{% translate 'Объяснить смету' %}</button></form>
+    {% endif %}
+    <p>{% translate 'Ответ ИИ может содержать ошибки. Это не замена проверке специалиста.' %}</p>
+  </div>
 </section>
 {% endblock %}

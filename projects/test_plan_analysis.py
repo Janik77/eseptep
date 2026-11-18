@@ -13,7 +13,7 @@ from .plan_analysis import analyze, normalize_rooms, PlanError
 class PlanPilotTests(TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
-        self.settings_context = override_settings(PRIVATE_MEDIA_ROOT=self.temp.name, PLAN_AI_ENABLED=True, OPENAI_API_KEY='unit-test-placeholder', PRODUCTION=False)
+        self.settings_context = override_settings(PRIVATE_MEDIA_ROOT=self.temp.name, OPENAI_LIVE_CONFIRMED=True, PLAN_AI_ENABLED=True, OPENAI_API_KEY='unit-test-placeholder', PRODUCTION=False)
         self.settings_context.enable()
         self.addCleanup(self.settings_context.disable)
         self.addCleanup(self.temp.cleanup)
@@ -26,9 +26,9 @@ class PlanPilotTests(TestCase):
 
     def response(self, area=4.8):
         response = io.BytesIO(json.dumps({'status': 'completed', 'id': 'test-response', 'usage': {'input_tokens': 100, 'output_tokens': 50}, 'output': [{'content': [{'type': 'output_text', 'text': json.dumps({'rooms': [{'name': 'Ванная', 'kind': 'bathroom', 'source': 'stated' if area else 'unknown', 'area': area, 'page': 1, 'evidence': 'invented'}]})}]}]}).encode())
-        return response
+        return json.loads(response.getvalue())
 
-    @patch('urllib.request.urlopen')
+    @patch('projects.plan_analysis.responses_create')
     def test_reclick_reupload_and_language_are_not_charged_again(self, api):
         api.return_value = self.response()
         first = analyze(self.upload)
@@ -41,14 +41,14 @@ class PlanPilotTests(TestCase):
         self.assertEqual(api.call_count, 1)
         self.assertEqual(PlanAnalysisBudget.objects.get(pk=1).reserved_cents, 20)
 
-    @patch('urllib.request.urlopen', side_effect=TimeoutError)
+    @patch('projects.plan_analysis.responses_create', side_effect=TimeoutError)
     def test_unknown_attempt_never_retries_or_refunds(self, api):
         self.assertEqual(analyze(self.upload).status, 'unknown')
         analyze(self.upload)
         self.assertEqual(api.call_count, 1)
         self.assertEqual(PlanAnalysisBudget.objects.get(pk=1).reserved_cents, 20)
 
-    @patch('urllib.request.urlopen')
+    @patch('projects.plan_analysis.responses_create')
     def test_budget_ceiling(self, api):
         PlanAnalysisBudget.objects.create(pk=1, reserved_cents=200)
         self.assertEqual(analyze(self.upload).error_code, 'budget_limit')
@@ -106,7 +106,7 @@ class PlanPilotTests(TestCase):
         self.assertEqual(calculation.result_data['plan_source']['area'], '5.25')
         self.assertEqual(calculation.result_data['input']['zone'], 'floor')
 
-    @patch('urllib.request.urlopen')
+    @patch('projects.plan_analysis.responses_create')
     def test_unreadable_value_requires_manual_confirmation_and_kazakh(self, api):
         api.return_value = self.response(None)
         analyze(self.upload)
@@ -133,7 +133,7 @@ class PlanPilotTests(TestCase):
         self.assertIsNotNone(rooms[0]['line'])
         self.assertEqual(rooms[0]['evidence'], '3   Ванная          4,8 м²')
 
-    @patch('urllib.request.urlopen')
+    @patch('projects.plan_analysis.responses_create')
     def test_corrupt_legacy_file_is_manual_fallback_not_500(self, api):
         broken = ProjectUpload.objects.create(user=self.user, file=SimpleUploadedFile('broken.png', b'not an image'))
         page = self.client.post(f'/projects/{broken.pk}/plan/', {'action':'analyze'})

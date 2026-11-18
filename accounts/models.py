@@ -246,3 +246,17 @@ class CalculationSubmission(models.Model):
         constraints = [models.UniqueConstraint(
             fields=['user', 'nonce', 'action'], name='unique_calculation_submission',
         )]
+
+
+class EstimateExplanation(models.Model):
+    calculation = models.ForeignKey(Calculation, on_delete=models.PROTECT, related_name='ai_explanations')
+    language = models.CharField(max_length=2)
+    status = models.CharField(max_length=16, default='running')
+    text = models.TextField(blank=True)
+    model = models.CharField(max_length=80)
+    usage = models.JSONField(default=dict)
+    error_code = models.CharField(max_length=40, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=['calculation', 'language'], name='unique_estimate_explanation_language')]

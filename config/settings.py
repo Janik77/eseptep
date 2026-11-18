@@ -138,3 +138,15 @@ ESEPTEP_DEMO_MODE = os.getenv('ESEPTEP_DEMO_MODE', '0') == '1'
 if ESEPTEP_DEMO_MODE and PRODUCTION:
     raise ImproperlyConfigured('Demo mode cannot run in production.')
 TEMPLATES[0]['OPTIONS']['context_processors'].append('core.demo.demo_context')
+
+# A key alone never enables a paid request. Owner confirms readiness separately.
+OPENAI_LIVE_CONFIRMED = os.getenv('OPENAI_LIVE_CONFIRMED', '0') == '1'
+OPENAI_MODEL = os.getenv('OPENAI_MODEL', 'gpt-5.4-mini-2026-03-17')
+def _bounded_ai_int(name, default, minimum, maximum):
+    try:
+        return max(minimum, min(maximum, int(os.getenv(name, str(default)))))
+    except ValueError:
+        return default
+OPENAI_MAX_OUTPUT_TOKENS = _bounded_ai_int('OPENAI_MAX_OUTPUT_TOKENS', 1800, 128, 1800)
+OPENAI_TIMEOUT_SECONDS = _bounded_ai_int('OPENAI_TIMEOUT_SECONDS', 45, 5, 60)
+ESTIMATE_AI_ENABLED = os.getenv('ESTIMATE_AI_ENABLED', '0') == '1'
