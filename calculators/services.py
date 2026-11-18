@@ -81,6 +81,7 @@ def _persist_calculation(user, slug, result, project_id):
         grand_total=result['grand_total'],
         result_data={
             'admin_quote': result.get('admin_quote'),
+            'plan_source': result.get('plan_source', {}),
             'parameter_snapshot': result.get('parameter_snapshot'),
             'materials': result['materials'],
             'variants': result.get('variants'),

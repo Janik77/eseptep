@@ -124,6 +124,16 @@ def calculator_detail(request, slug):
             validate_calculator_input(calculator, form_data)
         except InputValidationError as exc:
             field_errors = exc.errors
+    plan_token = source.get('plan_token', '') if source is not None else ''
+    plan_source = None
+    if plan_token:
+        from projects.plan_views import confirmed_source
+        try:
+            plan_source = confirmed_source(request, plan_token, slug, form_data)
+        except ValidationError as exc:
+            field_errors['area'] = exc.messages[0]
+        # Bind source confirmation into the existing signed save intent.
+        form_data['plan_token'] = plan_token
     form_errors = list(field_errors.values())
     form_fields = _get_form_fields(calculator, form_data)
     for field in form_fields:
@@ -134,6 +144,8 @@ def calculator_detail(request, slug):
         result = calculate_materials(calculator, form_data)
         from .pricing import attach_quotation
         attach_quotation(slug, result)
+        if plan_source:
+            result['plan_source'] = plan_source
         action = request.POST.get('action') if request.method == 'POST' else None
 
         if action in {'save_estimate', 'request_master', 'request_supplier'}:
@@ -160,6 +172,8 @@ def calculator_detail(request, slug):
         request,
         'calculators/detail.html',
         {
+            'plan_token': plan_token,
+            'plan_source': plan_source,
             'calculator': calculator,
             'form_data': form_data,
             'form_fields': form_fields,

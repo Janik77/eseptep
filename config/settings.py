@@ -129,3 +129,7 @@ MEDIA_URL = 'media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Isolated anonymized plan pilot only. No browser-side credentials or automatic calls.
+OPENAI_API_KEY = os.getenv('OPENAI_API_KEY', '')
+PLAN_AI_ENABLED = os.getenv('PLAN_AI_ENABLED', '0') == '1'
