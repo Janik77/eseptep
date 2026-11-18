@@ -23,7 +23,7 @@
     <div class="calculator-tabs__panel calculator-tabs__panel--auto">
         <section class="calculator-workspace calculator-workspace--unified">
             <form class="calc-form calc-form--panel" method="post" data-calc-form>
-                {% csrf_token %}{% if selected_project_id %}<input type="hidden" name="project_id" value="{{ selected_project_id }}">{% endif %}{% if plan_token %}<input type="hidden" name="plan_token" value="{{ plan_token }}">{% endif %}
+                {% csrf_token %}<input type="hidden" name="project_id" value="{{ selected_project_id|default:'' }}">{% if plan_token %}<input type="hidden" name="plan_token" value="{{ plan_token }}">{% endif %}
                 <div class="form-step-label"><h2>{% translate 'Параметры расчёта' %}</h2></div>
                 {% if form_errors %}
                     <div class="form-errors" role="alert">

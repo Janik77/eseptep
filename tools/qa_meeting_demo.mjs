@@ -36,6 +36,13 @@ for(const width of [1440,360]){
   await page.locator('[data-variant-button="comfort"]').click();
   await page.locator('select[name=project_id]').selectOption({index:1});
   const project=await page.locator('select[name=project_id]').inputValue();
+  await page.locator('[data-calc-form] [name=area]').fill('5.8');
+  assert(await page.locator('button[value=save_estimate]').isDisabled());
+  await page.locator('[data-calc-form] [name=area]').fill('4.8');
+  assert(!(await page.locator('button[value=save_estimate]').isDisabled()));
+  await page.locator('[data-calc-form] button[type=submit]').click();
+  assert.equal(await page.locator('select[name=project_id]').inputValue(),project);
+  await page.locator('[data-variant-button="comfort"]').click();
   await lang(page,language==='ru'?'kk':'ru');
   assert.equal(await page.locator('select[name=project_id]').inputValue(),project);
   assert.equal(await page.locator('[data-selected-variant-input]').inputValue(),'comfort');

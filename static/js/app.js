@@ -120,7 +120,7 @@ function initCalculatorForm() {
     }
 
     const stale = document.querySelector('[data-result-stale]');
-    const inputSignature = () => JSON.stringify([...new FormData(form)].filter(([name]) => !['csrfmiddlewaretoken','action'].includes(name)));
+    const inputSignature = () => JSON.stringify([...new FormData(form)].filter(([name]) => !['csrfmiddlewaretoken','action','project_id'].includes(name)));
     const originalSignature = inputSignature();
     const updateStale = () => {
         if (!stale) return;
