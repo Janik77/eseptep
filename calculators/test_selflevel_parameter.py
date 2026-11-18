@@ -28,7 +28,7 @@ class SelfLevelParameterTests(TestCase):
         return SelfLevelMixEdition.objects.create(version=version,consumption=Decimal(value),source_note='SYNTHETIC parameter test, not a product recommendation',source_date=date(2026,1,1),**kwargs)
 
     def test_default_identical_to_captured_base_results(self):
-        fixture=json.loads(Path(__file__).with_name('fixtures').joinpath('selflevel_baseline.json').read_text())
+        fixture=json.loads(Path(__file__).with_name('fixtures').joinpath('selflevel_baseline.json').read_text(encoding='utf-8'))
         for case in fixture['selflevel']:
             actual=calculate_materials(self.definition,case['input'])
             params=actual.pop('parameter_snapshot')
@@ -38,7 +38,7 @@ class SelfLevelParameterTests(TestCase):
 
     def test_no_effect_on_other_eleven_calculators(self):
         self.edition(is_active=True,published_at=timezone.now())
-        fixture=json.loads(Path(__file__).with_name('fixtures').joinpath('selflevel_baseline.json').read_text())
+        fixture=json.loads(Path(__file__).with_name('fixtures').joinpath('selflevel_baseline.json').read_text(encoding='utf-8'))
         for slug,case in fixture['defaults'].items():
             if slug=='nalivnoy-pol':continue
             result=calculate_materials(CALCULATORS_BY_SLUG[slug],case['input'])

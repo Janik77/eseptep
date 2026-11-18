@@ -1,7 +1,7 @@
 """Append-only canonical IDs. Never regenerate/reassign keys when labels/order change."""
 import json
 from pathlib import Path
-REGISTRY = json.loads(Path(__file__).with_name('material_registry.json').read_text())
+REGISTRY = json.loads(Path(__file__).with_name('material_registry.json').read_text(encoding='utf-8'))
 BY_KEY = {row['key']: row for row in REGISTRY}
 BY_PAIR = {(row['name'], row['unit']): row['key'] for row in REGISTRY}
 

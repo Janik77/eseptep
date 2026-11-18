@@ -69,3 +69,14 @@ python manage.py runserver
 AI-площадь и размеры обозначаются как предложения модели, а не проверенные измерения. Совпадение цитаты подтверждает только наличие строки, не правильность числового вывода. Источник сохраняет recognition_verified=false до явного человеческого подтверждения площади. Дедупликация живёт вместе с исходной записью загрузки: удаление этой записи каскадно удаляет историю анализа; новая загрузка может снова потребовать оплату. Общий резерв бюджета при этом не уменьшается.
 
 Независимая проверка выявила гонку SQLite SELECT→INSERT. Перед чтением/созданием анализа теперь берётся общий write-lock бюджета. `tools/qa_plan_concurrency.py` проверяет настоящую SQLite с 8 потоками, но **mock API**: восемь одинаковых запросов дают один вызов; пятнадцать различных запросов после него допускают всего десять вызовов и резерв200центов, без исключений. Это доказывает ограничение допуска запросов в одной БД, не фактический денежный лимит платформы. Ошибки PDF/image parser теперь переводятся в ручной ввод, не HTTP500.
+
+## Windows: registry encoding and local checks
+
+Material registry and test JSON fixtures are read explicitly as UTF-8; the app no longer depends on Windows ANSI locale or `PYTHONUTF8`. A regression test simulates a cp1251 default.
+
+For PowerShell, Node does not expand wildcard filenames: use
+```powershell
+$jsTests = @(Get-ChildItem calculators\js_tests\*.test.cjs | ForEach-Object FullName)
+node --test $jsTests
+```
+Keep `PLAN_AI_ENABLED=0` for local manual-fallback checks. Use a separate `DJANGO_DB_PATH` and `DJANGO_PRIVATE_MEDIA_ROOT`; do not seed an existing database.
