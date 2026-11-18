@@ -25,6 +25,12 @@ jobs:
           node-version: '24'
       - run: python -m pip install -r requirements.txt
       - run: python manage.py test projects.test_plan_analysis
+      - name: Concurrent plan reservations and duplicate requests (mock provider)
+        env:
+          DJANGO_DB_PATH: /tmp/eseptep-plan-browser-qa-concurrency.sqlite3
+        run: |
+          python manage.py migrate --noinput
+          PYTHONPATH=. python tools/qa_plan_concurrency.py
       - run: npm install --prefix /tmp/eseptep-browser-driver playwright@1.65.0
       - run: /tmp/eseptep-browser-driver/node_modules/.bin/playwright install ffmpeg
       - run: python manage.py migrate --noinput && PYTHONPATH=. python tools/qa_browser_seed.py

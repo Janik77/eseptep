@@ -27,7 +27,7 @@ class PlanError(Exception):
     pass
 
 
-def pages(upload):
+def _pages(upload):
     with upload.file.open('rb') as file:
         raw = file.read(MAX_BYTES + 1)
     if len(raw) > MAX_BYTES:
@@ -63,6 +63,15 @@ def pages(upload):
     return raw, result
 
 
+def pages(upload):
+    try:
+        return _pages(upload)
+    except PlanError:
+        raise
+    except Exception:
+        raise PlanError('unreadable_file') from None
+
+
 def area(value):
     try:
         number = Decimal(str(value).replace(',', '.'))
@@ -91,7 +100,7 @@ def normalize_rooms(values, frames):
         if source not in ('stated', 'dimensions'):
             source, stated = 'unknown', None
         result.append({'name': str(value.get('name') or '')[:100], 'kind': value.get('kind'),
-                       'area': stated, 'source': source, 'page': page,
+                       'area': stated, 'source': source, 'recognition_verified': False, 'page': page,
                        'evidence': evidence if line else '', 'line': line})
     return result
 
@@ -108,11 +117,14 @@ def analyze(upload):
         raise PlanError('not_configured')
     if getattr(settings, 'PRODUCTION', False):
         raise PlanError('pilot_only')
+    PlanAnalysisBudget.objects.get_or_create(pk=1)
     with transaction.atomic():
+        # Acquire the shared writer/row lock before SELECT (SQLite deferred
+        # transactions otherwise race during read-to-write upgrade).
+        PlanAnalysisBudget.objects.filter(pk=1).update(reserved_cents=F('reserved_cents'))
         result, created = PlanAnalysis.objects.get_or_create(identity=identity, defaults={'upload': upload})
         if not created:
             return result
-        PlanAnalysisBudget.objects.get_or_create(pk=1)
         reserved = PlanAnalysisBudget.objects.filter(pk=1, reserved_cents__lte=200-RESERVATION_CENTS).update(reserved_cents=F('reserved_cents')+RESERVATION_CENTS)
         if not reserved:
             result.status, result.error_code = 'failed', 'budget_limit'

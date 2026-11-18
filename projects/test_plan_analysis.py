@@ -132,3 +132,12 @@ class PlanPilotTests(TestCase):
         rooms = normalize_rooms([{'name':'Ванная','source':'stated','area':4.8,'page':1,'evidence':'3   Ванная          4,8 м²'}], frames)
         self.assertIsNotNone(rooms[0]['line'])
         self.assertEqual(rooms[0]['evidence'], '3   Ванная          4,8 м²')
+
+    @patch('urllib.request.urlopen')
+    def test_corrupt_legacy_file_is_manual_fallback_not_500(self, api):
+        broken = ProjectUpload.objects.create(user=self.user, file=SimpleUploadedFile('broken.png', b'not an image'))
+        page = self.client.post(f'/projects/{broken.pk}/plan/', {'action':'analyze'})
+        self.assertEqual(page.status_code, 200)
+        self.assertContains(page, 'Не удалось прочитать файл')
+        self.assertEqual(self.client.get(f'/projects/{broken.pk}/plan/page/1/').status_code, 404)
+        api.assert_not_called()

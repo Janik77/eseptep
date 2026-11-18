@@ -12,7 +12,7 @@
 {% for room in rooms %}<form method="post" class="plan-room">{% csrf_token %}<input type="hidden" name="action" value="confirm"><input type="hidden" name="room" value="{{ forloop.counter0 }}">
 <label>{% translate 'Помещение' %}<input name="name" value="{{ room.name }}" maxlength="100" required></label>
 <label>{% translate 'Площадь пола, м²' %}<input name="area" inputmode="decimal" value="{{ room.area|default:'' }}" required placeholder="{% translate 'Указать площадь' %}"></label>
-<p>{% if room.source == 'stated' %}{% translate 'Площадь прочитана с плана' %}{% elif room.source == 'dimensions' %}{% translate 'Площадь вычислена по размерам' %}{% else %}{% translate 'Площадь не прочитана' %}{% endif %}</p>
+<p>{% if room.source == 'stated' %}{% translate 'ИИ предложил площадь с плана — проверьте' %}{% elif room.source == 'dimensions' %}{% translate 'ИИ вычислил площадь по распознанным размерам — проверьте' %}{% else %}{% translate 'Площадь не прочитана' %}{% endif %}</p>
 {% if room.page %}<a href="{% url 'projects:plan_image' upload.pk room.page %}" target="_blank" rel="noopener">{% translate 'Открыть страницу' %} {{ room.page }}</a>{% endif %}
 {% if room.line %}<p>{% translate 'Строка текстового слоя' %} {{ room.line }}: «{{ room.evidence }}»</p>{% endif %}
 {% if room.kind == 'bathroom' %}<button type="submit" class="btn btn--primary">{% translate 'Подтвердить → плитка на пол' %}</button>{% endif %}</form>{% endfor %}

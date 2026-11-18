@@ -12,8 +12,11 @@ from .views import accessible_uploads
 
 
 def current_analysis(upload):
-    with upload.file.open('rb') as file:
-        raw = file.read(5 * 1024 * 1024 + 1)
+    try:
+        with upload.file.open('rb') as file:
+            raw = file.read(5 * 1024 * 1024 + 1)
+    except OSError:
+        return None
     owner = f'user:{upload.user_id}' if upload.user_id else f'session:{upload.guest_session_key}'
     identity = hashlib.sha256(owner.encode() + b'\0' + raw).hexdigest()
     return PlanAnalysis.objects.filter(identity=identity).first()
@@ -67,6 +70,7 @@ def plan_review(request, pk):
             return redirect(reverse('calculators:detail', args=['plitka-keramogranit']) + '?' + urlencode({
                 '_preview': '0', 'area': number, 'zone': 'floor', 'tile_format': '60x60', 'plan_token': token}))
     messages = {
+        'unreadable_file': _('Не удалось прочитать файл. Укажите площадь вручную или загрузите другой план.'),
         'not_configured': _('ИИ пока не подключён. Можно указать площадь вручную.'),
         'file_limit': _('Для анализа нужен файл до 5 МБ.'), 'page_limit': _('Для анализа нужен PDF не более двух страниц.'),
         'invalid_area': _('Укажите название и площадь от 1 до 10 000 м².'),
