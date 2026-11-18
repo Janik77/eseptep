@@ -24,10 +24,17 @@ for(const width of [1440,360]){
   await page.locator('form:has(input[name=sample][value=clear]) button').click();
   await page.locator('.plan-image').waitFor();await pause(page);
   // Test the waiting UI without claiming measured provider latency.
-  await page.route('**/projects/*/plan/',async route=>{if(route.request().method()==='POST'&&route.request().postData()?.includes('action=analyze'))await new Promise(r=>setTimeout(r,2000));await route.continue();});
-  await page.locator('[data-plan-analysis-form] button').click({noWaitAfter:true});
-  await page.locator('.plan-progress:not([hidden])').waitFor();
-  await shot(page,`waiting-${language}-${width}`);
+  let waitingCaptured=false;
+  await page.route('**/projects/*/plan/',async route=>{
+   if(route.request().method()==='POST'&&route.request().postData()?.includes('action=analyze')){
+    assert(await page.evaluate(()=>!document.querySelector('.plan-progress').hidden));
+    await page.screenshot({path:`${output}/waiting-${language}-${width}.png`,fullPage:true});
+    waitingCaptured=true;await new Promise(r=>setTimeout(r,1200));
+   }
+   await route.continue();
+  });
+  await page.locator('[data-plan-analysis-form] button').click();
+  assert(waitingCaptured);
   await page.locator('[role=alert]').waitFor();await page.unroute('**/projects/*/plan/');
   const form=page.locator('details form');await form.locator('[name=area]').fill('4,8');await pause(page);
   await shot(page,`plan-${language}-${width}`);await form.locator('button').click();
