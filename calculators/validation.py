@@ -60,6 +60,15 @@ def validate_fields(fields, data):
 
 def validate_calculator_input(calculator, data):
     cleaned = validate_fields(calculator['fields'], data)
+    if calculator['slug'] == 'plitka-keramogranit':
+        # The reference matrix has no verified kit for these combinations.
+        # Reject rather than silently returning another zone/format's materials.
+        from .services import TILE_REFERENCE_MATRIX
+        combination = (cleaned.get('zone'), cleaned.get('tile_format'))
+        if not any(key[1:] == combination for key in TILE_REFERENCE_MATRIX):
+            raise InputValidationError({'tile_format': _(
+                'Для выбранной зоны и формата пока нет проверенного набора материалов. Выберите другое сочетание или уточните расчёт у специалиста.'
+            )})
     if 'selected_variant' in data:
         allowed = ('base', 'optimal', 'maximum') if calculator['slug'] == 'demontazh' else (
             ('economy', 'comfort', 'business') if calculator['slug'] in VARIANT_CALCULATORS else ()

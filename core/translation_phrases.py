@@ -850,3 +850,6 @@ PLURAL_MESSAGES = (
     ngettext_lazy('Ensure that there are no more than %(max)s decimal place.', 'Ensure that there are no more than %(max)s decimal places.', 2),
     ngettext_lazy('Ensure that there are no more than %(max)s digit before the decimal point.', 'Ensure that there are no more than %(max)s digits before the decimal point.', 2),
 )
+
+# Admin display vocabulary is kept separate from calculation identifiers.
+from .admin_translation_phrases import TRANSLATIONS as ADMIN_TRANSLATIONS

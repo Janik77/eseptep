@@ -1,3 +1,4 @@
+from calculators.submission_test_helpers import post_result
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
@@ -25,7 +26,7 @@ class CalculatorValidationTests(TestCase):
                     result = calculate_materials(calculator, data)
                     self.assertGreater(result['grand_total'], 0)
                     self.assertLess(result['grand_total'], 10**10)
-                    response = self.client.post(reverse('calculators:detail', args=[calculator['slug']]), data)
+                    response = post_result(self.client, reverse('calculators:detail', args=[calculator['slug']]), data)
                     self.assertEqual(response.status_code, 200)
                     self.assertIsNotNone(response.context['result'])
 
@@ -46,7 +47,7 @@ class CalculatorValidationTests(TestCase):
                     with self.subTest(slug=calculator['slug'], field=field['name'], value=value[:30]):
                         with self.assertRaises(InputValidationError):
                             calculate_materials(calculator, data)
-                        response = self.client.post(reverse('calculators:detail', args=[calculator['slug']]), data)
+                        response = post_result(self.client, reverse('calculators:detail', args=[calculator['slug']]), data)
                         self.assertEqual(response.status_code, 200)
                         self.assertIsNone(response.context['result'])
                         self.assertTrue(response.context['form_errors'])
@@ -59,7 +60,7 @@ class CalculatorValidationTests(TestCase):
         for calculator in CALCULATORS:
             with self.subTest(slug=calculator['slug']):
                 for data in ({}, {**defaults(calculator), 'selected_variant': 'bogus'}, {**defaults(calculator), 'selected_variant': ''}):
-                    response = self.client.post(reverse('calculators:detail', args=[calculator['slug']]), data)
+                    response = post_result(self.client, reverse('calculators:detail', args=[calculator['slug']]), data)
                     self.assertTrue(response.context['form_errors'])
                     self.assertIsNone(response.context['result'])
 
@@ -82,9 +83,9 @@ class CalculatorValidationTests(TestCase):
         for calculator in CALCULATORS:
             with self.subTest(slug=calculator['slug']):
                 url = reverse('calculators:detail', args=[calculator['slug']])
-                preview = self.client.post(url, defaults(calculator))
+                preview = post_result(self.client, url, defaults(calculator))
                 parameter_version = (preview.context['result'].get('parameter_snapshot') or {}).get('version', '')
-                response = self.client.post(url, {**defaults(calculator), 'action': 'save_estimate', 'project_id': project.pk, 'parameter_version': parameter_version})
+                response = post_result(self.client, url, {**defaults(calculator), 'action': 'save_estimate', 'project_id': project.pk, 'parameter_version': parameter_version})
                 self.assertEqual(response.status_code, 302)
                 saved = Calculation.objects.latest('pk')
                 saved.full_clean()
@@ -124,7 +125,11 @@ class CalculatorArithmeticTests(TestCase):
                             elif field.get('step') == 1:
                                 data[field['name']] = count
                         with self.subTest(slug=calculator['slug'], data=data):
-                            self.assert_result_consistent(calculate_materials(calculator, data))
+                            if calculator['slug'] == 'plitka-keramogranit' and data['tile_format'] == 'large' and data['zone'] in {'floor', 'bathroom'}:
+                                with self.assertRaises(InputValidationError):
+                                    calculate_materials(calculator, data)
+                            else:
+                                self.assert_result_consistent(calculate_materials(calculator, data))
 
     def test_ceiling_negative_niche_regression(self):
         from .definitions import CALCULATORS_BY_SLUG
@@ -153,13 +158,13 @@ class CalculatorArithmeticTests(TestCase):
             for variant in initial.get('variants', []):
                 data = {**defaults(calculator), 'selected_variant': variant['key']}
                 with self.subTest(slug=calculator['slug'], variant=variant['key']):
-                    response = self.client.post(reverse('calculators:detail', args=[calculator['slug']]), data)
+                    response = post_result(self.client, reverse('calculators:detail', args=[calculator['slug']]), data)
                     result = response.context['result']
                     self.assertEqual(result['selected_variant_label'], variant['title'])
                     self.assertEqual(result['materials'], variant['materials'])
                     self.assertIn(variant['title'], result['copy_text'])
                     self.assert_result_consistent(result)
-                    response = self.client.post(reverse('calculators:detail', args=[calculator['slug']]), {**data, 'action': 'save_estimate', 'project_id': project.pk, 'parameter_version': (result.get('parameter_snapshot') or {}).get('version', '')})
+                    response = post_result(self.client, reverse('calculators:detail', args=[calculator['slug']]), {**data, 'action': 'save_estimate', 'project_id': project.pk, 'parameter_version': (result.get('parameter_snapshot') or {}).get('version', '')})
                     self.assertEqual(response.status_code, 302)
                     saved = Calculation.objects.latest('pk')
                     saved.full_clean()
@@ -173,7 +178,7 @@ class CalculatorArithmeticTests(TestCase):
     def test_plumbing_surcharge_is_separate_and_visible(self):
         from .definitions import CALCULATORS_BY_SLUG
         calculator = CALCULATORS_BY_SLUG['santehnika']
-        response = self.client.post(reverse('calculators:detail', args=[calculator['slug']]), {**defaults(calculator), 'selected_variant': 'business'})
+        response = post_result(self.client, reverse('calculators:detail', args=[calculator['slug']]), {**defaults(calculator), 'selected_variant': 'business'})
         result = response.context['result']
         self.assertEqual(result['additional_total'], 150000)
         self.assertContains(response, 'Дополнительная сумма пакета (состав не указан)')

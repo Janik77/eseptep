@@ -1,3 +1,4 @@
+from calculators.submission_test_helpers import post_result
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.contrib.auth.models import AnonymousUser
 from django.urls import reverse
@@ -40,14 +41,14 @@ class ProjectSelectionTests(TestCase):
 
     def test_http_missing_project_is_error_without_save(self):
         self.client.force_login(self.owner)
-        response = self.client.post(reverse('calculators:detail', args=[self.slug]), {'area': '60', 'demolition_type': 'partial', 'parameter_version': self.result['parameter_snapshot']['version'], 'action': 'save_estimate'})
+        response = post_result(self.client, reverse('calculators:detail', args=[self.slug]), {'area': '60', 'demolition_type': 'partial', 'parameter_version': self.result['parameter_snapshot']['version'], 'action': 'save_estimate'})
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Выберите проект')
         self.assertFalse(Calculation.objects.exists())
 
     def test_http_save_selected_project(self):
         self.client.force_login(self.owner)
-        response = self.client.post(reverse('calculators:detail', args=[self.slug]), {'area': '60', 'demolition_type': 'partial', 'parameter_version': self.result['parameter_snapshot']['version'], 'action': 'save_estimate', 'project_id': self.project.pk})
+        response = post_result(self.client, reverse('calculators:detail', args=[self.slug]), {'area': '60', 'demolition_type': 'partial', 'parameter_version': self.result['parameter_snapshot']['version'], 'action': 'save_estimate', 'project_id': self.project.pk})
         self.assertEqual(response.status_code, 302)
         self.assertEqual(Calculation.objects.get().project_id, self.project.pk)
 
@@ -55,7 +56,7 @@ class ProjectSelectionTests(TestCase):
         self.client.force_login(self.owner)
         for value in ['9' * 5000, str(2**63), '0', '-1', '１２', '', '1.5']:
             with self.subTest(value=value[:25]):
-                response = self.client.post(reverse('calculators:detail', args=[self.slug]), {
+                response = post_result(self.client, reverse('calculators:detail', args=[self.slug]), {
                     'area': '60', 'demolition_type': 'partial', 'parameter_version': self.result['parameter_snapshot']['version'],
                     'action': 'save_estimate', 'project_id': value})
                 self.assertEqual(response.status_code, 200)
@@ -68,7 +69,7 @@ class ProjectSelectionTests(TestCase):
         self.client.force_login(self.owner)
         payload = {'area': '20.5', 'rooms': '1', 'selected_variant': 'economy',
                    'action': 'save_estimate', 'project_id': self.project.pk}
-        response = self.client.post(reverse('calculators:detail', args=['natyazhnoy-potolok']), payload)
+        response = post_result(self.client, reverse('calculators:detail', args=['natyazhnoy-potolok']), payload)
         saved = Calculation.objects.get()
         self.assertEqual(saved.segment, 'economy')
         self.assertEqual(saved.result_data['selected_variant'], 'economy')

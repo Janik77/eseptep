@@ -8,7 +8,7 @@ const { chromium } = require(process.env.PLAYWRIGHT_PACKAGE || 'playwright');
 const base = 'http://127.0.0.1:8197';
 const output = 'browser-evidence';
 await fs.mkdir(output, { recursive: true });
-const browser = await chromium.launch({ channel: 'chrome', chromiumSandbox: true });
+const browser = await chromium.launch({ ...(process.env.CHROME_EXECUTABLE ? {executablePath: process.env.CHROME_EXECUTABLE} : {channel: 'chrome'}), chromiumSandbox: true });
 const evidence = { sha: execFileSync('git', ['rev-parse','HEAD'], {encoding:'utf8'}).trim(), checks: [] };
 const languageForm = '[data-language-switch], [data-language-form]';
 async function switchLanguage(page, lang) {
@@ -66,6 +66,16 @@ try {
       await page.locator('[data-calc-form] button[type=submit]').click();
       await page.locator('[data-variant-button]').first().waitFor();
       await shot(page,`calculator-result-${lang}-${width}`);
+      assert.equal(await page.locator('[data-result-stale]').count(),1);
+      assert.equal(await page.locator('[data-summary-variant]').count(),1);
+      await page.locator('[data-calc-form] [name=area]').fill('37.5');
+      assert(await page.locator('[data-result-stale]').isVisible(),'edited input marks old result');
+      assert(await page.locator('[data-copy-variant]').isDisabled(),'stale result cannot be copied');
+      await shot(page,`calculator-dirty-${lang}-${width}`);
+      await page.locator('[data-calc-form] [name=area]').fill('36.5');
+      assert(await page.locator('[data-result-stale]').isHidden(),'restoring input clears stale state');
+      assert(await page.locator('[data-copy-variant]').isEnabled());
+
       const params=await page.locator('.result-params').innerText();
       assert(/36[,.]5/.test(params),'fractional input preserved in result parameters');
       const labels=await page.locator('.result-params b').allTextContents();
@@ -108,6 +118,14 @@ try {
   const before=countCalculations();
   await page.locator('[data-calc-form] button[type=submit]').click();
   await page.locator('[data-variant-button]').first().waitFor();
+  await page.locator('[data-calc-form] [name=area]').fill('37.5');
+  assert(await page.locator('button[name=action][value=save_estimate]').isDisabled());
+  await switchLanguage(page,'ru');
+  assert.equal(await page.locator('[data-calc-form] [name=area]').inputValue(),'37.5');
+  assert(/37[,.]5/.test(await page.locator('.result-params').innerText()),'language preview recalculates changed fields');
+  assert.equal(countCalculations(),before,'dirty language preview cannot save');
+  await page.locator('[data-calc-form] [name=area]').fill('36.5');
+  await page.locator('[data-calc-form] button[type=submit]').click();
   const variant=page.locator('[data-variant-button]').last();
   await variant.click();
   const chosen=await variant.getAttribute('data-variant-button');

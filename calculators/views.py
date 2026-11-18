@@ -137,43 +137,17 @@ def calculator_detail(request, slug):
         action = request.POST.get('action') if request.method == 'POST' else None
 
         if action in {'save_estimate', 'request_master', 'request_supplier'}:
-            expected_parameter = request.POST.get('parameter_version', '')
-            actual_parameter = (result.get('parameter_snapshot') or {}).get('version', '')
-            if expected_parameter != actual_parameter:
-                message = 'Параметр защитной плёнки изменился. Проверьте новый расчёт и сохраните снова.' if slug == 'demontazh' else 'Параметр расхода изменился. Проверьте новый расчёт и сохраните снова.'
-                form_errors.append(_(message))
-                action = None
-            current_version = (result.get('admin_quote') or {}).get('version', '')
-            if request.POST.get('price_book_version', '') != current_version:
-                form_errors.append(_('Прайс изменился. Проверьте новый расчёт и сохраните снова.'))
-                action = None
-        if action in {'save_estimate', 'request_master', 'request_supplier'}:
+            from .submissions import submit_result
             try:
-                project, calculation = save_calculation_for_user(request.user, slug, result, request.POST.get('project_id'))
+                calculation = submit_result(request.user, slug, form_data, request.POST, result, save_calculation_for_user)
             except ValidationError as error:
                 form_errors.extend(error.messages)
                 result = calculate_materials(calculator, form_data)
                 attach_quotation(slug, result)
             else:
                 if action == 'request_master':
-                    ServiceRequest.objects.create(
-                        client=request.user,
-                        project=project,
-                        calculation=calculation,
-                        request_type=ServiceRequest.RequestType.MASTER,
-                        status=ServiceRequest.Status.NEW,
-                        comment=f'Заявка после расчёта: {calculator["title"]}',
-                    )
                     messages.success(request, _('Смета сохранена и заявка мастерам отправлена.'))
                 elif action == 'request_supplier':
-                    ServiceRequest.objects.create(
-                        client=request.user,
-                        project=project,
-                        calculation=calculation,
-                        request_type=ServiceRequest.RequestType.SUPPLIER,
-                        status=ServiceRequest.Status.NEW,
-                        comment=f'Запрос поставщикам после расчёта: {calculator["title"]}',
-                    )
                     messages.success(request, _('Смета сохранена и запрос поставщикам отправлен.'))
                 else:
                     messages.success(request, _('Смета сохранена в личный кабинет.'))
@@ -181,6 +155,7 @@ def calculator_detail(request, slug):
     if result:
         from .offers import attach_offers
         attach_offers(result)
+    from .submissions import result_token
     return render(
         request,
         'calculators/detail.html',
@@ -190,6 +165,7 @@ def calculator_detail(request, slug):
             'form_fields': form_fields,
             'segments': SEGMENT_MULTIPLIERS,
             'result': result,
+            'submission_token': result_token(request.user, slug, form_data) if result else '',
             'form_errors': form_errors,
             'calculators': CALCULATORS,
             'recommended_masters': RECOMMENDED_MASTERS,

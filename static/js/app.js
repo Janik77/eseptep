@@ -119,6 +119,18 @@ function initCalculatorForm() {
         return;
     }
 
+    const stale = document.querySelector('[data-result-stale]');
+    const inputSignature = () => JSON.stringify([...new FormData(form)].filter(([name]) => !['csrfmiddlewaretoken','action'].includes(name)));
+    const originalSignature = inputSignature();
+    const updateStale = () => {
+        if (!stale) return;
+        const changed = originalSignature !== inputSignature();
+        stale.hidden = !changed;
+        document.querySelectorAll('[data-copy-variant], [data-copy-single], .result-actions--backend button[type="submit"]').forEach(button => {button.disabled = changed;});
+    };
+    form.addEventListener('input', updateStale);
+    form.addEventListener('change', updateStale);
+
     const decimalInputs = [...form.querySelectorAll('[data-decimal-field="true"]')];
     const normalizeDecimalInputs = () => {
         decimalInputs.forEach((input) => {

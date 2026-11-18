@@ -220,3 +220,19 @@ class SupplierResponse(models.Model):
 
     def __str__(self):
         return f'{self.supplier.company_name} → #{self.request_id}'
+
+
+class CalculationSubmission(models.Model):
+    """Durable deduplication receipt; legacy calculations need no backfill."""
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    nonce = models.UUIDField()
+    action = models.CharField(max_length=24)
+    fingerprint = models.CharField(max_length=64)
+    calculation = models.ForeignKey(Calculation, null=True, on_delete=models.PROTECT)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(
+            fields=['user', 'nonce', 'action'], name='unique_calculation_submission',
+        )]

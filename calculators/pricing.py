@@ -22,7 +22,7 @@ def quotation(slug, variant, materials, book):
         rows.append({'material_key': price.material_key, 'material_title': row['title'], 'unit_label': row['unit'], 'quantity': str(quantity),
                      'unit_price': str(price.price), 'line_total': str(line_total)})
     return {'store_name': book.store_name, 'version': book.version, 'source_note': book.source_note,
-            'price_date': book.price_date.isoformat(), 'currency': 'KZT', 'method_version': 'reference-quantities@1abbc920',
+            'price_date': book.price_date.isoformat(), 'currency': 'KZT', 'method_version': 'reference-quantities@pilot-exact-match-v2',
             'variant_key': variant, 'rows': rows, 'missing': missing, 'complete': not missing and bool(rows),
             'subtotal': str(total), 'coverage': len(rows), 'required': len(rows) + len(missing)}
 

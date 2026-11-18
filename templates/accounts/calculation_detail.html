@@ -16,8 +16,8 @@
   <div class="dashboard-card">
     <h2>{% translate 'Материалы' %}</h2>
     <div class="table-wrap">
-      <table><thead><tr><th>{% translate 'Материал' %}</th><th>{% translate 'Количество' %}</th><th>{% translate 'Сумма, ₸' %}</th></tr></thead>
-      <tbody>{% for row in calculation.result_data.materials %}<tr><td>{{ row.title }}</td><td>{{ row.quantity }} {{ row.unit }}</td><td>{{ row.total|money }}</td></tr>{% empty %}<tr><td colspan="3">{% translate 'Список материалов недоступен.' %}</td></tr>{% endfor %}</tbody></table>
+      <table><thead><tr><th>{% translate 'Материал' %}</th><th>{% translate 'Кол-во' %}</th><th>{% translate 'Сумма, ₸' %}</th></tr></thead>
+      <tbody>{% for row in calculation.result_data.materials %}<tr><td>{{ row.title }}</td><td>{{ row.quantity }}&nbsp;{{ row.unit }}</td><td>{{ row.total|money }}</td></tr>{% empty %}<tr><td colspan="3">{% translate 'Список материалов недоступен.' %}</td></tr>{% endfor %}</tbody></table>
     </div>
     <p>{% translate 'Материалы:' %} {{ calculation.materials_total|money }} {% translate '₸ · Работы:' %} {{ calculation.works_total|money }} ₸</p>
     {% if calculation.result_data.totals.additional_total %}<p>{% translate 'Дополнительная сумма пакета (состав не указан):' %} {{ calculation.result_data.totals.additional_total|money }} ₸</p>{% endif %}

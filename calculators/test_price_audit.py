@@ -1,3 +1,4 @@
+from calculators.submission_test_helpers import post_result
 """Independent synthetic price audit; does not access real store data."""
 from datetime import date
 from decimal import Decimal
@@ -30,7 +31,7 @@ class IndependentPriceAudit(TestCase):
  def test_snapshot_survives_new_price_and_stale_post_creates_nothing(self):
   first=self.make_book('audit-v1',Decimal('12.34'))
   data={**self.data,'action':'save_estimate','project_id':self.project.pk,'price_book_version':'audit-v1','selected_variant':'business'}
-  response=self.client.post('/calculators/plitka-keramogranit/',data)
+  response=post_result(self.client, '/calculators/plitka-keramogranit/',data)
   self.assertEqual(response.status_code,302)
   saved=self.project.calculations.get(); snapshot=deepcopy(saved.result_data)
   self.assertEqual(snapshot['admin_quote']['variant_key'],'business')
@@ -38,7 +39,7 @@ class IndependentPriceAudit(TestCase):
   self.assertEqual(total,Decimal(snapshot['admin_quote']['subtotal']))
   first.is_active=False;first.save()
   second=self.make_book('audit-v2',Decimal('31.87'))
-  response=self.client.post('/calculators/plitka-keramogranit/',data)
+  response=post_result(self.client, '/calculators/plitka-keramogranit/',data)
   self.assertEqual(response.status_code,200);self.assertEqual(self.project.calculations.count(),1)
   saved.refresh_from_db();self.assertEqual(saved.result_data,snapshot)
   for lang in ['ru','kk']:
@@ -49,5 +50,5 @@ class IndependentPriceAudit(TestCase):
   saved.refresh_from_db();self.assertEqual(saved.result_data,snapshot)
  def test_nonstaff_cannot_publish_admin_price(self):
   book=self.make_book('admin-denial',Decimal('12.34'));book.is_active=False;book.published_at=None;book.save()
-  response=self.client.post('/admin/calculators/pricebook/',{'action':'activate','_selected_action':str(book.pk)})
+  response=post_result(self.client, '/admin/calculators/pricebook/',{'action':'activate','_selected_action':str(book.pk)})
   self.assertEqual(response.status_code,302);book.refresh_from_db();self.assertFalse(book.is_active);self.assertIsNone(book.published_at)
