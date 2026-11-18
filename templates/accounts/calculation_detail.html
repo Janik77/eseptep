@@ -5,7 +5,7 @@
 <section class="dashboard saved-estimate">
   <div class="dashboard-card">
     <a class="back-link" href="{% url 'accounts:dashboard_client' %}">{% translate '← Кабинет клиента' %}</a>
-    <h1>{{ title }}</h1>
+    <h1>{{ title }}</h1><p><a class="btn btn--secondary" href="{% url 'calculators:saved_pdf' calculation.pk %}">{% translate 'Скачать PDF' %}</a></p>
     <p>{% translate 'Сохранённая смета ·' %} {{ calculation.created_at|date:'d.m.Y H:i' }}</p>
     <p>{% translate 'Проект:' %} <b>{{ calculation.project.title }}</b>{% if variant_label %} {% translate '· Вариант:' %} <b>{{ variant_label }}</b>{% endif %}</p>
     <p>{% translate 'Это сохранённые данные расчёта, без пересчёта по текущим ценам.' %}</p>
@@ -28,6 +28,8 @@
     {% if calculation.calculator_slug == 'nalivnoy-pol' %}{% include 'calculators/partials/selflevel_parameter.html' with parameter=calculation.result_data.parameter_snapshot %}{% elif calculation.calculator_slug == 'demontazh' %}{% include 'calculators/partials/demolition_parameter.html' with parameter=calculation.result_data.parameter_snapshot %}{% endif %}
     {% include 'calculators/partials/admin_quote.html' with quote=calculation.result_data.admin_quote %}
     {% include 'calculators/partials/material_offers.html' with offers=material_offers %}
+    {% if meeting_supplier_available %}<p><a class="btn btn--primary" href="{% url 'accounts:supplier_request_preview' calculation.pk %}">{% translate 'Запросить предложение' %}</a></p>{% endif %}
+    {% for req in targeted_requests %}<p><a href="{% url 'accounts:supplier_request_detail' req.pk %}">{% translate 'Тестовая заявка' %} #{{ req.pk }}</a> · {{ req.get_status_display|system_text }}</p>{% endfor %}
     <a class="btn btn--secondary" href="{% url 'calculators:detail' calculation.calculator_slug %}">{% translate 'Начать новый расчёт' %}</a>
   </div>
 </section>

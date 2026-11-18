@@ -133,3 +133,8 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Isolated anonymized plan pilot only. No browser-side credentials or automatic calls.
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY', '')
 PLAN_AI_ENABLED = os.getenv('PLAN_AI_ENABLED', '0') == '1'
+
+ESEPTEP_DEMO_MODE = os.getenv('ESEPTEP_DEMO_MODE', '0') == '1'
+if ESEPTEP_DEMO_MODE and PRODUCTION:
+    raise ImproperlyConfigured('Demo mode cannot run in production.')
+TEMPLATES[0]['OPTIONS']['context_processors'].append('core.demo.demo_context')

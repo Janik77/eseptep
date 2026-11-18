@@ -1,0 +1,18 @@
+{% extends 'base.html' %}{% load i18n eseptep_i18n %}
+{% block title %}{% translate 'Тестовая заявка — ESEPTEP' %}{% endblock %}
+{% block content %}
+<section class="dashboard saved-estimate">
+  <div class="dashboard-card">
+    {% if is_recipient %}<a class="back-link" href="{% url 'accounts:dashboard_supplier' %}">{% translate 'Кабинет поставщика' %}</a>{% else %}<a class="back-link" href="{% url 'accounts:dashboard_client' %}">{% translate '← Кабинет клиента' %}</a>{% endif %}
+    <h1>{% translate 'Тестовая заявка' %} #{{ service_request.pk }}</h1>
+    <p>{% translate 'Получатель:' %} <strong>{{ snapshot.supplier_name }}</strong></p>
+    <p>{% translate 'Статус:' %} <strong data-request-status>{{ service_request.get_status_display|system_text }}</strong></p>
+    <p>{% translate 'Состав и цены сохранены на момент отправки. Внешних уведомлений нет.' %}</p>
+    {% if is_recipient and service_request.status == 'new' %}
+    <form method="post">{% csrf_token %}<input type="hidden" name="action" value="mark_viewed"><button class="btn btn--primary" type="submit">{% translate 'Отметить как просмотренную' %}</button></form>
+    {% endif %}
+  </div>
+  {% include 'accounts/partials/request_snapshot.html' %}
+  {% if not is_recipient and service_request.calculation_id %}<div class="dashboard-card"><a class="btn btn--secondary" href="{% url 'accounts:calculation_detail' service_request.calculation_id %}">{% translate 'Вернуться к смете' %}</a></div>{% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,92 @@
+name: Client meeting demo acceptance
+on:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  baseline:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      DJANGO_ENV: test
+      DJANGO_DB_PATH: /tmp/eseptep-meeting-baseline-browser-qa.sqlite3
+      DJANGO_PRIVATE_MEDIA_ROOT: /tmp/eseptep-meeting-baseline-media
+      DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1,testserver
+      PLAN_AI_ENABLED: '0'
+      ESEPTEP_BROWSER_QA: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 72d19710ad02718e74e74eaee0290abaf13daf5b
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - uses: actions/setup-node@v4
+        with: {node-version: '24'}
+      - run: python -m pip install -r requirements.txt
+      - run: npm install --prefix /tmp/eseptep-browser-driver playwright@1.65.0
+      - run: /tmp/eseptep-browser-driver/node_modules/.bin/playwright install ffmpeg
+      - run: python manage.py migrate --noinput && PYTHONPATH=. python tools/qa_browser_seed.py
+      - run: python manage.py shell -c "from calculators.models import PriceBook; from django.utils import timezone; PriceBook.objects.filter(version='qa-partial').update(is_active=True,published_at=timezone.now())"
+      - name: Original path before final comparison
+        run: |
+          python manage.py runserver 127.0.0.1:8207 --noreload >/tmp/baseline-server.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
+          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:8207/ >/dev/null && break || sleep 1; done
+          PLAYWRIGHT_PACKAGE=/tmp/eseptep-browser-driver/node_modules/playwright PLAN_EVIDENCE=baseline-evidence node tools/qa_plan_pilot.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: meeting-baseline-72d1971
+          path: baseline-evidence/
+  meeting:
+    needs: baseline
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      DJANGO_ENV: test
+      DJANGO_DB_PATH: /tmp/eseptep-meeting-demo-browser-qa.sqlite3
+      DJANGO_PRIVATE_MEDIA_ROOT: /tmp/eseptep-meeting-demo-media
+      DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1,testserver
+      ESEPTEP_DEMO_MODE: '1'
+      PLAN_AI_ENABLED: '0'
+      ESEPTEP_BROWSER_QA: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - uses: actions/setup-node@v4
+        with: {node-version: '24'}
+      - run: python -m pip install -r requirements.txt
+      - run: python manage.py check && python manage.py makemigrations --check --dry-run && python manage.py test
+      - run: node --test calculators/js_tests/*.test.cjs
+      - name: Targeted request SQLite concurrency
+        env:
+          DJANGO_DB_PATH: /tmp/eseptep-meeting-supplier-browser-qa.sqlite3
+        run: |
+          python manage.py migrate --noinput
+          PYTHONPATH=. python tools/qa_meeting_supplier_concurrency.py
+      - run: npm install --prefix /tmp/eseptep-browser-driver playwright@1.65.0
+      - run: /tmp/eseptep-browser-driver/node_modules/.bin/playwright install ffmpeg
+      - name: Repeatable isolated dataset
+        run: |
+          python manage.py migrate --noinput
+          python manage.py seed_meeting_demo --confirm-isolated
+          python manage.py seed_meeting_demo --confirm-isolated
+      - name: Complete manual client supplier flow desktop mobile RU KK
+        run: |
+          python manage.py runserver 127.0.0.1:8220 --noreload >/tmp/meeting-server.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
+          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:8220/ >/dev/null && break || sleep 1; done
+          PLAYWRIGHT_PACKAGE=/tmp/eseptep-browser-driver/node_modules/playwright node tools/qa_meeting_demo.mjs
+          python tools/check_meeting_pdfs.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: client-meeting-demo-evidence
+          path: |
+            meeting-evidence/
+            /tmp/meeting-server.log
+          retention-days: 14

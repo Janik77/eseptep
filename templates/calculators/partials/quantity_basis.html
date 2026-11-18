@@ -1,0 +1,1 @@
+{% load i18n %}{% if basis %}<small class="quantity-explanation">{% if basis.mode == 'ceiling' %}{% blocktranslate with raw=basis.unrounded quantity=quantity unit=unit %}К закупке: {{ raw }} → {{ quantity }} {{ unit }} (округление вверх){% endblocktranslate %}{% else %}{% translate 'Количество из эталонного набора методики' %}{% endif %}</small>{% endif %}

@@ -69,6 +69,7 @@
             </div>
         </details>
     {% endfor %}
+<p>{% translate 'Это предварительный бюджет по опубликованным тарифам, не заказ и не договор. Состав и окончательную цену нужно согласовать отдельно.' %}</p><a class="btn btn--primary" href="{% url 'accounts:client_project_create' %}">{% translate 'Создать проект для дальнейших расчётов' %}</a>
 </section>
 {% else %}
 <section class="turnkey-results turnkey-results--empty" aria-label="{% translate 'Пакеты ремонта под ключ' %}">

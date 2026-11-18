@@ -981,6 +981,17 @@ def _calculate_plitka(calculator, form_data):
         'business': _drywall_variant_from_comfort('business', 'Бизнес', TILE_VARIANT_DESCRIPTIONS['business'], comfort_materials, business_total, comfort_total),
     }
 
+    # Explain purchase rounding without changing the existing quantity formula.
+    for variant in variants.values():
+        for row, reference_row in zip(variant['materials'], reference['materials']):
+            raw_quantity = reference_row[1] if is_exact_reference else reference_row[1] * area_ratio
+            row['quantity_basis'] = {
+                'mode': 'reference' if is_exact_reference else 'ceiling',
+                'unrounded': format(raw_quantity, '.4f').rstrip('0').rstrip('.'),
+                'reference_area': format(reference_key[0], 'g'),
+                'area': format(area, 'g'),
+            }
+
     tile_form_data = {
         **form_data,
         'zone': zone,
@@ -988,7 +999,7 @@ def _calculate_plitka(calculator, form_data):
         '_metrics': [
             {'label': 'Зона', 'value': TILE_ZONE_LABELS[zone], 'unit': ''},
             {'label': 'Формат плитки', 'value': TILE_FORMAT_LABELS[tile_format], 'unit': ''},
-            {'label': 'Площадь укладки', 'value': _round_quantity(area), 'unit': 'м²'},
+            {'label': 'Площадь укладки', 'value': int(area) if area.is_integer() else area, 'unit': 'м²'},
             {'label': 'Грунтовка', 'value': '250 г/м² на 1 слой', 'unit': ''},
             {'label': 'Клей', 'value': '5–6.5 кг/м²' if tile_format == 'large' else '4–5 кг/м²', 'unit': ''},
         ],

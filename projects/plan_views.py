@@ -76,9 +76,12 @@ def plan_review(request, pk):
         'invalid_area': _('Укажите название и площадь от 1 до 10 000 м².'),
         'pilot_only': _('Анализ доступен только на тестовом стенде.'),
     }
+    previous = PlanConfirmation.objects.filter(upload=upload).order_by('-pk').first()
+    previous_data = previous.snapshot if previous else {}
     return render(request, 'projects/plan_review.html', {'upload': upload, 'analysis': analysis,
-        'rooms': rooms, 'error': messages.get(error, error), 'entered_name': request.POST.get('name', _('Ванная')),
-        'entered_area': request.POST.get('area', '')})
+        'rooms': rooms, 'error': messages.get(error, error), 'previous_confirmation': previous_data,
+        'entered_name': request.POST.get('name', previous_data.get('name', _('Ванная'))),
+        'entered_area': request.POST.get('area', previous_data.get('area', ''))})
 
 
 from decimal import Decimal

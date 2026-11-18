@@ -15,3 +15,6 @@ urlpatterns += [
     path('<int:pk>/plan/', plan_review, name='plan_review'),
     path('<int:pk>/plan/page/<int:page>/', plan_image, name='plan_image'),
 ]
+
+from .demo_samples import choose_sample
+urlpatterns += [path('examples/select/', choose_sample, name='choose_sample')]

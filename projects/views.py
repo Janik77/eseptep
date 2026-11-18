@@ -102,7 +102,7 @@ def project_upload(request):
                 guest_session_key='' if request.user.is_authenticated else request.session.session_key,
                 file=upload_form.cleaned_data['file'], comment=upload_form.cleaned_data['comment'],
                 ai_status=AI_ANALYSIS_MODE, ai_summary=DEMO_AI_SUMMARY)
-            messages.success(request, _('Файл принят для demo-анализа.'))
+            messages.success(request, _('Файл сохранён. Теперь откройте план и подтвердите площадь.'))
     return render(request, 'projects/upload.html', {
         'rate_config': rate_config,
         'upload': upload, 'estimate': estimate, 'upload_form': upload_form, 'estimate_form': estimate_form,

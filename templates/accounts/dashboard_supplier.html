@@ -43,6 +43,13 @@
         <p>{{ req.project.city }} · {{ req.project.area_m2 }} {% translate 'м²' %}</p>
         <p>{% translate 'Материалы:' %} {% if req.calculation and req.calculation.result_data.materials %}{{ req.calculation.result_data.materials|length }} {% translate 'позиций' %}{% else %}{% translate 'не указано' %}{% endif %}</p>
         <small>{{ req.comment|default:i18n_default_0 }}</small>
+        {% if req.target_supplier_id %}
+        <p>{% translate 'Демонстрационная заявка' %} #{{ req.pk }} · {{ req.get_status_display|system_text }}</p>
+        <div class="table-wrap"><table><thead><tr><th>{% translate 'Материал' %}</th><th style="white-space:nowrap">{% translate 'Кол-во' %}</th></tr></thead><tbody>
+        {% for row in req.request_snapshot.result.materials %}<tr><td>{{ row.title|system_text }}</td><td style="white-space:nowrap">{{ row.quantity }}&nbsp;{{ row.unit|system_text }}</td></tr>{% endfor %}
+        </tbody></table></div>
+        <p><a class="btn btn--primary" href="{% url 'accounts:supplier_request_detail' req.pk %}">{% translate 'Открыть заявку' %}</a></p>
+        {% endif %}
 
         <form method="post" class="master-response-form">
           {% csrf_token %}

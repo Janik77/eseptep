@@ -23,7 +23,7 @@
     <div class="calculator-tabs__panel calculator-tabs__panel--auto">
         <section class="calculator-workspace calculator-workspace--unified">
             <form class="calc-form calc-form--panel" method="post" data-calc-form>
-                {% csrf_token %}{% if plan_token %}<input type="hidden" name="plan_token" value="{{ plan_token }}">{% endif %}
+                {% csrf_token %}{% if selected_project_id %}<input type="hidden" name="project_id" value="{{ selected_project_id }}">{% endif %}{% if plan_token %}<input type="hidden" name="plan_token" value="{{ plan_token }}">{% endif %}
                 <div class="form-step-label"><h2>{% translate 'Параметры расчёта' %}</h2></div>
                 {% if form_errors %}
                     <div class="form-errors" role="alert">
@@ -102,7 +102,7 @@
                                     <div class="materials-table materials-table--primary materials-table--priced">
                                         {% for material in variant.materials %}
                                             <div class="materials-table__row">
-                                                <div><b>{{ forloop.counter }}. {{ material.title }}</b><small>{% blocktranslate with amount=material.reference_price|money unit=material.unit %}₸ {{ amount }} за {{ unit }}{% endblocktranslate %}</small></div>
+                                                <div><b>{{ forloop.counter }}. {{ material.title }}</b>{% include 'calculators/partials/quantity_basis.html' with basis=material.quantity_basis quantity=material.quantity unit=material.unit %}<small>{% blocktranslate with amount=material.reference_price|money unit=material.unit %}₸ {{ amount }} за {{ unit }}{% endblocktranslate %}</small></div>
                                                 <div class="quantity-cell"><strong class="quantity-value">{{ material.quantity }}&nbsp;{{ material.unit }}</strong>
                                                 <small class="material-line-total">₸ {{ material.reference_total|money }}</small></div>
                                             </div>
@@ -172,8 +172,10 @@
                             </select>
                         </label>
                         <button class="btn btn--secondary" type="submit" name="action" value="save_estimate">{% translate 'Сохранить в выбранный проект' %}</button>
+                        {% if not demo_mode %}
                         <button class="btn btn--primary" type="submit" name="action" value="request_master">{% translate 'Отправить заявку мастерам' %}</button>
                         <button class="btn btn--secondary" type="submit" name="action" value="request_supplier">{% translate 'Отправить запрос поставщикам' %}</button>
+                        {% else %}<p>{% translate 'Сначала сохраните смету, затем запросите предложение конкретного поставщика.' %}</p>{% endif %}
                         {% else %}
                         <p>{% translate 'Сначала создайте проект в кабинете. Расчёт не будет привязан автоматически.' %}</p>
                         <a class="btn btn--secondary" href="{% url 'accounts:client_project_create' %}" target="_blank" rel="noopener">{% translate 'Создать проект в новой вкладке' %}</a>

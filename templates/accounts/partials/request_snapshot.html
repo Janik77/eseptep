@@ -1,0 +1,14 @@
+{% load i18n eseptep_i18n %}
+<section class="dashboard-card">
+  <h2>{% translate 'Состав запроса' %}</h2>
+  <p>{% translate 'Проект:' %} {{ snapshot.project_title }} · {{ snapshot.city }}</p>
+  <p>{% translate 'Площадь пола, м²' %}: <strong>{{ snapshot.area }}</strong></p>
+  <p>{% translate 'Вариант:' %} {{ snapshot.result.selected_variant_label|system_text }}</p>
+  <div class="table-wrap"><table>
+    <thead><tr><th>{% translate 'Материал' %}</th><th style="white-space:nowrap">{% translate 'Кол-во' %}</th></tr></thead>
+    <tbody>{% for row in snapshot.result.materials %}<tr><td>{{ row.title|system_text }}</td><td style="white-space:nowrap">{{ row.quantity }}&nbsp;{{ row.unit|system_text }}</td></tr>{% empty %}<tr><td colspan="2">{% translate 'Список материалов недоступен.' %}</td></tr>{% endfor %}</tbody>
+  </table></div>
+  <p>{% translate 'Предварительная оценка калькулятора:' %} <strong style="white-space:nowrap">{{ snapshot.reference_total|money }}&nbsp;₸</strong></p>
+  {% include 'calculators/partials/admin_quote.html' with quote=snapshot.result.admin_quote %}
+  <p>{% translate 'Запрос не является заказом, оплатой или обязательством купить материалы.' %}</p>
+</section>
