@@ -3,7 +3,7 @@ import fs from 'node:fs/promises';
 import assert from 'node:assert/strict';
 const require=createRequire(import.meta.url);
 const {chromium}=require(process.env.PLAYWRIGHT_PACKAGE||'playwright');
-const browser=await chromium.launch({channel:'chrome',chromiumSandbox:true});
+const browser=await chromium.launch({...(process.env.CHROME_EXECUTABLE ? {executablePath:process.env.CHROME_EXECUTABLE} : {channel:'chrome'}),chromiumSandbox:true});
 const base='http://127.0.0.1:8197';
 const context=await browser.newContext({viewport:{width:1440,height:1000},recordVideo:{dir:'browser-evidence/material-pricing-video'}});
 const page=await context.newPage();
@@ -14,7 +14,7 @@ async function publish(version){
  await row.locator('input.action-select').check();
  await page.locator('select[name=action]').first().selectOption('activate');
  await page.locator('button[name=index]').first().click();
- await page.locator('.messagelist').getByText('Price edition activated. Saved estimates remain unchanged.',{exact:true}).waitFor();
+ await page.locator('.messagelist').getByText('Прайс опубликован. Сохранённые сметы не изменились.',{exact:true}).waitFor();
 }
 async function calculate(){
  await page.goto(base+'/calculators/plitka-keramogranit/');

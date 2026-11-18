@@ -1,3 +1,4 @@
+from calculators.submission_test_helpers import post_result
 from copy import deepcopy
 from datetime import date
 from decimal import Decimal
@@ -59,11 +60,11 @@ class DemolitionParameterTests(TestCase):
         for version in [None,'old']:
             payload={**self.data,'action':'save_estimate','project_id':self.project.pk,'consumption':'999'}
             if version:payload['parameter_version']=version
-            response=self.client.post('/calculators/demontazh/',payload)
+            response=post_result(self.client, '/calculators/demontazh/',payload)
             self.assertContains(response,STALE_MESSAGE)
             self.assertEqual(Calculation.objects.count(),0)
         payload['parameter_version']=LEGACY_VERSION
-        response=self.client.post('/calculators/demontazh/',payload)
+        response=post_result(self.client, '/calculators/demontazh/',payload)
         self.assertEqual(response.status_code,302)
         self.assertEqual(Calculation.objects.get().result_data['materials'][1]['quantity'],51)
 

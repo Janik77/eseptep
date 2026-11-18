@@ -1,3 +1,4 @@
+from calculators.submission_test_helpers import post_result
 from copy import deepcopy
 from datetime import date
 from decimal import Decimal
@@ -84,11 +85,11 @@ class SelfLevelParameterTests(TestCase):
         self.edition(is_active=True,published_at=timezone.now())
         self.client.force_login(self.user)
         payload={**self.data,'project_id':self.project.pk,'action':'save_estimate','parameter_version':LEGACY_VERSION,'consumption':'999'}
-        response=self.client.post('/calculators/nalivnoy-pol/',payload)
+        response=post_result(self.client, '/calculators/nalivnoy-pol/',payload)
         self.assertEqual(response.status_code,200);self.assertEqual(self.project.calculations.count(),0)
         self.assertEqual(response.context['result']['parameter_snapshot']['consumption'],'30.00')
         payload['parameter_version']='mix-v1'
-        response=self.client.post('/calculators/nalivnoy-pol/',payload)
+        response=post_result(self.client, '/calculators/nalivnoy-pol/',payload)
         self.assertEqual(response.status_code,302);self.assertEqual(self.project.calculations.count(),1)
 
     def test_missing_version_token_rejected_with_visible_error(self):
@@ -96,7 +97,7 @@ class SelfLevelParameterTests(TestCase):
         payload={**self.data,'project_id':self.project.pk,'action':'save_estimate'}
         for active in [False,True]:
             if active:self.edition(is_active=True,published_at=timezone.now())
-            response=self.client.post('/calculators/nalivnoy-pol/',payload)
+            response=post_result(self.client, '/calculators/nalivnoy-pol/',payload)
             self.assertEqual(response.status_code,200)
             self.assertContains(response,'Параметр расхода изменился. Проверьте новый расчёт и сохраните снова.')
             self.assertEqual(self.project.calculations.count(),0)

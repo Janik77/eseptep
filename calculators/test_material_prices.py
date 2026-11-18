@@ -1,3 +1,4 @@
+from calculators.submission_test_helpers import post_result
 from copy import deepcopy
 from datetime import date
 from decimal import Decimal
@@ -84,7 +85,7 @@ class MaterialPricingTests(TestCase):
     def test_live_result_has_real_empty_states_in_both_languages(self):
         for language in ['ru','kk']:
             self.client.cookies['django_language']=language
-            response=self.client.post(reverse('calculators:detail',args=['plitka-keramogranit']),_get_form_data(self.definition,None))
+            response=post_result(self.client, reverse('calculators:detail',args=['plitka-keramogranit']),_get_form_data(self.definition,None))
             self.assertEqual(response.status_code,200)
             self.assertContains(response,'class="material-offers admin-quote"')
             self.assertNotContains(response,'PRIVATE-NOT-FOR-DISPLAY')
@@ -95,11 +96,11 @@ class MaterialPricingTests(TestCase):
         project=ClientProject.objects.create(user=client,title='Synthetic',city='Test',area_m2=60,rooms=2)
         self.client.force_login(client)
         data={**_get_form_data(self.definition,None),'action':'save_estimate','project_id':str(project.pk),'price_book_version':'old-version'}
-        response=self.client.post(reverse('calculators:detail',args=['plitka-keramogranit']),data)
+        response=post_result(self.client, reverse('calculators:detail',args=['plitka-keramogranit']),data)
         self.assertEqual(response.status_code,200)
         self.assertEqual(project.calculations.count(),0)
         data['price_book_version']='synthetic-v1'
-        response=self.client.post(reverse('calculators:detail',args=['plitka-keramogranit']),data)
+        response=post_result(self.client, reverse('calculators:detail',args=['plitka-keramogranit']),data)
         self.assertEqual(response.status_code,302)
         self.assertEqual(project.calculations.count(),1)
 
@@ -128,7 +129,7 @@ class MaterialPricingTests(TestCase):
                 PriceBook.objects.create(store_name='Synthetic',version='race-v2',source_note='Test',price_date=date(2026,1,1),published_at=timezone.now(),is_active=True)
             return original(*args,**kwargs)
         with patch('calculators.views.save_calculation_for_user', side_effect=publication_between_validation_and_save):
-            response=self.client.post(reverse('calculators:detail',args=['plitka-keramogranit']),data)
+            response=post_result(self.client, reverse('calculators:detail',args=['plitka-keramogranit']),data)
         self.assertEqual(response.status_code,200)
         self.assertEqual(project.calculations.count(),0)
 
@@ -137,7 +138,7 @@ class MaterialPricingTests(TestCase):
         price=MaterialPrice.objects.create(book=book,calculator_slug='plitka-keramogranit',variant_key=self.result['selected_variant'],material_key=material_key(self.row['title'],self.row['unit']),unit=self.row['unit'],price=Decimal('12.34'))
         administrator=User.objects.create_superuser('admin-immutability','admin@example.test','Synthetic-only')
         self.client.force_login(administrator)
-        response=self.client.post(reverse('admin:calculators_pricebook_change',args=[book.pk]),{
+        response=post_result(self.client, reverse('admin:calculators_pricebook_change',args=[book.pk]),{
             'store_name':'Tampered synthetic','version':book.version,'source_note':'Test','price_date':'2026-01-01',
             'entries-TOTAL_FORMS':'1','entries-INITIAL_FORMS':'1','entries-MIN_NUM_FORMS':'0','entries-MAX_NUM_FORMS':'1000',
             'entries-0-id':price.pk,'entries-0-book':book.pk,'entries-0-calculator_slug':price.calculator_slug,

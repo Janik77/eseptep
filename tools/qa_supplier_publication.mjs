@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 const require=createRequire(import.meta.url);
 const {chromium}=require(process.env.PLAYWRIGHT_PACKAGE||'playwright');
 assert.equal(process.env.ESEPTEP_BROWSER_QA,'1');
-const browser=await chromium.launch({channel:'chrome',chromiumSandbox:true});
+const browser=await chromium.launch({...(process.env.CHROME_EXECUTABLE ? {executablePath:process.env.CHROME_EXECUTABLE} : {channel:'chrome'}),chromiumSandbox:true});
 const context=await browser.newContext({viewport:{width:1440,height:1000}});
 const page=await context.newPage();const base='http://127.0.0.1:8197';const checks=[];
 async function calculate(){await page.goto(base+'/calculators/plitka-keramogranit/');await page.locator('[data-calc-form] [name=area]').fill('36.5');await page.locator('[data-calc-form] button[type=submit]').click();await page.locator('[data-result-ready]').waitFor();}

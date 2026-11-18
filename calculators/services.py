@@ -319,9 +319,8 @@ def _calculate_elektrika(calculator, form_data):
     area = to_float(form_data.get('area'), 0)
     rooms = max(1, int(to_float(form_data.get('rooms'), 1)))
     selected_variant = form_data.get('selected_variant', 'comfort')
-    matrix_key = (round(area), rooms)
+    matrix_key = (area, rooms)
     reference = ELECTRIC_REFERENCE_MATRIX.get(matrix_key)
-    exact_match = reference is not None and area == matrix_key[0]
     if reference is None:
         reference = _nearest_electric_reference(area, rooms)
         quantities = _scaled_electric_quantities(area, rooms, reference)
@@ -687,7 +686,7 @@ def _calculate_gipsokarton(calculator, form_data):
     ]
     comfort_total = sum(material['reference_total'] for material in comfort_materials)
 
-    exact_key = (round(area), rooms)
+    exact_key = (area, rooms)
     is_exact_reference = exact_key in DRYWALL_REFERENCE_MATRIX[construction_type]
     area_ratio = area / reference_key[0] if reference_key[0] else 1
     total_ratio = 1 if is_exact_reference else area_ratio
@@ -967,7 +966,7 @@ def _calculate_plitka(calculator, form_data):
 
     reference_key, reference = _tile_reference(area, zone, tile_format)
     area_ratio = area / reference_key[0] if reference_key[0] else 1
-    exact_key = (round(area), zone, tile_format)
+    exact_key = (area, zone, tile_format)
     is_exact_reference = exact_key in TILE_REFERENCE_MATRIX
     comfort_materials = _tile_comfort_materials(reference['materials'], area_ratio, is_exact_reference)
     comfort_total = sum(material['reference_total'] for material in comfort_materials)
@@ -1007,10 +1006,9 @@ def _calculate_plitka(calculator, form_data):
 
 
 def _tile_reference(area, zone, tile_format):
-    key = min(
-        TILE_REFERENCE_MATRIX,
-        key=lambda item: abs(item[0] - area) + (0 if item[1] == zone else 100) + (0 if item[2] == tile_format else 50),
-    )
+    # Never substitute a different application zone or tile format for proximity.
+    candidates = [key for key in TILE_REFERENCE_MATRIX if key[1:] == (zone, tile_format)]
+    key = min(candidates, key=lambda item: abs(item[0] - area))
     return key, TILE_REFERENCE_MATRIX[key]
 
 
