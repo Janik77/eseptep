@@ -24,6 +24,10 @@ def build_pdf(estimate):
              p(tr('Предварительно. Работы, стены и потолки не включены. Неизвестные цены не равны нулю.',
                   'Алдын ала. Жұмыс, қабырға және төбе кірмейді. Белгісіз баға нөл емес.')),
              p(tr('Источник цен: ', 'Баға көзі: ')+str(s.get('price_source') or tr('не указан','көрсетілмеген')))]
+    priced = sum(r.get('line_total') is not None for r in s['procurement'])
+    calculated = sum(bool(r.get('known')) for r in s['rooms'])
+    items.append(p(tr(f'Рассчитано комнат: {calculated} из {len(s["rooms"])}. Цены: по {priced} из {len(s["procurement"])} позиций.',
+                      f'Есептелген бөлмелер: {calculated} / {len(s["rooms"])}. Бағалар: {priced} / {len(s["procurement"])} позиция.')))
     for room in s['rooms']:
         items.append(p(f"{room['name']} · {room['area'] or '?'} м² · {room['finish']}"))
         items.append(p(str(room.get('visual_evidence') or room.get('evidence') or '')))

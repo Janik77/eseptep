@@ -8,6 +8,7 @@ from django.db import transaction
 from calculators.definitions import CALCULATORS_BY_SLUG
 from calculators.services import calculate_materials
 from calculators.models import PriceBook
+from calculators.material_keys import material_key
 from calculators.pricing import quotation, lock_price_configuration
 from .models import WholePlanEstimate
 from .plan_analysis import area, PARSER_VERSION
@@ -34,7 +35,8 @@ def calculate_snapshot(rooms, analysis_id):
     book = PriceBook.objects.filter(is_active=True, published_at__isnull=False).first()
     output, grouped, procurement = [], {}, []
     for original in rooms:
-        row = {k: original.get(k) for k in ('index','name','area','source','page','evidence','visual_evidence','finish','finish_proposed','finish_evidence')}
+        row = {k: original.get(k) for k in ('index','name','area','source','page','evidence','visual_evidence','finish','finish_proposed','finish_evidence','finish_source')}
+        row['finish_source'] = row.get('finish_source') or ('suggested' if row['finish_proposed'] else 'plan' if row.get('finish_evidence') else 'user')
         row['area'] = area(row['area'])
         row['known'] = row['area'] is not None and Decimal(row['area']) >= 1
         row.update(materials=[], subtotal=None)
@@ -61,7 +63,10 @@ def calculate_snapshot(rooms, analysis_id):
             price = priced.get((material['title'], material['unit']))
             item = {'title': material['title'], 'unit': material['unit'],
                     'quantity': str(material['quantity']), 'unit_price': price['unit_price'] if price else None,
-                    'line_total': price['line_total'] if price else None, 'finish': finish}
+                    'line_total': price['line_total'] if price else None, 'finish': finish,
+                    'material_key': material_key(material['title'], material['unit']),
+                    'calculator_slug': slug, 'variant': 'comfort' if finish == 'tile' else '',
+                    'specification': '60x60' if finish == 'tile' else finish}
             group_rows.append(item)
             procurement.append(item)
         # Room rows are transparent proportional allocations of the grouped kit.
@@ -75,7 +80,10 @@ def calculate_snapshot(rooms, analysis_id):
             member['allocation'] = 'area-share-of-grouped-kit'
     combined = {}
     for row in procurement:
-        key = (row['title'], row['unit'], row['unit_price'])
+        # Only identical supported specifications can share a procurement line.
+        # Unknown registry entries never merge merely because their labels match.
+        key = (row['material_key'], row['calculator_slug'], row['variant'],
+               row['specification'], row['unit'], row['unit_price']) if row['material_key'] else ('unregistered', len(combined))
         if key not in combined:
             combined[key] = {**row}
         else:
@@ -88,7 +96,9 @@ def calculate_snapshot(rooms, analysis_id):
     unknown = sum(not r['known'] for r in output)
     return {'version': PARSER_VERSION, 'analysis_id': analysis_id, 'rooms': output, 'procurement': procurement,
             'known_area': decimal_text(sum(Decimal(r['area']) for r in output if r['known'])),
-            'unknown_rooms': unknown, 'priced_subtotal': subtotal, 'prices_complete': complete,
+            'unknown_rooms': unknown, 'calculated_rooms': len(output) - unknown,
+            'priced_positions': sum(r['line_total'] is not None for r in procurement),
+            'total_positions': len(procurement), 'priced_subtotal': subtotal, 'prices_complete': complete,
             'materials_total': subtotal if complete else None,
             'total': None, 'work_total': None, 'scope': 'floor-materials-only',
             'rounding': 'grouped-by-finish', 'price_version': book.version if book else None,

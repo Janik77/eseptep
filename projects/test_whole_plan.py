@@ -161,3 +161,82 @@ class WholePlanTests(TestCase):
         self.assertEqual(latest.snapshot['rooms'][0]['area'],'19.50')
         self.assertEqual(latest.snapshot['rooms'][0]['source'],'manual')
         self.assertEqual(api.call_count,1)
+
+    @patch('projects.plan_analysis.responses_create')
+    def test_rename_partial_edit_preserves_other_rooms_and_provenance(self, api):
+        self.rooms[0].update(finish='parquet', finish_evidence='parquet flooring')
+        estimate = self.prepared(api)
+        original = estimate.snapshot
+        response = self.client.post(f'/projects/{self.upload.pk}/whole/', {
+            'action':'update', 'estimate_id':estimate.pk, 'room':0,
+            'name':'Спальня / Жатын бөлме', 'area':'18,00'})
+        self.assertEqual(response.status_code,302)
+        self.upload.refresh_from_db()
+        new = WholePlanEstimate.objects.get(pk=self.upload.ai_summary['whole_estimate_id']).snapshot
+        self.assertEqual(new['rooms'][0]['name'],'Спальня / Жатын бөлме')
+        self.assertEqual(new['rooms'][0]['finish_source'],'plan')
+        self.assertEqual(new['rooms'][0]['source'],'stated')
+        self.assertEqual(new['rooms'][0]['visual_evidence'],original['rooms'][0]['visual_evidence'])
+        self.assertEqual(new['rooms'][1:],original['rooms'][1:])
+        self.assertEqual(new['procurement'],original['procurement'])
+        estimate.refresh_from_db()
+        self.assertEqual(estimate.snapshot,original)
+        self.assertEqual(api.call_count,1)
+
+    @patch('projects.plan_analysis.responses_create')
+    def test_partial_room_counts_coverage_and_rename_unknown_room(self, api):
+        self.rooms[0].update(area=None, source='unknown')
+        estimate = self.prepared(api)
+        self.assertEqual(estimate.snapshot['calculated_rooms'],3)
+        self.assertEqual(estimate.snapshot['priced_positions'],0)
+        self.assertGreater(estimate.snapshot['total_positions'],0)
+        self.assertEqual(self.client.post(f'/projects/{self.upload.pk}/whole/', {
+            'action':'update','estimate_id':estimate.pk,'room':0,'name':'Новая комната','area':''}).status_code,302)
+        new = WholePlanEstimate.objects.latest('pk')
+        self.assertIsNone(new.snapshot['rooms'][0]['area'])
+        self.assertTrue(new.snapshot['rooms'][0]['finish_proposed'])
+        for language in ('ru','kk'):
+            response = self.client.get(f'/projects/{self.upload.pk}/whole/', HTTP_ACCEPT_LANGUAGE=language)
+            self.assertContains(response, '3 / 4')
+            self.assertContains(response, 'Новая комната')
+        self.assertEqual(api.call_count,1)
+
+    @patch('projects.plan_analysis.responses_create')
+    def test_invalid_names_and_stale_edit_do_not_create_revision(self, api):
+        estimate=self.prepared(api)
+        count=WholePlanEstimate.objects.count()
+        for name in ('', ' ', 'x'*101, 'room\nname'):
+            self.assertEqual(self.client.post(f'/projects/{self.upload.pk}/whole/', {
+                'action':'update','estimate_id':estimate.pk,'room':0,'name':name}).status_code,400)
+        self.assertEqual(WholePlanEstimate.objects.count(),count)
+        self.assertEqual(api.call_count,1)
+
+    @patch('projects.plan_analysis.responses_create')
+    def test_group_identity_and_partial_price_coverage(self, api):
+        from calculators.models import PriceBook, MaterialPrice
+        from django.utils import timezone
+        estimate=self.prepared(api)
+        rows=estimate.snapshot['procurement']
+        self.assertTrue(all(r['material_key'] and r['specification'] and r['calculator_slug'] for r in rows))
+        row=rows[0]
+        book=PriceBook.objects.create(store_name='Synthetic test only',version='synthetic-stage2',
+            source_note='Synthetic test only',price_date=timezone.now().date(),is_active=True,published_at=timezone.now())
+        MaterialPrice.objects.create(book=book,calculator_slug=row['calculator_slug'],variant_key=row['variant'],
+            material_key=row['material_key'],unit=row['unit'],price='100')
+        updated=persist_estimate(self.upload,estimate.snapshot['rooms'],estimate.snapshot['analysis_id'])
+        self.assertGreater(updated.snapshot['priced_positions'],0)
+        self.assertLess(updated.snapshot['priced_positions'],updated.snapshot['total_positions'])
+        self.assertIsNone(updated.snapshot['materials_total'])
+        self.assertEqual(updated.snapshot['total_positions'],len(updated.snapshot['procurement']))
+        self.assertEqual(api.call_count,1)
+
+    def test_equal_labels_do_not_merge_different_supported_specifications(self):
+        from .whole_plan import calculate_snapshot
+        rooms = [dict(index=0,name='A',area='10',finish='tile',finish_proposed=True),
+                 dict(index=1,name='B',area='10',finish='laminate',finish_proposed=True)]
+        with patch('projects.whole_plan.calculate_materials', return_value={'materials':[
+            {'title':'Same label','unit':'м²','quantity':12}]}), patch('projects.whole_plan.material_key', return_value='stable-id'):
+            snapshot = calculate_snapshot(rooms,1)
+        self.assertEqual(len(snapshot['procurement']),2)
+        self.assertEqual({r['specification'] for r in snapshot['procurement']},{'60x60','laminate'})
+        self.assertEqual([r['quantity'] for r in snapshot['procurement']],['12','12'])

@@ -45,13 +45,20 @@ def whole_plan(request, pk):
                     finish = request.POST.get('finish', row['finish'])
                     if finish not in FINISHES:
                         raise ValueError
-                    row['finish'], row['finish_proposed'] = finish, False
+                    if 'finish' in request.POST and (finish != row['finish'] or request.POST.get('edit_finish') == 'yes'):
+                        row['finish'], row['finish_proposed'], row['finish_source'] = finish, False, 'user'
+                    if 'name' in request.POST:
+                        name = request.POST['name'].strip()
+                        if not name or len(name) > 100 or any(ord(c) < 32 for c in name):
+                            raise ValueError
+                        row['name'] = name
                     if request.POST.get('area'):
                         number = area(request.POST['area'])
                         if number is None or Decimal(number) < 1:
                             raise ValueError
-                        row['area'], row['source'] = number, 'manual'
-                        row['visual_evidence'] = ''
+                        if number != area(row.get('area')):
+                            row['area'], row['source'] = number, 'manual'
+                            row['visual_evidence'] = ''
                     persist_estimate(upload, rows, estimate.snapshot['analysis_id'])
                 except (ValueError, StopIteration):
                     return HttpResponseBadRequest('Invalid room, finish or missing area.')
@@ -74,6 +81,9 @@ def whole_plan(request, pk):
         'upload': upload, 'analysis': analysis, 'estimate': estimate,
         'snapshot': estimate.snapshot if estimate else None, 'error': error,
         'local_ai_enabled': bool(getattr(settings, 'LOCAL_AI_BUDGET_PATH', '')),
+        'calculated_rooms': sum(bool(r.get('known')) for r in estimate.snapshot['rooms']) if estimate else 0,
+        'priced_positions': sum(r.get('line_total') is not None for r in estimate.snapshot['procurement']) if estimate else 0,
+        'total_positions': len(estimate.snapshot['procurement']) if estimate else 0,
         'preview_page': next((r['page'] for r in (analysis.rooms if analysis else []) if r.get('area') and r.get('page')), 1),
     })
 
