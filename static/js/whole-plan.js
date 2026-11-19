@@ -22,7 +22,7 @@
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 20000);
     try {
-      const response = await fetch(form.action || location.href, {method:'POST', body:data,
+      const response = await fetch(form.getAttribute('action') || location.href, {method:'POST', body:data,
         credentials:'same-origin', signal:controller.signal, headers:{'X-Requested-With':'XMLHttpRequest'}});
       const body = await response.text();
       if (!response.ok) {
