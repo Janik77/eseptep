@@ -105,9 +105,16 @@ def calculate_snapshot(rooms, analysis_id):
             'price_source': book.source_note if book else None}
 
 
+class EstimateChanged(ValueError):
+    """The caller's revision was replaced before its write acquired the lock."""
+
+
 @transaction.atomic
-def persist_estimate(upload, rooms, analysis_id):
+def persist_estimate(upload, rooms, analysis_id, expected_id=None):
     lock_price_configuration()
+    upload.refresh_from_db(fields=['ai_summary'])
+    if expected_id is not None and upload.ai_summary.get('whole_estimate_id') != expected_id:
+        raise EstimateChanged('estimate_changed')
     snapshot = calculate_snapshot(rooms, analysis_id)
     fingerprint = hashlib.sha256(json.dumps(snapshot, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
     record, _ = WholePlanEstimate.objects.get_or_create(upload=upload, fingerprint=fingerprint, defaults={'snapshot': snapshot})

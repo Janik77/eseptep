@@ -40,5 +40,22 @@ with tempfile.TemporaryDirectory(prefix='eseptep-supplier-') as tmp:
  race(fixture.vendor,url,{'token':token,'price_0':'100','availability_0':'available'})
  assert WholeSupplierOffer.objects.count()==1
  assert WholeSupplierOffer.objects.get().snapshot['total'] is None
+ # Two simultaneous room edits sharing one revision must not silently overwrite each other.
+ from projects.models import ProjectUpload
+ from projects.whole_plan import persist_estimate,EstimateChanged
+ from copy import deepcopy
+ upload=ProjectUpload.objects.create(user=fixture.owner,file='synthetic-concurrent.pdf')
+ rooms=[dict(index=i,name='Room '+str(i),area='10',source='manual',finish='laminate',finish_proposed=True) for i in range(2)]
+ original=persist_estimate(upload,rooms,1)
+ barrier=threading.Barrier(2)
+ def edit(index):
+  try:
+   local=ProjectUpload.objects.get(pk=upload.pk);data=deepcopy(rooms);data[index]['finish']='tile'
+   barrier.wait(timeout=5)
+   try:persist_estimate(local,data,1,expected_id=original.pk);return 'saved'
+   except EstimateChanged:return 'stale'
+  finally:connections.close_all()
+ with ThreadPoolExecutor(max_workers=2) as pool:results=list(pool.map(edit,[0,1]))
+ assert sorted(results)==['saved','stale'],results
  connections.close_all()
- print('PASS: concurrent save, request confirmation and partial offer each produce exactly one immutable record.')
+ print('PASS: concurrent save, request confirmation and partial offer each produce exactly one immutable record; concurrent room edit rejects stale revision.')

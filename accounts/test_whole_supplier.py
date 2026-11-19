@@ -55,6 +55,9 @@ class WholeSupplierTests(TestCase):
         self.assertEqual(SavedWholeEstimate.objects.count(),1)
         self.client.post(reverse('accounts:save_whole',args=[self.source.pk]),{'project_id':self.project.pk})
         self.assertEqual(SavedWholeEstimate.objects.count(),1)
+        self.assertNotIn('estimate',req.request_snapshot)
+        self.assertNotIn('rooms',req.request_snapshot)
+        self.assertNotIn('evidence',req.request_snapshot['lines'][0])
         before=deepcopy(req.request_snapshot)
         self.source.snapshot['procurement'][0]['unit_price']='999';self.source.save()
         from calculators.models import PriceBook
@@ -147,3 +150,26 @@ class WholeSupplierTests(TestCase):
         client=Client(enforce_csrf_checks=True);client.force_login(self.owner)
         self.assertEqual(client.post(reverse('accounts:save_whole',args=[self.source.pk]),{'project_id':self.project.pk}).status_code,403)
         self.assertFalse(SavedWholeEstimate.objects.exists())
+
+    def test_malformed_project_ids_fail_closed_without_server_error(self):
+        url=reverse('accounts:save_whole',args=[self.source.pk])
+        for value in ('²', '1'*5000, '-1', '1.0', 'x'):
+            self.assertEqual(self.client.post(url,{'project_id':value}).status_code,404)
+        self.assertFalse(SavedWholeEstimate.objects.exists())
+
+    def test_no_confirmed_prices_is_unknown_not_zero_and_admin_freezes_identity(self):
+        from .admin import ServiceRequestAdmin
+        from django.contrib import admin
+        req=self.requested();self.client.force_login(self.vendor)
+        url=reverse('accounts:whole_request',args=[req.pk]);token=self.client.get(url).context['token']
+        self.assertEqual(self.client.post(url,{'token':token}).status_code,302)
+        self.assertIsNone(WholeSupplierOffer.objects.get().snapshot['confirmed_subtotal'])
+        self.assertContains(self.client.get(url),'Пока нет подтверждённых цен')
+        self.assertEqual(self.client.get(reverse('accounts:whole_offer_pdf',args=[req.pk])).status_code,200)
+        fields=ServiceRequestAdmin(ServiceRequest,admin.site).get_readonly_fields(None,req)
+        for field in ('client','project','target_supplier','whole_estimate','request_snapshot'):
+            self.assertIn(field,fields)
+        req.target_supplier=SupplierProfile.objects.get(user=self.foreign_vendor);req.save()
+        self.client.force_login(self.foreign_vendor)
+        self.assertEqual(self.client.get(reverse('accounts:whole_offer_pdf',args=[req.pk])).status_code,404)
+        self.assertNotContains(self.client.get(url),'Пока нет подтверждённых цен')

@@ -72,6 +72,14 @@ class ServiceRequestAdmin(admin.ModelAdmin):
     readonly_fields = ('created_at',)
     ordering = ('-created_at',)
 
+    def get_readonly_fields(self, request, obj=None):
+        # Whole-estimate associations are created only by the owner-confirmed workflow.
+        fields = super().get_readonly_fields(request, obj) + ('whole_estimate',)
+        if obj and obj.whole_estimate_id:
+            fields += ('client', 'project', 'target_supplier', 'request_type', 'calculation', 'request_snapshot')
+        return fields
+
+
 
 @admin.register(MasterResponse)
 class MasterResponseAdmin(admin.ModelAdmin):

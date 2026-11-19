@@ -14,7 +14,8 @@ from django.views.decorators.http import require_http_methods, require_POST, req
 from django.utils.translation import get_language
 from .models import ClientProject, SavedWholeEstimate, WholeSupplierOffer, ServiceRequest, UserProfile
 from .views import role_required, _meeting_supplier
-from projects.models import WholePlanEstimate
+from projects.models import WholePlanEstimate, ProjectUpload
+from .identifiers import parse_positive_id
 
 
 def tr(ru, kk):
@@ -31,11 +32,12 @@ def save_whole(request, estimate_id):
     source = get_object_or_404(WholePlanEstimate.objects.select_related('upload'), pk=estimate_id, upload__user=request.user)
     if request.method == 'GET':
         return render(request,'accounts/whole_choose_project.html',{'source':source,'projects':ClientProject.objects.filter(user=request.user), 'next_action':'save' if request.GET.get('next')=='save' else 'quote'})
-    project = get_object_or_404(ClientProject, pk=request.POST.get('project_id') if request.POST.get('project_id','').isdigit() else 0, user=request.user)
+    project = get_object_or_404(ClientProject, pk=parse_positive_id(request.POST.get('project_id')) or 0, user=request.user)
     # First statement inside the transaction is a write: no SQLite lock upgrade race.
     with transaction.atomic():
         ClientProject.objects.filter(pk=project.pk).update(title=F('title'))
         project = get_object_or_404(ClientProject,pk=project.pk,user=request.user)
+        ProjectUpload.objects.filter(pk=source.upload_id,user=request.user).update(ai_status=F('ai_status'))
         source = get_object_or_404(WholePlanEstimate.objects.select_related('upload'),pk=source.pk,upload__user=request.user)
         saved = SavedWholeEstimate.objects.filter(project=project,source=source).first()
         if not saved:
@@ -65,8 +67,11 @@ def whole_preview(request, pk):
     if not supplier or supplier.user_id == request.user.pk:
         raise Http404
     snapshot = {'schema':'whole-offer-v1','demo':True,'saved_id':saved.pk,'project_title':saved.project.title,
-        'city':saved.project.city,'supplier_name':supplier.company_name,'estimate':deepcopy(saved.snapshot)}
-    snapshot['lines'] = [{**deepcopy(row),'line_id':str(i)} for i,row in enumerate(saved.snapshot['procurement'])]
+        'city':saved.project.city,'supplier_name':supplier.company_name}
+    # Suppliers receive only what the confirmation preview shows, never room evidence or file metadata.
+    fields = ('title','unit','quantity','unit_price','line_total','material_key','calculator_slug','variant','specification')
+    snapshot['lines'] = [{**{key:deepcopy(row[key]) for key in fields if key in row},'line_id':str(i)}
+                         for i,row in enumerate(saved.snapshot['procurement'])]
     if not snapshot['lines']:
         return HttpResponseBadRequest(tr('Сначала уточните площади комнат.', 'Алдымен бөлмелердің ауданын нақтылаңыз.'))
     payload = {'user':request.user.pk,'saved':saved.pk,'supplier':supplier.pk,'digest':digest(snapshot)}
@@ -92,7 +97,7 @@ def whole_preview(request, pk):
 
 
 def accessible_request(request, pk):
-    qs=ServiceRequest.objects.filter(whole_estimate__isnull=False,request_type='supplier',project__user=F('client')).select_related('project','target_supplier','whole_estimate')
+    qs=ServiceRequest.objects.filter(whole_estimate__isnull=False,request_type='supplier',project__user=F('client'),project_id=F('whole_estimate__project_id')).select_related('project','target_supplier','whole_estimate')
     role=getattr(getattr(request.user,'profile',None),'role',None)
     if role == 'client':
         qs=qs.filter(client=request.user)
@@ -127,7 +132,7 @@ def offer_snapshot(post, snapshot):
             'availability':availability,'line_total':str(total) if total is not None else None})
     known=sum(Decimal(r['line_total']) for r in rows if r['line_total'] is not None)
     complete=bool(rows) and all(r['line_total'] is not None for r in rows)
-    return {'schema':'whole-supplier-offer-v1','lines':rows,'confirmed_subtotal':str(known),
+    return {'schema':'whole-supplier-offer-v1','lines':rows,'confirmed_subtotal':str(known) if any(r['line_total'] is not None for r in rows) else None,
         'total':str(known) if complete else None,'unconfirmed':sum(r['line_total'] is None for r in rows),
         'message':post.get('message','').strip()[:2000]}
 
@@ -151,21 +156,23 @@ def whole_request(request, pk):
             with transaction.atomic():
                 ServiceRequest.objects.filter(pk=req.pk).update(status=F('status'))
                 req,recipient=accessible_request(request,pk)
+                if not recipient:
+                    return HttpResponseForbidden()
                 if digest(req.request_snapshot)!=token['digest']:
                     return HttpResponseBadRequest(tr('Состав запроса изменился.', 'Сұраныс құрамы өзгерді.'))
-                existing=WholeSupplierOffer.objects.filter(request=req).first()
+                existing=WholeSupplierOffer.objects.filter(request=req,supplier_id=req.target_supplier_id).first()
                 if not existing:
                     if req.status not in ('new','viewed','responded'):
                         return HttpResponseBadRequest(tr('Заявка закрыта.', 'Өтінім жабылды.'))
                     WholeSupplierOffer.objects.create(request=req,supplier=req.target_supplier,snapshot=result)
                     req.status='responded';req.save(update_fields=['status'])
             return redirect('accounts:whole_request',pk=pk)
-    offer=WholeSupplierOffer.objects.filter(request=req).first()
+    offer=WholeSupplierOffer.objects.filter(request=req,supplier_id=req.target_supplier_id).first()
     quote_lines = [{**row, 'entered_price': request.POST.get('price_'+row['line_id'],'')[:12] if error else '',
                     'entered_availability': request.POST.get('availability_'+row['line_id'],'unknown') if error else 'unknown'}
                    for row in req.request_snapshot['lines']]
     return render(request,'accounts/whole_request.html',{'service_request':req,'snapshot':req.request_snapshot,
-        'offer':offer,'is_recipient':recipient,'error':error,'quote_lines':quote_lines,
+        'offer':offer,'is_recipient':recipient,'error':error,'quote_lines':quote_lines, 'entered_message':request.POST.get('message','')[:2000] if error else '',
         'token':signing.dumps({'request':req.pk,'supplier':req.target_supplier_id,'digest':digest(req.request_snapshot)},salt='whole-response-v1')})
 
 
@@ -184,7 +191,7 @@ def saved_whole_pdf(request, pk):
 @require_GET
 def whole_offer_pdf(request, pk):
     req,_=accessible_request(request,pk)
-    offer=get_object_or_404(WholeSupplierOffer,request=req)
+    offer=get_object_or_404(WholeSupplierOffer,request=req,supplier_id=req.target_supplier_id)
     from .whole_pdf import offer_pdf
     response=HttpResponse(offer_pdf(req,offer),content_type='application/pdf')
     response['Content-Disposition']=f'attachment; filename="supplier-offer-{pk}.pdf"'
