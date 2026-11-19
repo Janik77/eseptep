@@ -82,3 +82,15 @@ class PlanConfirmation(models.Model):
     upload = models.ForeignKey(ProjectUpload, on_delete=models.CASCADE)
     snapshot = models.JSONField()
     created_at = models.DateTimeField(auto_now_add=True)
+
+
+class WholePlanEstimate(models.Model):
+    """Immutable upload-scoped estimate revisions; supplier action is local simulation."""
+    upload = models.ForeignKey(ProjectUpload, on_delete=models.CASCADE)
+    fingerprint = models.CharField(max_length=64)
+    snapshot = models.JSONField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    supplier_simulated_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=['upload', 'fingerprint'], name='unique_whole_plan_revision')]
