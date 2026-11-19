@@ -151,3 +151,13 @@ class WholePlanTests(TestCase):
             legacy = self.client.get(f'/projects/upload/?upload_id={upload.pk}')
             self.assertContains(legacy, 'name="upload_id"')
         api.assert_not_called()
+
+    @patch('projects.plan_analysis.responses_create')
+    def test_known_area_manual_correction_does_not_call_provider(self, api):
+        record=self.prepared(api)
+        r=self.client.post(f'/projects/{self.upload.pk}/whole/',{'action':'update','room':'0','finish':'laminate','area':'19.5','estimate_id':record.pk})
+        self.assertEqual(r.status_code,302)
+        latest=WholePlanEstimate.objects.latest('pk')
+        self.assertEqual(latest.snapshot['rooms'][0]['area'],'19.50')
+        self.assertEqual(latest.snapshot['rooms'][0]['source'],'manual')
+        self.assertEqual(api.call_count,1)

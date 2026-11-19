@@ -20,7 +20,8 @@ from .models import PlanAnalysis, PlanAnalysisBudget
 MAX_BYTES = 5 * 1024 * 1024
 MAX_PAGES = 12
 PARSER_VERSION = "whole-floor-v1"
-# 20 cents reserved even on timeout; fixed model, <=2 resized images, 1800 output tokens.
+# Legacy per-database admission counter. Local AI additionally reserves the full
+# context worst-case600c in the authoritative SDK-boundary ledger.
 # This is intentionally much larger than the estimated token charge, NOT actual API spend.
 RESERVATION_CENTS = 20
 

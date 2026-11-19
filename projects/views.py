@@ -110,7 +110,8 @@ def project_upload(request):
                     if analysis.status == 'completed':
                         persist_estimate(upload, initial_rooms(analysis), analysis.pk)
                 except PlanError as exc:
-                    messages.warning(request, str(exc))
+                    from .plan_messages import plan_message
+                    messages.warning(request, plan_message(str(exc)))
                 return redirect('projects:whole_plan', pk=upload.pk)
             messages.success(request, _('Файл сохранён. Теперь откройте план и подтвердите площадь.'))
     from .demo_samples import typical_plans

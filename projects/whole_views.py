@@ -46,11 +46,12 @@ def whole_plan(request, pk):
                     if finish not in FINISHES:
                         raise ValueError
                     row['finish'], row['finish_proposed'] = finish, False
-                    if not row.get('known') and request.POST.get('area'):
+                    if request.POST.get('area'):
                         number = area(request.POST['area'])
                         if number is None or Decimal(number) < 1:
                             raise ValueError
                         row['area'], row['source'] = number, 'manual'
+                        row['visual_evidence'] = ''
                     persist_estimate(upload, rows, estimate.snapshot['analysis_id'])
                 except (ValueError, StopIteration):
                     return HttpResponseBadRequest('Invalid room, finish or missing area.')
@@ -65,9 +66,14 @@ def whole_plan(request, pk):
             return HttpResponseBadRequest('Unknown action.')
     if not estimate and analysis and analysis.status == 'completed':
         estimate = persist_estimate(upload, initial_rooms(analysis), analysis.pk)
+    from .plan_messages import plan_message
+    if not error and analysis and analysis.status in ('failed', 'unknown'):
+        error = analysis.error_code or 'api_failed'
+    if error:error = plan_message(error)
     return render(request, 'projects/whole_plan.html', {
         'upload': upload, 'analysis': analysis, 'estimate': estimate,
         'snapshot': estimate.snapshot if estimate else None, 'error': error,
+        'local_ai_enabled': bool(getattr(settings, 'LOCAL_AI_BUDGET_PATH', '')),
         'preview_page': next((r['page'] for r in (analysis.rooms if analysis else []) if r.get('area') and r.get('page')), 1),
     })
 
