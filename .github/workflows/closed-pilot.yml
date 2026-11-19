@@ -1,0 +1,43 @@
+name: Closed pilot apartment and supplier acceptance
+on:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  closed-pilot:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      PLAN_AI_ENABLED: '0'
+      ESTIMATE_AI_ENABLED: '0'
+      OPENAI_LIVE_CONFIRMED: '0'
+      ESEPTEP_BROWSER_QA: '1'
+      DJANGO_ENV: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - uses: actions/setup-node@v4
+        with: {node-version: '24'}
+      - run: python -m pip install -r requirements.txt
+      - run: python manage.py test --noinput && python manage.py makemigrations --check --dry-run
+      - run: python tools/qa_whole_supplier_concurrency.py && python tools/qa_whole_supplier_migration.py
+      - run: node --test calculators/js_tests/*.test.cjs
+      - run: npm install --prefix /tmp/eseptep-browser-driver playwright@1.65.0
+      - run: google-chrome --version && /tmp/eseptep-browser-driver/node_modules/.bin/playwright install ffmpeg
+      - name: Offline synthetic result and ordinary local supplier flow
+        run: |
+          python -u tools/run_closed_pilot_review.py > /tmp/closed-pilot-server.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
+          for i in $(seq 1 40); do curl -fsS http://127.0.0.1:8233/accounts/login/ >/dev/null && break || sleep 1; done
+          PLAYWRIGHT_PACKAGE=/tmp/eseptep-browser-driver/node_modules/playwright node tools/qa_closed_pilot.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: closed-pilot-synthetic-evidence
+          path: |
+            closed-pilot-evidence/
+            /tmp/closed-pilot-server.log
+          retention-days: 14

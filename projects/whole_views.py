@@ -1,4 +1,5 @@
 from decimal import Decimal
+from copy import deepcopy
 from django.conf import settings
 from django.contrib import messages
 from django.utils.translation import get_language
@@ -10,7 +11,7 @@ from .views import accessible_uploads
 from .models import WholePlanEstimate
 from .plan_views import current_analysis
 from .plan_analysis import analyze, PlanError, area, PARSER_VERSION
-from .whole_plan import initial_rooms, persist_estimate, FINISHES
+from .whole_plan import initial_rooms, persist_estimate, FINISHES, EstimateChanged
 
 
 @require_http_methods(['GET', 'POST'])
@@ -36,7 +37,7 @@ def whole_plan(request, pk):
                 return redirect('projects:whole_plan', pk=pk)
         elif action in ('update', 'save', 'supplier_simulate'):
             if not estimate or str(estimate.pk) != request.POST.get('estimate_id'):
-                return HttpResponseBadRequest('Estimate changed. Reload this upload before editing.')
+                return HttpResponseBadRequest('Есеп өзгерді. Бетті жаңартыңыз.' if (get_language() or '').startswith('kk') else 'Расчёт уже изменился. Обновите страницу перед следующей правкой.')
             if action == 'update':
                 rows = [dict(r) for r in estimate.snapshot['rooms']]
                 try:
@@ -59,9 +60,11 @@ def whole_plan(request, pk):
                         if number != area(row.get('area')):
                             row['area'], row['source'] = number, 'manual'
                             row['visual_evidence'] = ''
-                    persist_estimate(upload, rows, estimate.snapshot['analysis_id'])
+                    persist_estimate(upload, rows, estimate.snapshot['analysis_id'], expected_id=estimate.pk)
+                except EstimateChanged:
+                    return HttpResponseBadRequest('Есеп өзгерді. Бетті жаңартып, қайталаңыз.' if (get_language() or '').startswith('kk') else 'Расчёт изменился. Обновите страницу и повторите изменение.')
                 except (ValueError, StopIteration):
-                    return HttpResponseBadRequest('Invalid room, finish or missing area.')
+                    return HttpResponseBadRequest('Бөлмені, жабынды және ауданды тексеріңіз (кемінде 1 м²).' if (get_language() or '').startswith('kk') else 'Проверьте комнату, покрытие и площадь (не менее 1 м²).')
             elif action == 'supplier_simulate':
                 if not settings.ESEPTEP_DEMO_MODE:
                     return HttpResponseBadRequest('Supplier simulation is available only in demo mode.')
@@ -77,9 +80,25 @@ def whole_plan(request, pk):
     if not error and analysis and analysis.status in ('failed', 'unknown'):
         error = analysis.error_code or 'api_failed'
     if error:error = plan_message(error)
+    display_snapshot = deepcopy(estimate.snapshot) if estimate else None
+    kk = (get_language() or '').startswith('kk')
+    room_labels = {'гостиная': 'Қонақ бөлме', 'кухня': 'Асүй', 'ванная': 'Жуынатын бөлме',
+                   'санузел': 'Санторап', 'коридор': 'Дәліз', 'прихожая': 'Кіреберіс',
+                   'спальня': 'Жатын бөлме', 'детская': 'Балалар бөлмесі', 'комната': 'Бөлме'}
+    if display_snapshot:
+        for room in display_snapshot['rooms']:
+            name = room.get('name', '')
+            translated = name
+            if kk:
+                for ru, kz in room_labels.items():
+                    if name.casefold() == ru or name.casefold().startswith(ru + ' '):
+                        translated = kz + name[len(ru):]
+                        break
+            room['display_name'] = translated
     return render(request, 'projects/whole_plan.html', {
         'upload': upload, 'analysis': analysis, 'estimate': estimate,
-        'snapshot': estimate.snapshot if estimate else None, 'error': error,
+        'snapshot': display_snapshot, 'error': error,
+        'unresolved_positions': sum(r.get('line_total') is None for r in estimate.snapshot['procurement']) if estimate else 0,
         'local_ai_enabled': bool(getattr(settings, 'LOCAL_AI_BUDGET_PATH', '')),
         'calculated_rooms': sum(bool(r.get('known')) for r in estimate.snapshot['rooms']) if estimate else 0,
         'priced_positions': sum(r.get('line_total') is not None for r in estimate.snapshot['procurement']) if estimate else 0,
