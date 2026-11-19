@@ -34,7 +34,7 @@
   <div class="dashboard-card">
     <h2>{% translate 'Мои сметы' %}</h2>
     <div class="dashboard-list">
-      {% for calc in calculations %}
+      {% for saved in whole_estimates %}<article class="dashboard-item"><b>{{ saved.project.title }}</b><p>{{ saved.snapshot.known_area }} м² · {% if LANGUAGE_CODE == 'kk' %}Еден материалдары{% else %}Материалы для пола{% endif %}</p><a href="{% url 'accounts:whole_saved' saved.pk %}">{% if LANGUAGE_CODE == 'kk' %}Смета және дүкеннің жауабы{% else %}Смета и ответ магазина{% endif %}</a></article>{% endfor %}{% for calc in calculations %}
       <article class="dashboard-item">
         <b>{{ calc.calculator_slug }}</b>
         <p>{% translate 'Проект:' %} {{ calc.project.title }}{% if calc.result_data.selected_variant %} {% translate '· Вариант:' %} {{ calc.result_data.selected_variant_label|default:calc.result_data.selected_variant }}{% endif %}</p>
@@ -51,13 +51,13 @@
     <div class="dashboard-list">
       {% for req in service_requests %}
       <article class="dashboard-item">
-        <b>{{ req.get_request_type_display|system_text }}</b>
+        <b>{{ req.get_request_type_display|system_text }}</b><p>{{ req.request_snapshot.project_title|default:req.project.title }}</p>
         {% if req.target_supplier_id %}<p>{{ req.target_supplier.company_name }} · <a href="{% url 'accounts:supplier_request_detail' req.pk %}">{% translate 'Открыть заявку' %} #{{ req.pk }}</a></p>{% endif %}
         <p>
           <span class="status-badge status-badge--{{ req.status }}">{{ req.get_status_display|system_text }}</span>
           · {{ req.created_at|date:'d.m.Y' }}
         </p>
-        <small>{% translate 'Ответов мастеров:' %} {{ req.master_responses_count }} {% translate '· поставщиков:' %} {{ req.supplier_responses_count }}</small>
+        {% if req.whole_estimate_id %}{% if req.status == 'responded' %}<a href="{% url 'accounts:whole_request' req.pk %}">{% if LANGUAGE_CODE == 'kk' %}Дүкеннің жауабын ашу{% else %}Открыть ответ магазина{% endif %}</a>{% endif %}{% else %}<small>{% translate 'Ответов мастеров:' %} {{ req.master_responses_count }} {% translate '· поставщиков:' %} {{ req.supplier_responses_count }}</small>{% endif %}
       </article>
       {% empty %}<div class="empty-state">{% translate 'Заявок пока нет.' %}</div>{% endfor %}
     </div>

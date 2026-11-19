@@ -109,10 +109,10 @@ class WholePlanTests(TestCase):
         result=self.client.post('/projects/upload/', {'action':'upload_calculate','file':SimpleUploadedFile('new.png',self.raw)})
         self.assertEqual(result.status_code,302)
         self.assertIn('/whole/',result.url)
-        for lang, title in [('ru','От плана к материалам'),('kk','Жоспардан материалдарға')]:
+        for lang, title in [('ru','Материалы для пола'),('kk','Еден материалдары')]:
             response=self.client.get(result.url,HTTP_ACCEPT_LANGUAGE=lang)
             self.assertContains(response,title)
-            self.assertContains(response,'39.00')
+            self.assertContains(response,'39 м²')
             self.assertNotContains(response,'50.00')
         self.assertEqual(api.call_count,1)
 
@@ -240,3 +240,34 @@ class WholePlanTests(TestCase):
         self.assertEqual(len(snapshot['procurement']),2)
         self.assertEqual({r['specification'] for r in snapshot['procurement']},{'60x60','laminate'})
         self.assertEqual([r['quantity'] for r in snapshot['procurement']],['12','12'])
+
+    @patch('projects.plan_analysis.responses_create')
+    def test_compact_display_translation_does_not_rewrite_snapshot(self, api):
+        self.rooms[0]['name'] = 'Гостиная'
+        estimate = self.prepared(api)
+        self.client.cookies['django_language'] = 'kk'
+        response = self.client.get(f'/projects/{self.upload.pk}/whole/')
+        self.assertContains(response, 'Еден материалдары')
+        self.assertContains(response, 'Қонақ бөлме')
+        self.assertContains(response, 'data-coverage', count=4)
+        self.assertContains(response, 'id="purchase"', count=1)
+        self.assertContains(response, 'data-request-offer')
+        self.assertNotContains(response, 'data-whole-submit')
+        estimate.refresh_from_db()
+        self.assertEqual(estimate.snapshot['rooms'][0]['name'], 'Гостиная')
+        self.assertNotIn('display_name', estimate.snapshot['rooms'][0])
+        self.assertEqual(api.call_count, 1)
+
+    @patch('projects.plan_analysis.responses_create')
+    def test_autosave_concurrent_change_has_localized_failure_without_new_api(self, api):
+        from .whole_plan import EstimateChanged
+        estimate = self.prepared(api)
+        self.client.cookies['django_language'] = 'kk'
+        with patch('projects.whole_views.persist_estimate', side_effect=EstimateChanged):
+            response = self.client.post(f'/projects/{self.upload.pk}/whole/', {
+                'action': 'update', 'estimate_id': estimate.pk, 'room': 0,
+                'finish': 'tile', 'edit_finish': 'yes'}, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('Есеп өзгерді', response.content.decode())
+        self.assertEqual(WholePlanEstimate.objects.filter(upload=self.upload).count(), 1)
+        self.assertEqual(api.call_count, 1)

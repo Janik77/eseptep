@@ -51,14 +51,14 @@
         <p><a class="btn btn--primary" href="{% url 'accounts:supplier_request_detail' req.pk %}">{% translate 'Открыть заявку' %}</a></p>
         {% endif %}
 
-        <form method="post" class="master-response-form">
+        {% if not req.whole_estimate_id %}<form method="post" class="master-response-form">
           {% csrf_token %}
           <input type="hidden" name="request_id" value="{{ req.id }}">
           <label class="auth-field"><span>{{ response_form.total_price.label }}</span><input type="number" step="0.01" min="0" name="total_price" required></label>
           <label class="auth-field"><span>{{ response_form.message.label }}</span><textarea name="message" rows="3"></textarea></label>
           <label class="auth-field"><span>{{ response_form.delivery_time.label }}</span><input type="text" name="delivery_time" placeholder="{% translate 'Например, 1-2 дня' %}"></label>
           <button class="btn btn--primary" type="submit">{% translate 'Отправить ответ' %}</button>
-        </form>
+        </form>{% endif %}
       </article>
       {% empty %}<div class="empty-state">{% translate 'Новых запросов пока нет.' %}</div>{% endfor %}
     </div>
@@ -67,7 +67,7 @@
   <div class="dashboard-card">
     <h2>{% translate 'Мои ответы' %}</h2>
     <div class="dashboard-list">
-      {% for response in my_responses %}
+      {% for item in whole_offers %}<article class="dashboard-item"><a href="{% url 'accounts:whole_request' item.request_id %}">{{ item.request.request_snapshot.project_title }} · {% if LANGUAGE_CODE == 'kk' %}Дүкеннің жауабы{% else %}Ответ магазина{% endif %}</a></article>{% endfor %}{% for response in my_responses %}
       <article class="dashboard-item">
         <b>{{ response.request.project.title }}</b>
         <p>{% translate 'Цена: ₸' %} {{ response.total_price }} {% translate '· Статус:' %} {{ response.get_status_display|system_text }}</p>

@@ -168,6 +168,7 @@ class ServiceRequest(models.Model):
         SupplierProfile, on_delete=models.PROTECT, null=True, blank=True,
         related_name='targeted_requests',
     )
+    whole_estimate = models.ForeignKey('SavedWholeEstimate', on_delete=models.PROTECT, null=True, blank=True, related_name='requests')
     request_snapshot = models.JSONField(default=dict, blank=True, editable=False)
     request_type = models.CharField(max_length=20, choices=RequestType.choices)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.NEW)
@@ -180,7 +181,9 @@ class ServiceRequest(models.Model):
             fields=['calculation', 'target_supplier'],
             condition=models.Q(request_type='supplier', target_supplier__isnull=False),
             name='one_supplier_request_per_saved_estimate',
-        )]
+        ), models.UniqueConstraint(fields=['whole_estimate','target_supplier'],
+            condition=models.Q(whole_estimate__isnull=False, target_supplier__isnull=False),
+            name='one_supplier_request_per_whole_revision')]
         verbose_name = 'Заявка на сервис'
         verbose_name_plural = 'Заявки на сервис'
 
@@ -260,3 +263,22 @@ class EstimateExplanation(models.Model):
 
     class Meta:
         constraints = [models.UniqueConstraint(fields=['calculation', 'language'], name='unique_estimate_explanation_language')]
+
+
+class SavedWholeEstimate(models.Model):
+    """A client-project attachment of an immutable, explicitly selected revision."""
+    project = models.ForeignKey(ClientProject, on_delete=models.PROTECT, related_name='whole_estimates')
+    source = models.ForeignKey('projects.WholePlanEstimate', on_delete=models.PROTECT)
+    snapshot = models.JSONField(editable=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=['project', 'source'], name='one_whole_revision_per_project')]
+
+
+class WholeSupplierOffer(models.Model):
+    """One immutable line-wise offer; no purchase or external notification."""
+    request = models.OneToOneField(ServiceRequest, on_delete=models.PROTECT, related_name='whole_offer')
+    supplier = models.ForeignKey(SupplierProfile, on_delete=models.PROTECT)
+    snapshot = models.JSONField(editable=False)
+    created_at = models.DateTimeField(auto_now_add=True)

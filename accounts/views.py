@@ -26,6 +26,8 @@ from .forms import (
 )
 from .models import (
     Calculation,
+    SavedWholeEstimate,
+    WholeSupplierOffer,
     MasterProfile,
     MasterResponse,
     ServiceRequest,
@@ -142,6 +144,7 @@ def client_dashboard(request):
         'service_requests': requests,
         'master_responses': master_responses,
         'supplier_responses': supplier_responses,
+        'whole_estimates': SavedWholeEstimate.objects.filter(project__user=request.user).select_related('project').order_by('-pk'),
     }
     return render(request, 'accounts/dashboard_client.html', context)
 
@@ -258,6 +261,8 @@ def supplier_dashboard(request):
         service_request = get_object_or_404(ServiceRequest.objects.filter(Q(target_supplier__isnull=True) | Q(target_supplier=supplier_profile, target_supplier__is_active=True)).filter(project__user=F('client')).exclude(client=request.user).select_related('project', 'calculation'), id=request_id,
             request_type__in=[ServiceRequest.RequestType.SUPPLIER, ServiceRequest.RequestType.FULL_REPAIR],
             status__in=OPEN_REQUEST_STATUSES)
+        if service_request.whole_estimate_id:
+            return redirect('accounts:whole_request',pk=service_request.pk)
         if form.is_valid():
             response = form.save(commit=False)
             response.supplier = supplier_profile
@@ -285,6 +290,7 @@ def supplier_dashboard(request):
         'supplier_requests': requests,
         'response_form': form,
         'my_responses': my_responses,
+        'whole_offers': WholeSupplierOffer.objects.filter(supplier=supplier_profile).select_related('request').order_by('-pk'),
     })
 
 
@@ -460,6 +466,8 @@ def supplier_request_detail(request, request_id):
     else:
         return HttpResponseForbidden(translate('Недостаточно прав доступа.'))
     service_request = get_object_or_404(requests, pk=request_id)
+    if service_request.whole_estimate_id:
+        return redirect('accounts:whole_request',pk=service_request.pk)
     if request.method == 'POST':
         if role != UserProfile.Role.SUPPLIER or request.POST.get('action') != 'mark_viewed':
             return HttpResponseForbidden(translate('Недостаточно прав доступа.'))
