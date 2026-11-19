@@ -132,3 +132,22 @@ class WholePlanTests(TestCase):
         page=self.client.get(f'/projects/{upload.pk}/whole/')
         self.assertEqual(page.context['preview_page'],2)
         self.assertNotContains(page,'50.00')
+
+    @override_settings(PLAN_AI_ENABLED=False)
+    @patch('projects.plan_analysis.responses_create')
+    def test_primary_upload_keeps_manual_fallback_accessible_without_ai(self, api):
+        for lang in ('ru', 'kk'):
+            self.client.cookies['django_language'] = lang
+            response = self.client.post('/projects/upload/', {
+                'action':'upload_calculate',
+                'file':SimpleUploadedFile('fallback.png', self.raw, content_type='image/png'),
+            }, follow=True)
+            self.assertEqual(response.status_code, 200)
+            self.assertContains(response, 'data-manual-plan')
+            self.assertContains(response, 'data-legacy-estimate')
+            upload = ProjectUpload.objects.latest('pk')
+            self.assertContains(response, f'/projects/{upload.pk}/plan/')
+            self.assertEqual(self.client.get(f'/projects/{upload.pk}/plan/').status_code, 200)
+            legacy = self.client.get(f'/projects/upload/?upload_id={upload.pk}')
+            self.assertContains(legacy, 'name="upload_id"')
+        api.assert_not_called()
