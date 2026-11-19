@@ -30,3 +30,7 @@ meeting-demo-server-*.log
 
 typical-demo.sqlite3
 typical-demo-test.sqlite3
+
+# Isolated offline whole-apartment QA database (not user data).
+whole-plan-qa.sqlite3
+whole-plan-live-20261119.sqlite3

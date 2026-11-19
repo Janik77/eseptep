@@ -18,8 +18,9 @@ await page.locator('[data-language-switch], [data-language-form]').locator(`butt
 await page.waitForFunction(lang=>document.documentElement.lang===lang,lang);
 await page.locator('[name=file]').setInputFiles('tests/fixtures/plans/apartment-unreadable-area.pdf');
 await page.waitForTimeout(800); // Deliberate reviewable recording pace, not a readiness assertion.
-await page.locator('form [name=action][value=upload]').locator('..').locator('button[type=submit]').click();
-await page.locator('a[href$="/plan/"]').click();
+await page.locator('form [name=action][value=upload_calculate]').locator('..').locator('button[type=submit]').click();
+await page.waitForURL(/\/projects\/\d+\/whole\//);
+await page.locator('[data-manual-plan]').click();
 await page.locator('.plan-image').waitFor();
 await page.locator('form [name=action][value=analyze]').locator('..').locator('button').click();
 assert(await page.locator('[role=alert]').isVisible());

@@ -102,6 +102,17 @@ def project_upload(request):
                 guest_session_key='' if request.user.is_authenticated else request.session.session_key,
                 file=upload_form.cleaned_data['file'], comment=upload_form.cleaned_data['comment'],
                 ai_status=AI_ANALYSIS_MODE, ai_summary=DEMO_AI_SUMMARY)
+            if request.POST.get('action') == 'upload_calculate':
+                from .plan_analysis import analyze, PlanError
+                from .whole_plan import initial_rooms, persist_estimate
+                try:
+                    analysis = analyze(upload)
+                    if analysis.status == 'completed':
+                        persist_estimate(upload, initial_rooms(analysis), analysis.pk)
+                except PlanError as exc:
+                    from .plan_messages import plan_message
+                    messages.warning(request, plan_message(str(exc)))
+                return redirect('projects:whole_plan', pk=upload.pk)
             messages.success(request, _('Файл сохранён. Теперь откройте план и подтвердите площадь.'))
     from .demo_samples import typical_plans
     return render(request, 'projects/upload.html', {

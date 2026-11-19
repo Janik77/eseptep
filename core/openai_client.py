@@ -22,6 +22,11 @@ def responses_create(**payload):
         payload['reasoning'] = {'effort': 'low'}
         payload['service_tier'] = 'default'
     payload['max_output_tokens'] = min(int(payload.get('max_output_tokens', 1200)), settings.OPENAI_MAX_OUTPUT_TOKENS)
+    ledger = getattr(settings, 'LOCAL_AI_BUDGET_PATH', '')
+    ticket = None
+    if ledger:
+        from .local_ai_budget import reserve
+        ticket = reserve(ledger, payload)
     # Fixed official endpoint; never forward credentials to an environment-supplied proxy URL.
     with OpenAI(api_key=settings.OPENAI_API_KEY, base_url='https://api.openai.com/v1',
                 timeout=settings.OPENAI_TIMEOUT_SECONDS, max_retries=0) as client:
@@ -29,11 +34,21 @@ def responses_create(**payload):
         data = response.model_dump(mode='json')
     if len(json.dumps(data).encode()) > 65536:
         raise ValueError('response_limit')
+    if ticket:
+        from .local_ai_budget import reconcile, BudgetError
+        try:
+            if data.get('model') != settings.OPENAI_MODEL or data.get('service_tier') != 'default':
+                raise BudgetError('unverified_usage')
+            reconcile(ledger, ticket, data)
+        except BudgetError:
+            pass  # Unverifiable usage never releases the600c hold.
     return data
 
 
 def safe_error_code(exc):
     """Only whitelisted provider metadata, never exception messages or bodies."""
+    from .local_ai_budget import BudgetError
+    if isinstance(exc, BudgetError):return str(exc) if str(exc) in {'budget_missing','budget_invalid','budget_limit','duplicate_call','budget_configuration'} else 'budget_invalid'
     status=getattr(exc,'status_code',None)
     code=getattr(exc,'code',None)
     if code in {'model_not_found','insufficient_quota','invalid_api_key','rate_limit_exceeded'}: return code

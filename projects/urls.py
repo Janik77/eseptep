@@ -18,3 +18,9 @@ urlpatterns += [
 
 from .demo_samples import choose_sample
 urlpatterns += [path('examples/select/', choose_sample, name='choose_sample')]
+
+from .whole_views import whole_plan, whole_pdf
+urlpatterns += [
+    path('<int:pk>/whole/', whole_plan, name='whole_plan'),
+    path('<int:pk>/whole/<int:estimate_id>/pdf/', whole_pdf, name='whole_pdf'),
+]

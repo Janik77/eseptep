@@ -25,7 +25,7 @@ class PlanPilotTests(TestCase):
         self.upload = ProjectUpload.objects.create(user=self.user, file=SimpleUploadedFile('plan.png', self.raw))
 
     def response(self, area=4.8):
-        response = io.BytesIO(json.dumps({'status': 'completed', 'id': 'test-response', 'usage': {'input_tokens': 100, 'output_tokens': 50}, 'output': [{'content': [{'type': 'output_text', 'text': json.dumps({'rooms': [{'name': 'Ванная', 'kind': 'bathroom', 'source': 'stated' if area else 'unknown', 'area': area, 'page': 1, 'evidence': 'invented'}]})}]}]}).encode())
+        response = io.BytesIO(json.dumps({'status': 'completed', 'id': 'test-response', 'usage': {'input_tokens': 100, 'output_tokens': 50}, 'output': [{'content': [{'type': 'output_text', 'text': json.dumps({'rooms': [{'name': 'Ванная', 'kind': 'bathroom', 'source': 'stated' if area else 'unknown', 'area': area, 'page': 1, 'evidence': '4.8 m2' if area else 'unreadable', 'page_type': 'floor_plan'}]})}]}]}).encode())
         return json.loads(response.getvalue())
 
     @patch('projects.plan_analysis.responses_create')

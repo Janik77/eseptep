@@ -2,26 +2,27 @@
 
 {% block title %}{% translate 'Загрузить проект — ESEPTEP' %}{% endblock %}
 
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/whole-plan.css' %}">{% endblock %}
 {% block content %}
 <section class="page-hero page-hero--compact project-upload-hero">
     <span class="hero__badge">{% translate 'Загрузить проект' %}</span>
     <h1>{% translate 'Загрузите план квартиры' %}</h1>
-    <p>{% translate 'Загрузите обезличенный план. Проверьте площадь ванной и рассчитайте плитку на пол.' %}</p>
+    <p>{% if LANGUAGE_CODE == 'kk' %}Жоспарды жүктеңіз: бөлмелерді танып, еден материалдарының алдын ала есебін дайындаймыз.{% else %}Загрузите план: распознаем комнаты и подготовим предварительный расчёт материалов для пола.{% endif %}</p>
 </section>
 
 <div class="result-actions"><a class="btn btn--primary" href="#own-plan">{% translate 'Загрузить свой план' %}</a>{% if demo_mode %}<a class="btn btn--secondary" href="#typical-plans">{% translate 'Выбрать типовую планировку' %}</a>{% endif %}</div>
 <section class="project-upload-layout" aria-label="{% translate 'Загрузка проекта' %}">
-    <form id="own-plan" class="calc-form project-upload-form" method="post" enctype="multipart/form-data">
+    <form id="own-plan" data-whole-submit class="calc-form project-upload-form" method="post" enctype="multipart/form-data">
         {% csrf_token %}
-        <input type="hidden" name="action" value="upload">
+        <input type="hidden" name="action" value="upload_calculate">
         {{ upload_form.as_p }}
-        <p>{% translate 'PDF до 100 страниц, JPG, PNG или WEBP. До 10 МБ; изображения до 20 Мп. DWG пока не поддерживается.' %}</p>
-        <button class="btn btn--primary" type="submit">{% translate 'Загрузить свой план' %}</button>
+        <p>{% if LANGUAGE_CODE == 'kk' %}ЖИ талдауы: PDF — 12 бетке дейін, JPG, PNG немесе WEBP; 5 МБ дейін, суреттер 20 Мп дейін. DWG қолдау көрсетілмейді.{% else %}Для ИИ-анализа: PDF до 12 страниц, JPG, PNG или WEBP; до 5 МБ, изображения до 20 Мп. DWG пока не поддерживается.{% endif %}</p>
+        <p class="whole-disclosure">{% if LANGUAGE_CODE == 'kk' %}Батырманы басқанда файл талдау үшін OpenAI-ға жіберіледі. Тек жеке деректері жоқ жоспарды жүктеңіз. Нәтиже алдын ала есеп болып табылады.{% else %}Нажимая кнопку, вы отправляете файл в OpenAI для анализа. Загружайте только обезличенный план. Результат будет предварительным.{% endif %}</p><button class="btn btn--primary" type="submit">{% if LANGUAGE_CODE == 'kk' %}Жүктеу және есептеу{% else %}Загрузить и рассчитать{% endif %}</button><p class="whole-progress" role="status" hidden>{% if LANGUAGE_CODE == 'kk' %}Жоспарды оқып, есеп дайындап жатырмыз. Қайта басудың қажеті жоқ.{% else %}Читаем план и готовим расчёт. Повторно нажимать не нужно.{% endif %}</p>
     </form>
 
     <aside class="project-demo-note">
         <h2>{% translate 'Вы контролируете исходные данные' %}</h2>
-        <p>{% translate 'Загрузка сама по себе не отправляет файл в OpenAI. Анализ запускается отдельно; ручной ввод доступен всегда.' %}</p>
+        <p>{% if LANGUAGE_CODE == 'kk' %}Алдымен оқылған деректер бойынша есеп аласыз. Жетіспейтін аудан мен еден түрін кейін нақтылауға болады. Қабырғалар мен жұмыс құны бұл есепке кірмейді.{% else %}Сначала вы получите расчёт по прочитанным данным. Недостающую площадь и покрытие можно уточнить после. Стены и стоимость работ в этот расчёт не входят.{% endif %}</p>
         {% if show_auth_save_cta %}
             <div class="auth-soft-cta auth-soft-cta--compact">
                 <p>{% translate 'Войдите до загрузки, чтобы сохранить её за аккаунтом. Гостевой файл доступен только в текущей сессии; после входа загрузите его заново.' %}</p>
@@ -65,3 +66,5 @@
 </section>
 {% endif %}
 {% endblock %}
+
+{% block extra_js %}<script src="{% static 'js/whole-plan.js' %}" defer></script>{% endblock %}

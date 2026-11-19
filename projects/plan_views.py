@@ -7,7 +7,7 @@ from django.urls import reverse
 from django.utils.translation import gettext as _
 from django.views.decorators.http import require_GET, require_http_methods
 from .models import PlanAnalysis, PlanConfirmation
-from .plan_analysis import PlanError, analyze, area, pages
+from .plan_analysis import PlanError, analyze, area, pages, analysis_identity
 from .views import accessible_uploads
 
 
@@ -18,7 +18,7 @@ def current_analysis(upload):
     except OSError:
         return None
     owner = f'user:{upload.user_id}' if upload.user_id else f'session:{upload.guest_session_key}'
-    identity = hashlib.sha256(owner.encode() + b'\0' + raw).hexdigest()
+    identity = analysis_identity(owner, raw)
     return PlanAnalysis.objects.filter(identity=identity).first()
 
 
