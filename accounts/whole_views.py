@@ -1,0 +1,192 @@
+"""Local closed-pilot flow. No provider calls, repricing or external notifications."""
+from copy import deepcopy
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
+import hashlib
+import json
+from types import SimpleNamespace
+from django.core import signing
+from django.db import transaction
+from django.db.models import F
+from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseForbidden, Http404
+from django.shortcuts import get_object_or_404, redirect, render
+from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_http_methods, require_POST, require_GET
+from django.utils.translation import get_language
+from .models import ClientProject, SavedWholeEstimate, WholeSupplierOffer, ServiceRequest, UserProfile
+from .views import role_required, _meeting_supplier
+from projects.models import WholePlanEstimate
+
+
+def tr(ru, kk):
+    return kk if (get_language() or '').startswith('kk') else ru
+
+
+def digest(value):
+    return hashlib.sha256(json.dumps(value,sort_keys=True,ensure_ascii=False).encode()).hexdigest()
+
+
+@role_required(UserProfile.Role.CLIENT)
+@require_http_methods(['GET','POST'])
+def save_whole(request, estimate_id):
+    source = get_object_or_404(WholePlanEstimate.objects.select_related('upload'), pk=estimate_id, upload__user=request.user)
+    if request.method == 'GET':
+        return render(request,'accounts/whole_choose_project.html',{'source':source,'projects':ClientProject.objects.filter(user=request.user), 'next_action':'save' if request.GET.get('next')=='save' else 'quote'})
+    project = get_object_or_404(ClientProject, pk=request.POST.get('project_id') if request.POST.get('project_id','').isdigit() else 0, user=request.user)
+    # First statement inside the transaction is a write: no SQLite lock upgrade race.
+    with transaction.atomic():
+        ClientProject.objects.filter(pk=project.pk).update(title=F('title'))
+        project = get_object_or_404(ClientProject,pk=project.pk,user=request.user)
+        source = get_object_or_404(WholePlanEstimate.objects.select_related('upload'),pk=source.pk,upload__user=request.user)
+        saved = SavedWholeEstimate.objects.filter(project=project,source=source).first()
+        if not saved:
+            if source.upload.ai_summary.get('whole_estimate_id') != source.pk:
+                return HttpResponseBadRequest(tr('Расчёт изменился. Откройте текущую версию.', 'Есеп өзгерді. Ағымдағы нұсқаны ашыңыз.'))
+            saved = SavedWholeEstimate.objects.create(project=project,source=source,snapshot=deepcopy(source.snapshot))
+    return redirect('accounts:whole_preview' if request.POST.get('next') == 'quote' else 'accounts:whole_saved', pk=saved.pk)
+
+
+def owned_saved(request, pk):
+    return get_object_or_404(SavedWholeEstimate.objects.select_related('project','source'),pk=pk,project__user=request.user)
+
+
+@role_required(UserProfile.Role.CLIENT)
+@require_GET
+def whole_saved(request, pk):
+    saved = owned_saved(request,pk)
+    return render(request,'accounts/whole_saved.html',{'saved':saved,'supplier':_meeting_supplier(),
+        'requests':saved.requests.filter(client=request.user).select_related('target_supplier')})
+
+
+@role_required(UserProfile.Role.CLIENT)
+@require_http_methods(['GET','POST'])
+def whole_preview(request, pk):
+    saved = owned_saved(request,pk)
+    supplier = _meeting_supplier()
+    if not supplier or supplier.user_id == request.user.pk:
+        raise Http404
+    snapshot = {'schema':'whole-offer-v1','demo':True,'saved_id':saved.pk,'project_title':saved.project.title,
+        'city':saved.project.city,'supplier_name':supplier.company_name,'estimate':deepcopy(saved.snapshot)}
+    snapshot['lines'] = [{**deepcopy(row),'line_id':str(i)} for i,row in enumerate(saved.snapshot['procurement'])]
+    if not snapshot['lines']:
+        return HttpResponseBadRequest(tr('Сначала уточните площади комнат.', 'Алдымен бөлмелердің ауданын нақтылаңыз.'))
+    payload = {'user':request.user.pk,'saved':saved.pk,'supplier':supplier.pk,'digest':digest(snapshot)}
+    if request.method == 'POST':
+        try:
+            if signing.loads(request.POST.get('token',''),salt='whole-request-v1',max_age=3600) != payload or request.POST.get('confirm') != 'yes':
+                raise ValueError
+        except (signing.BadSignature,ValueError):
+            return HttpResponseBadRequest(tr('Проверьте состав и подтвердите запрос заново.', 'Құрамын тексеріп, сұранысты қайта растаңыз.'))
+        with transaction.atomic():
+            SavedWholeEstimate.objects.filter(pk=saved.pk).update(snapshot=F('snapshot'))
+            locked = owned_saved(request,pk)
+            current_supplier = _meeting_supplier()
+            if not current_supplier or current_supplier.pk != supplier.pk:
+                raise Http404
+            if locked.snapshot != saved.snapshot:
+                return HttpResponseBadRequest(tr('Смета изменилась.', 'Смета өзгерді.'))
+            req,_ = ServiceRequest.objects.get_or_create(whole_estimate=locked,target_supplier=supplier,
+                defaults={'client':request.user,'project':locked.project,'request_type':'supplier','request_snapshot':snapshot})
+        return redirect('accounts:whole_request',pk=req.pk)
+    return render(request,'accounts/whole_preview.html',{'saved':saved,'snapshot':snapshot,
+        'token':signing.dumps(payload,salt='whole-request-v1')})
+
+
+def accessible_request(request, pk):
+    qs=ServiceRequest.objects.filter(whole_estimate__isnull=False,request_type='supplier',project__user=F('client')).select_related('project','target_supplier','whole_estimate')
+    role=getattr(getattr(request.user,'profile',None),'role',None)
+    if role == 'client':
+        qs=qs.filter(client=request.user)
+    elif role == 'supplier':
+        qs=qs.filter(target_supplier__user=request.user,target_supplier__is_active=True)
+    else:
+        raise Http404
+    return get_object_or_404(qs,pk=pk), role == 'supplier'
+
+
+def offer_snapshot(post, snapshot):
+    rows=[]
+    for row in snapshot['lines']:
+        key=row['line_id']
+        availability=post.get('availability_'+key,'unknown')
+        if availability not in ('available','unavailable','unknown'):
+            raise ValueError
+        raw=post.get('price_'+key,'').strip().replace(',','.')
+        price=None
+        if raw:
+            if len(raw)>12:
+                raise ValueError
+            try:
+                price=Decimal(raw)
+                if not price.is_finite() or price<0 or price>Decimal('999999999.99') or price.as_tuple().exponent < -2:
+                    raise ValueError
+            except InvalidOperation:
+                raise ValueError
+        # Price alone is not a confirmed offer when stock is unknown/unavailable.
+        total=(price*Decimal(row['quantity'])).quantize(Decimal('.01'),rounding=ROUND_HALF_UP) if price is not None and availability=='available' else None
+        rows.append({**deepcopy(row),'unit_price':str(price) if price is not None else None,
+            'availability':availability,'line_total':str(total) if total is not None else None})
+    known=sum(Decimal(r['line_total']) for r in rows if r['line_total'] is not None)
+    complete=bool(rows) and all(r['line_total'] is not None for r in rows)
+    return {'schema':'whole-supplier-offer-v1','lines':rows,'confirmed_subtotal':str(known),
+        'total':str(known) if complete else None,'unconfirmed':sum(r['line_total'] is None for r in rows),
+        'message':post.get('message','').strip()[:2000]}
+
+
+@login_required
+@require_http_methods(['GET','POST'])
+def whole_request(request, pk):
+    req, recipient=accessible_request(request,pk)
+    error=''
+    if request.method=='POST':
+        if not recipient:
+            return HttpResponseForbidden()
+        try:
+            token=signing.loads(request.POST.get('token',''),salt='whole-response-v1',max_age=3600)
+            if token != {'request':req.pk,'supplier':req.target_supplier_id,'digest':digest(req.request_snapshot)}:
+                raise ValueError
+            result=offer_snapshot(request.POST,req.request_snapshot)
+        except (signing.BadSignature,ValueError):
+            error=tr('Проверьте цены и наличие. Суммы должны быть неотрицательными, до двух знаков после запятой.', 'Баға мен қолжетімділікті тексеріңіз. Сома теріс болмауы және үтірден кейін екі таңбадан аспауы тиіс.')
+        else:
+            with transaction.atomic():
+                ServiceRequest.objects.filter(pk=req.pk).update(status=F('status'))
+                req,recipient=accessible_request(request,pk)
+                if digest(req.request_snapshot)!=token['digest']:
+                    return HttpResponseBadRequest(tr('Состав запроса изменился.', 'Сұраныс құрамы өзгерді.'))
+                existing=WholeSupplierOffer.objects.filter(request=req).first()
+                if not existing:
+                    if req.status not in ('new','viewed','responded'):
+                        return HttpResponseBadRequest(tr('Заявка закрыта.', 'Өтінім жабылды.'))
+                    WholeSupplierOffer.objects.create(request=req,supplier=req.target_supplier,snapshot=result)
+                    req.status='responded';req.save(update_fields=['status'])
+            return redirect('accounts:whole_request',pk=pk)
+    offer=WholeSupplierOffer.objects.filter(request=req).first()
+    quote_lines = [{**row, 'entered_price': request.POST.get('price_'+row['line_id'],'')[:12] if error else '',
+                    'entered_availability': request.POST.get('availability_'+row['line_id'],'unknown') if error else 'unknown'}
+                   for row in req.request_snapshot['lines']]
+    return render(request,'accounts/whole_request.html',{'service_request':req,'snapshot':req.request_snapshot,
+        'offer':offer,'is_recipient':recipient,'error':error,'quote_lines':quote_lines,
+        'token':signing.dumps({'request':req.pk,'supplier':req.target_supplier_id,'digest':digest(req.request_snapshot)},salt='whole-response-v1')})
+
+
+@role_required(UserProfile.Role.CLIENT)
+@require_GET
+def saved_whole_pdf(request, pk):
+    saved=owned_saved(request,pk)
+    from projects.whole_pdf import build_pdf
+    response=HttpResponse(build_pdf(SimpleNamespace(snapshot=saved.snapshot,pk=saved.pk,created_at=saved.created_at)),content_type='application/pdf')
+    response['Content-Disposition']=f'attachment; filename="saved-floor-{pk}.pdf"'
+    response['Cache-Control']='private, no-store'
+    return response
+
+
+@login_required
+@require_GET
+def whole_offer_pdf(request, pk):
+    req,_=accessible_request(request,pk)
+    offer=get_object_or_404(WholeSupplierOffer,request=req)
+    from .whole_pdf import offer_pdf
+    response=HttpResponse(offer_pdf(req,offer),content_type='application/pdf')
+    response['Content-Disposition']=f'attachment; filename="supplier-offer-{pk}.pdf"'
+    response['Cache-Control']='private, no-store'
+    return response
