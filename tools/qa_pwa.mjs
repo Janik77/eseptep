@@ -88,12 +88,23 @@ if (engine === 'chrome') {
     // CDP installation leaves the desktop user's launch choice in browser mode
     // on some Chrome builds. Select Open in window via actual OS app settings.
     await cdp.send('PWA.changeAppUserSettings', { manifestId, displayMode: 'standalone' });
-    const newApp = context.waitForEvent('page', { timeout: 15000 });
     const { targetId } = await cdp.send('PWA.launch', { manifestId });
-    const app = await newApp;
+    // Chrome may open an extra installation tab. Observe the actual target
+    // returned for the explicit OS launch, not the first arbitrary page event.
+    let app;
+    for (let attempts = 0; !app && attempts < 48; attempts++) {
+      for (const candidate of context.pages()) {
+        const session = await context.newCDPSession(candidate).catch(() => null);
+        if (!session) continue;
+        try {
+          const { targetInfo } = await session.send('Target.getTargetInfo').catch(() => ({}));
+          if (targetInfo?.targetId === targetId) { app = candidate; break; }
+        } finally { await session.detach().catch(() => {}); }
+      }
+      if (!app) await new Promise(resolve => setTimeout(resolve, 250));
+    }
+    assert.ok(app, 'Chrome did not expose its launched app target');
     await app.waitForLoadState();
-    const appSession = await context.newCDPSession(app);
-    assert.equal((await appSession.send('Target.getTargetInfo')).targetInfo.targetId, targetId);
     const mode = await app.evaluate(() => ({ standalone: matchMedia('(display-mode: standalone)').matches, browser: matchMedia('(display-mode: browser)').matches, location: location.pathname }));
     console.log('Chrome actual launched app display mode:', mode);
     await app.waitForFunction(() => matchMedia('(display-mode: standalone)').matches, null, { timeout: 6000 });
