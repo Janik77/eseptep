@@ -10,6 +10,7 @@
   {% if reviewing %}
     {% include 'accounts/whole_lines.html' with lines=snapshot.lines %}
     {% include 'accounts/whole_request_subtotal.html' %}
+    {% include 'accounts/whole_catalog_version.html' with version=saved.snapshot.price_version %}
     <a href="{% url 'accounts:whole_preview' saved.pk %}">{% if LANGUAGE_CODE == 'kk' %}Таңдауды өзгерту{% else %}Изменить выбор{% endif %}</a>
     <form method="post" class="whole-request-confirm">{% csrf_token %}
       <input type="hidden" name="token" value="{{ token }}">

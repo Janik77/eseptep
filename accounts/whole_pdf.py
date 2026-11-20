@@ -18,6 +18,13 @@ def offer_pdf(request, offer):
     rows=[p(tr('Предложение тестового магазина','Тест дүкенінің ұсынысы')),
         p(r['project_title']),p(r['supplier_name']),p(offer.created_at.isoformat()),
         p(tr('Это не заказ и не обязательство купить.','Бұл тапсырыс немесе сатып алу міндеттемесі емес.'))]
+    # The linked saved estimate is the immutable source; never re-read the active price book.
+    catalog_version = request.whole_estimate.snapshot.get('price_version')
+    if catalog_version:
+        rows.append(p(tr('Справочно, редакция каталога исходной сметы ESEPTEP: ',
+                         'Анықтама: ESEPTEP бастапқы сметасының каталог нұсқасы: ') + catalog_version))
+        rows.append(p(tr('Цены предложения указаны магазином отдельно.',
+                         'Ұсыныс бағаларын дүкен бөлек көрсеткен.')))
     statuses={'available':tr('В наличии','Бар'),'unknown':tr('Наличие не подтверждено','Бар-жоғы расталмаған'),'unavailable':tr('Нет в наличии','Жоқ')}
     for line in s['lines']:
         price=line['unit_price'] if line['unit_price'] is not None else tr('уточнить','нақтылау')

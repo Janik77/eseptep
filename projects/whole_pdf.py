@@ -24,6 +24,8 @@ def build_pdf(estimate):
              p(tr('Предварительно. Работы, стены и потолки не включены. Неизвестные цены не равны нулю.',
                   'Алдын ала. Жұмыс, қабырға және төбе кірмейді. Белгісіз баға нөл емес.')),
              p(tr('Источник цен: ', 'Баға көзі: ')+str(s.get('price_source') or tr('не указан','көрсетілмеген')))]
+    if s.get('price_version'):
+        items.append(p(tr('Редакция каталога сметы ESEPTEP: ', 'ESEPTEP сметасының каталог нұсқасы: ') + s['price_version']))
     priced = sum(r.get('line_total') is not None for r in s['procurement'])
     calculated = sum(bool(r.get('known')) for r in s['rooms'])
     items.append(p(tr(f'Рассчитано комнат: {calculated} из {len(s["rooms"])}. Цены: по {priced} из {len(s["procurement"])} позиций.',
