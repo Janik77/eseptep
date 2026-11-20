@@ -39,6 +39,8 @@ def build_pdf(estimate):
         if row.get('purchase_unit') == 'pack':
             pack = tr('упак.', 'қапт.')
             quantity = f"{row['purchase_quantity']} {pack} ({row['pack_coverage']} {row['unit']} / {pack}; {tr('нужно', 'қажет')} {quantity})"
+            if row.get('purchase_covered_quantity'):
+                quantity += f"; {tr('к закупке', 'сатып алу')} {row['purchase_covered_quantity']} {row['unit']}"
         items.append(p(f"{row['title']}: {quantity} × {price} = {total} ₸"))
     items.extend([p(tr('Подытог позиций с ценой: ', 'Бағасы бар позициялар жиыны: ')+s['priced_subtotal']+' ₸'),
                   p(tr('Окончательная стоимость неизвестна. Согласуйте работы и недостающие данные.',

@@ -26,6 +26,8 @@ def offer_pdf(request, offer):
         if line.get('purchase_unit') == 'pack':
             pack = tr('упак.', 'қапт.')
             quantity = f"{line['purchase_quantity']} {pack} ({line['pack_coverage']} {line['unit']} / {pack}; {tr('нужно', 'қажет')} {quantity})"
+            if line.get('purchase_covered_quantity'):
+                quantity += f"; {tr('к закупке', 'сатып алу')} {line['purchase_covered_quantity']} {line['unit']}"
         rows.append(p(f"{line['title']}: {quantity} × {price} ₸; {statuses[line['availability']]}; {amount} ₸"))
     rows += [p((tr('Сумма предложения: ','Ұсыныстың жалпы сомасы: ') if s['total'] is not None else tr('Подтверждённая часть: ','Расталған бөлігі: '))+(s['confirmed_subtotal']+' ₸' if s['confirmed_subtotal'] is not None else tr('пока нет подтверждённых цен','расталған баға әзірге жоқ'))),
              p(tr('Неподтверждённых позиций: ','Расталмаған позициялар: ')+str(s['unconfirmed'])),p(s['message'])]

@@ -52,8 +52,13 @@ try {
     await page.locator('#purchase summary').click();
     const purchase=await page.locator('#purchase').innerText();
     assert.match(purchase,language==='ru'?/32\s*упак\./:/32\s*қапт\./);
-    assert.match(purchase,/316\s800/);
+    assert.match(purchase,/316\s800/);assert.match(purchase,/70,4\s*м²/);
     await picture(page,`floor-packs-${language}`);
+    await page.locator('#details-0 summary').click();
+    await page.locator('#details-0 [name=name]').focus();
+    assert.equal(await page.locator('[data-request-offer]').isVisible(),false);
+    await page.locator('#details-0 summary').click();
+    assert.equal(await page.locator('[data-request-offer]').isVisible(),true);
     await change(page,'tile');await page.reload();
     assert.equal(await page.locator('#finish-0').inputValue(),'tile');
     assert.equal(await page.locator('#finish-1').inputValue(),'laminate');

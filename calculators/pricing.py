@@ -27,7 +27,8 @@ def quotation(slug, variant, materials, book, *, include_packs=False):
         if include_packs and price.pack_coverage is not None:
             billed_quantity = (quantity / price.pack_coverage).to_integral_value(rounding=ROUND_CEILING)
             metadata = {'price_basis': 'pack', 'pack_coverage': format(price.pack_coverage.normalize(), 'f'),
-                        'purchase_quantity': str(billed_quantity), 'purchase_unit': 'pack'}
+                        'purchase_quantity': str(billed_quantity), 'purchase_unit': 'pack',
+                        'purchase_covered_quantity': format((billed_quantity * price.pack_coverage).normalize(), 'f')}
             if price.price_basis == 'canonical':
                 unit_price = (price.price * price.pack_coverage).quantize(Decimal('.01'), rounding=ROUND_HALF_UP)
                 if not unit_price:
