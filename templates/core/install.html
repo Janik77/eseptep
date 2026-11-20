@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}{{ install_copy.title }}{% endblock %}
+{% block content %}
+<section class="pwa-install">
+    <header class="pwa-intro">
+        <img src="{% static 'pwa/icon-192.png' %}" width="62" height="62" alt="">
+        <div><h1>{{ install_copy.title }}</h1><p>{{ install_copy.intro }}</p></div>
+    </header>
+    <button class="btn btn--primary pwa-button" type="button" data-install-app hidden>{{ install_copy.install }}</button>
+    <p class="pwa-installed" data-installed-app hidden>{{ install_copy.installed }}</p>
+    <div class="pwa-platforms">
+        <section class="pwa-platform"><h2>{{ install_copy.android }}</h2><ol>{% for step in install_copy.android_steps %}<li>{{ step }}</li>{% endfor %}</ol></section>
+        <section class="pwa-platform"><h2>{{ install_copy.ios }}</h2><ol>{% for step in install_copy.ios_steps %}<li>{{ step }}</li>{% endfor %}</ol></section>
+    </div>
+    <p class="pwa-online">{{ install_copy.online }}</p>
+    <a class="pwa-back" href="{% url 'core:home' %}">{{ install_copy.home }}</a>
+</section>
+{% endblock %}
