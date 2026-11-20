@@ -13,6 +13,7 @@ os.environ.update(DJANGO_SETTINGS_MODULE='config.settings',DJANGO_ENV='developme
 import django;django.setup()
 from django.core.management import call_command
 from django.contrib.auth.models import User
+from accounts.models import ClientProject
 from django.core.files.base import ContentFile
 from projects.models import ProjectUpload,PlanAnalysis
 from projects.whole_plan import initial_rooms,persist_estimate
@@ -26,6 +27,7 @@ if DB.exists():
 call_command('migrate',interactive=False)
 call_command('seed_meeting_demo',confirm_isolated=True)
 user=User.objects.get(username='demo-client@example.test')
+ClientProject.objects.get_or_create(user=user,title='ESEPTEP · 72 м²',defaults={'city':'Шымкент','area_m2':'72.00','rooms':5})
 raw=(ROOT/'tests/fixtures/plans/typical-two-room.pdf').read_bytes()
 identity=analysis_identity(f'user:{user.pk}',raw)
 analysis=PlanAnalysis.objects.filter(identity=identity).first()

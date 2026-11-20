@@ -73,7 +73,7 @@ def draft(version):
  book=PriceBook.objects.create(store_name='Original synthetic',version=version,source_note='Synthetic concurrency',price_date=date(2026,1,1))
  row=r['materials'][0]
  entry=MaterialPrice.objects.create(book=book,calculator_slug=definition['slug'],variant_key=r['selected_variant'],material_key=material_key(row['title'],row['unit']),unit=row['unit'],price=Decimal('12.34'))
- payload={'store_name':'Edited synthetic','version':version,'source_note':'Edited source','price_date':'2026-01-01','entries-TOTAL_FORMS':'1','entries-INITIAL_FORMS':'1','entries-MIN_NUM_FORMS':'0','entries-MAX_NUM_FORMS':'1000','entries-0-id':entry.pk,'entries-0-book':book.pk,'entries-0-calculator_slug':entry.calculator_slug,'entries-0-variant_key':entry.variant_key,'entries-0-material_key':entry.material_key,'entries-0-unit':entry.unit,'entries-0-price':'88.88','_save':'Save'}
+ payload={'store_name':'Edited synthetic','version':version,'source_note':'Edited source','price_date':'2026-01-01','entries-TOTAL_FORMS':'1','entries-INITIAL_FORMS':'1','entries-MIN_NUM_FORMS':'0','entries-MAX_NUM_FORMS':'1000','entries-0-id':entry.pk,'entries-0-book':book.pk,'entries-0-calculator_slug':entry.calculator_slug,'entries-0-variant_key':entry.variant_key,'entries-0-material_key':entry.material_key,'entries-0-unit':entry.unit,'entries-0-price':'88.88','entries-0-price_basis':'canonical','_save':'Save'}
  return book,entry,payload
 book,entry,payload=draft('admin-publish-first');acquired.clear()
 def admin_publisher_first():

@@ -66,13 +66,13 @@ try{
  const initial=await page.locator('#finish-0').inputValue();
  await change(page,initial==='tile'?'laminate':'tile');await shot(page,'ordinary-upload-changed-ru-390');
  await page.locator('[data-request-offer]').click();
- await page.locator('#whole-project').selectOption({index:0});await page.locator('form:has(#whole-project) button').click();
+ await page.locator('#whole-project').selectOption({label:'ESEPTEP · 72 м²'});await page.locator('form:has(#whole-project) button').click();
  const picks=page.locator('[data-choose-lines] [name=line]');assert((await picks.count())>2);
  for(let i=2;i<await picks.count();i++)await picks.nth(i).uncheck();
  await page.locator('[data-choose-lines] button[type=submit]').click();
  const confirm=page.locator('form:has([name=confirm])');await confirm.waitFor();
  const savedUrl=new URL(page.url());savedUrl.pathname=savedUrl.pathname.replace(/request\/$/,'');savedUrl.search='';
- assert.equal(await page.locator('.whole-materials li').count(),2);await shot(page,'request-review-ru-390');
+ assert.equal(await page.locator('.whole-materials li').count(),2);assert.match(await page.locator('.dashboard').innerText(),/ESEPTEP · 72 м²/);await shot(page,'request-review-ru-390');
  await confirm.locator('[name=confirm]').check();await confirm.locator('button').click();await page.waitForURL(/whole-requests\/\d+\//);const requestUrl=page.url();
  const supplier=await browser.newContext({viewport:{width:390,height:900}});const sp=await supplier.newPage();sp.on('pageerror',e=>errors.push(e.message));await login(sp,'supplier');
  const requestPath=new URL(requestUrl).pathname;
