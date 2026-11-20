@@ -65,11 +65,13 @@ def status(path):
         return {'ceiling_cents':CEILING,'accounted_cents':used,'remaining_cents':CEILING-used,'next_hold_cents':HOLD,'next_call_available':used+HOLD<=CEILING}
 
 
-def reserve(path, payload):
+def reserve(path, payload, *, scope=None):
     if payload.get('model') != 'gpt-6.1-sol' or payload.get('service_tier') != 'default' or payload.get('max_output_tokens') != 1800 or payload.get('tools') or payload.get('previous_response_id'):
         raise BudgetError('budget_configuration')
     status(path)
-    identity=hashlib.sha256(json.dumps(payload,sort_keys=True,separators=(',',':')).encode()).hexdigest()
+    payload_bytes = json.dumps(payload, sort_keys=True, separators=(',', ':')).encode()
+    # A private scope belongs only to the ledger, never to provider request data.
+    identity=hashlib.sha256(payload_bytes if scope is None else scope.encode()+b'\0'+payload_bytes).hexdigest()
     with connect(path) as c:
         c.execute('BEGIN IMMEDIATE')
         if c.execute("SELECT 1 FROM events WHERE kind='reserve' AND identity=?",(identity,)).fetchone():

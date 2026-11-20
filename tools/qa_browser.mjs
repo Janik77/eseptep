@@ -207,9 +207,23 @@ try {
     }
   }
   await page.goto(`${base}/projects/upload/`);
-  await page.locator('[type=file]').setInputFiles({name:'unsupported.txt',mimeType:'text/plain',buffer:Buffer.from('synthetic')});
-  await page.locator('.project-upload-form button[type=submit]').click();
-  assert(await page.locator('.errorlist').count()>0,'unsupported file error visible');
+  for (const [lang, label] of [['ru', /Выберите PDF/], ['kk', /PDF, JPG, PNG/]]) {
+    if ((await page.locator('html').getAttribute('lang')) !== lang) await switchLanguage(page, lang);
+    const before = uploadPosts.length;
+    const unsupported = {name:'unsupported.txt',mimeType:'text/plain',buffer:Buffer.from('synthetic')};
+    await page.locator('[type=file]').setInputFiles(unsupported);
+    const alert = page.locator('#plan-file-selection-error');
+    assert(await alert.isVisible(), 'unsupported selection has an inline message');
+    assert.match(await alert.innerText(), label);
+    await page.locator('.project-upload-form button[type=submit]').click();
+    assert.equal(uploadPosts.length, before, 'client must not POST unsupported file');
+    const token = await page.locator('#own-plan [name=csrfmiddlewaretoken]').inputValue();
+    const direct = await page.request.post(`${base}/projects/upload/`, {multipart:{csrfmiddlewaretoken:token, action:'upload_calculate', file:unsupported}});
+    assert.equal(direct.status(), 200);
+    assert.match(await direct.text(), /class="errorlist/);
+    await page.locator('[type=file]').setInputFiles([]);
+  }
+  evidence.checks.push('RU/KK unsupported format: inline client rejection, no POST, direct HTTP server validation');
   for(const role of ['master','supplier']) {
     const roleContext=await browser.newContext({viewport:{width:390,height:844}});
     const rolePage=await roleContext.newPage();

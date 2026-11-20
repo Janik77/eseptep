@@ -48,6 +48,24 @@
       root.removeAttribute('aria-busy'); busy = false;
     }
   }
+  const planInput = document.querySelector('#own-plan input[type=file][data-analysis-max-bytes]');
+  function validatePlanInput() {
+    const file = planInput.files[0];
+    const kk = document.documentElement.lang.startsWith('kk');
+    let message = '';
+    if (file && !/\.(?:pdf|jpe?g|png|webp)$/i.test(file.name))
+      message = kk ? 'PDF, JPG, PNG немесе WEBP таңдаңыз.' : 'Выберите PDF, JPG, PNG или WEBP.';
+    else if (file && (!file.size || file.size > Number(planInput.dataset.analysisMaxBytes)))
+      message = kk ? 'Көлемі 5 МБ-дан аспайтын бос емес файлды таңдаңыз.' : 'Выберите непустой файл до 5 МБ.';
+    planInput.setCustomValidity(message);
+    if (message) planInput.setAttribute('aria-invalid', 'true');
+    else planInput.removeAttribute('aria-invalid');
+    const notice = document.getElementById('plan-file-selection-error');
+    if (notice) { notice.textContent = message; notice.hidden = !message; }
+    return !message;
+  }
+  planInput?.addEventListener('change', () => { validatePlanInput(); });
+  planInput?.addEventListener('invalid', validatePlanInput);
   document.addEventListener('change', event => {
     const form = event.target.closest('form[data-coverage]');
     if (form && event.target.matches('select')) update(form);

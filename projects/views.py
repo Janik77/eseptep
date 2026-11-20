@@ -55,7 +55,7 @@ def project_upload(request):
     upload = None
     estimate = None
     rate_config = rate_configuration()
-    upload_form = ProjectUploadForm()
+    upload_form = ProjectUploadForm(for_analysis=True)
     estimate_form = ProjectEstimateForm(initial={'repair_level': ProjectUpload.RepairLevel.STANDARD})
     if request.method == 'GET' and request.GET.get('upload_id'):
         try:
@@ -94,13 +94,14 @@ def project_upload(request):
                     estimate = {**upload.estimate_snapshot, 'repair_level': upload.get_repair_level_display()}
                     messages.success(request, _('Предварительный расчёт готов.'))
     elif request.method == 'POST':
-        upload_form = ProjectUploadForm(request.POST, request.FILES)
+        upload_form = ProjectUploadForm(request.POST, request.FILES, for_analysis=request.POST.get('action') == 'upload_calculate')
         if upload_form.is_valid():
             if not request.user.is_authenticated and not request.session.session_key:
                 request.session.create()
             upload = ProjectUpload.objects.create(
                 user=request.user if request.user.is_authenticated else None,
                 guest_session_key='' if request.user.is_authenticated else request.session.session_key,
+                source_sha256=upload_form.source_sha256,
                 file=upload_form.cleaned_data['file'], comment=upload_form.cleaned_data['comment'],
                 ai_status=AI_ANALYSIS_MODE, ai_summary=DEMO_AI_SUMMARY)
             if request.POST.get('action') == 'upload_calculate':

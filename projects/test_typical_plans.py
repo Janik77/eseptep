@@ -41,8 +41,8 @@ class TypicalPlansTests(TestCase):
   from projects.plan_analysis import analyze
   a=ProjectUpload.objects.create(file='synthetic-a.png',guest_session_key='qa')
   b=ProjectUpload.objects.create(file='synthetic-b.png',guest_session_key='qa')
-  response={'status':'completed','output':[{'content':[{'type':'output_text','text':'{"rooms":[]}'}]}]}
-  with patch('projects.plan_analysis.pages',side_effect=[(b'a',[(b'image','')]),(b'b',[(b'image','')]),(b'a',[(b'image','')])]),patch('projects.plan_analysis.responses_create',return_value=response) as api:
+  response={'status':'completed','output':[{'content':[{'type':'output_text','text':'{"document_kind":"floor_plan","floor_pages":[1],"rooms":[]}'}]}]}
+  with patch('projects.plan_analysis.read_raw',side_effect=lambda upload: b'a' if upload.pk==a.pk else b'b'),patch('projects.plan_analysis.pages',return_value=(b'',[(b'image','')])),patch('projects.plan_analysis.responses_create',return_value=response) as api:
    self.assertEqual(analyze(a).status,'completed')
    self.assertEqual(analyze(b).error_code,'budget_limit')
    self.assertEqual(analyze(a).status,'completed')

@@ -6,7 +6,7 @@ from unittest.mock import patch
 from django.contrib.auth.models import User
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
-from PIL import Image
+from PIL import Image, ImageDraw
 from .models import ProjectUpload, PlanAnalysis, PlanAnalysisBudget, WholePlanEstimate
 from .plan_analysis import analyze, normalize_rooms, analysis_identity, PlanError
 from .whole_plan import initial_rooms, persist_estimate
@@ -21,7 +21,7 @@ class WholePlanTests(TestCase):
         override.enable(); self.addCleanup(override.disable)
         self.user = User.objects.create_user('whole-plan-client')
         self.client.force_login(self.user)
-        image = io.BytesIO(); Image.new('RGB',(120,120),'white').save(image,'PNG')
+        image = io.BytesIO(); plan=Image.new('RGB',(120,120),'white'); ImageDraw.Draw(plan).rectangle((20,20,100,100),outline='black',width=4); plan.save(image,'PNG')
         self.raw = image.getvalue()
         self.upload = ProjectUpload.objects.create(user=self.user,file=SimpleUploadedFile('apartment.png',self.raw))
         self.rooms = [dict(name=n,kind=k,area=a,source='stated' if a else 'unknown',page=1,
@@ -29,7 +29,7 @@ class WholePlanTests(TestCase):
                       for n,k,a in [('Living','other',18),('Kitchen','other',10.2),('Bath','bathroom',4.8),('Hall','other',6)]]
 
     def response(self, rooms=None):
-        return {'status':'completed','id':'test','usage':{},'output':[{'content':[{'type':'output_text','text':json.dumps({'rooms':rooms or self.rooms})}]}]}
+        return {'status':'completed','id':'test','usage':{},'output':[{'content':[{'type':'output_text','text':json.dumps({'document_kind':'floor_plan','floor_pages':sorted({r['page'] for r in (rooms or self.rooms)}),'rooms':rooms or self.rooms})}]}]}
 
     def prepared(self, api):
         api.return_value = self.response()

@@ -1,5 +1,6 @@
 """Claim one explicitly saved private floor estimate after first-party authentication."""
 from copy import deepcopy
+from hashlib import sha256
 from time import time
 
 from django.contrib import messages
@@ -11,6 +12,7 @@ from django.views.decorators.http import require_POST
 
 from projects.models import ProjectUpload, WholePlanEstimate
 from projects.plan_views import current_analysis
+from projects.plan_analysis import read_raw, PlanError
 
 from .models import ClientProject, SavedWholeEstimate, UserProfile
 
@@ -70,6 +72,10 @@ def finish_guest_save(request, origin_key):
         if analysis:
             # Keep the original recorded attempt, including failures; never re-charge the claimed upload.
             summary['claimed_plan_analysis'] = analysis.pk
+            try:
+                summary['claimed_plan_digest'] = sha256(read_raw(upload)).hexdigest()
+            except PlanError:
+                pass
         upload.ai_summary = summary
         upload.user = request.user
         upload.guest_session_key = ''

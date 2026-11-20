@@ -14,7 +14,7 @@ def validate_configuration():
     if settings.OPENAI_MODEL not in ALLOWED_MODELS:
         raise AIConfigurationError('unsupported_model')
 
-def responses_create(**payload):
+def responses_create(*, _local_scope=None, **payload):
     validate_configuration()
     payload['model'] = settings.OPENAI_MODEL
     payload['store'] = False
@@ -26,7 +26,7 @@ def responses_create(**payload):
     ticket = None
     if ledger:
         from .local_ai_budget import reserve
-        ticket = reserve(ledger, payload)
+        ticket = reserve(ledger, payload, scope=_local_scope)
     # Fixed official endpoint; never forward credentials to an environment-supplied proxy URL.
     with OpenAI(api_key=settings.OPENAI_API_KEY, base_url='https://api.openai.com/v1',
                 timeout=settings.OPENAI_TIMEOUT_SECONDS, max_retries=0) as client:
