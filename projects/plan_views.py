@@ -1,4 +1,3 @@
-import hashlib
 from urllib.parse import urlencode
 from django.core import signing
 from django.http import Http404, HttpResponse
@@ -7,30 +6,26 @@ from django.urls import reverse
 from django.utils.translation import gettext as _
 from django.views.decorators.http import require_GET, require_http_methods
 from .models import PlanAnalysis, PlanConfirmation
-from .plan_analysis import PlanError, analyze, area, pages, analysis_identity
+from .plan_analysis import PlanError, analyze, area, pages, analysis_identity, read_raw, scoped_analysis
+from .plan_messages import plan_message
 from .views import accessible_uploads
 
 
 def current_analysis(upload):
-    claimed_id = (upload.ai_summary or {}).get('claimed_plan_analysis')
-    if upload.user_id and isinstance(claimed_id, int):
-        claimed = PlanAnalysis.objects.filter(pk=claimed_id).first()
-        if claimed:
-            return claimed
     try:
-        with upload.file.open('rb') as file:
-            raw = file.read(5 * 1024 * 1024 + 1)
-    except OSError:
+        raw = read_raw(upload)
+    except PlanError:
         return None
-    owner = f'user:{upload.user_id}' if upload.user_id else f'session:{upload.guest_session_key}'
     if upload.comment.startswith('MEETING_SAMPLE:'):
         fixture = PlanAnalysis.objects.filter(
             identity=analysis_identity(f'demo-sample:{upload.pk}', raw),
             upload=upload, model='offline-fixture').first()
         if fixture:
             return fixture
-    identity = analysis_identity(owner, raw)
-    return PlanAnalysis.objects.filter(identity=identity).first()
+    try:
+        return scoped_analysis(upload, raw)
+    except PlanError:
+        return None
 
 
 @require_GET
@@ -83,14 +78,14 @@ def plan_review(request, pk):
     messages = {
         'unreadable_file': _('Не удалось прочитать файл. Укажите площадь вручную или загрузите другой план.'),
         'not_configured': _('ИИ пока не подключён. Можно указать площадь вручную.'),
-        'file_limit': _('Для анализа нужен файл до 5 МБ.'), 'page_limit': _('Для анализа нужен PDF не более двух страниц.'),
+        'file_limit': plan_message('file_limit'), 'page_limit': plan_message('page_limit'),
         'invalid_area': _('Укажите название и площадь от 1 до 10 000 м².'),
         'pilot_only': _('Анализ доступен только на тестовом стенде.'),
     }
     previous = PlanConfirmation.objects.filter(upload=upload).order_by('-pk').first()
     previous_data = previous.snapshot if previous else {}
     return render(request, 'projects/plan_review.html', {'upload': upload, 'analysis': analysis,
-        'rooms': rooms, 'has_bathroom': any(r.get('kind')=='bathroom' for r in rooms), 'error': messages.get(error, error), 'previous_confirmation': previous_data,
+        'analysis_notice': plan_message(analysis.error_code) if analysis and analysis.error_code else '', 'rooms': rooms, 'has_bathroom': any(r.get('kind')=='bathroom' for r in rooms), 'error': messages.get(error, plan_message(error) if error else ''), 'previous_confirmation': previous_data,
         'entered_name': request.POST.get('name', previous_data.get('name', _('Ванная'))),
         'entered_area': request.POST.get('area', previous_data.get('area', ''))})
 

@@ -40,6 +40,7 @@ class ProjectUpload(models.Model):
 
     user = models.ForeignKey('auth.User', verbose_name='Пользователь', on_delete=models.SET_NULL, null=True, blank=True, related_name='project_uploads')
     file = models.FileField('Файл', upload_to='project_uploads/', storage=private_storage)
+    source_sha256 = models.CharField(max_length=64, blank=True, editable=False)
     guest_session_key = models.CharField(max_length=40, blank=True, editable=False, db_index=True)
     comment = models.TextField('Комментарий', blank=True)
     area = models.DecimalField('Площадь квартиры', max_digits=8, decimal_places=2, null=True, blank=True)

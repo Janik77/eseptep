@@ -5,7 +5,7 @@ from unittest.mock import patch
 from django.contrib.auth.models import User
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
-from PIL import Image
+from PIL import Image, ImageDraw
 from .models import ProjectUpload, PlanAnalysisBudget, PlanConfirmation
 from .plan_analysis import analyze, normalize_rooms, PlanError
 
@@ -20,12 +20,14 @@ class PlanPilotTests(TestCase):
         self.user = User.objects.create_user('plan-client')
         self.client.force_login(self.user)
         image = io.BytesIO()
-        Image.new('RGB', (100, 100), 'white').save(image, 'PNG')
+        plan = Image.new('RGB', (100, 100), 'white')
+        ImageDraw.Draw(plan).rectangle((15, 15, 85, 85), outline='black', width=4)
+        plan.save(image, 'PNG')
         self.raw = image.getvalue()
         self.upload = ProjectUpload.objects.create(user=self.user, file=SimpleUploadedFile('plan.png', self.raw))
 
     def response(self, area=4.8):
-        response = io.BytesIO(json.dumps({'status': 'completed', 'id': 'test-response', 'usage': {'input_tokens': 100, 'output_tokens': 50}, 'output': [{'content': [{'type': 'output_text', 'text': json.dumps({'rooms': [{'name': 'Ванная', 'kind': 'bathroom', 'source': 'stated' if area else 'unknown', 'area': area, 'page': 1, 'evidence': '4.8 m2' if area else 'unreadable', 'page_type': 'floor_plan'}]})}]}]}).encode())
+        response = io.BytesIO(json.dumps({'status': 'completed', 'id': 'test-response', 'usage': {'input_tokens': 100, 'output_tokens': 50}, 'output': [{'content': [{'type': 'output_text', 'text': json.dumps({'document_kind': 'floor_plan', 'floor_pages': [1], 'rooms': [{'name': 'Ванная', 'kind': 'bathroom', 'source': 'stated' if area else 'unknown', 'area': area, 'page': 1, 'evidence': '4.8 m2' if area else 'unreadable', 'page_type': 'floor_plan'}]})}]}]}).encode())
         return json.loads(response.getvalue())
 
     @patch('projects.plan_analysis.responses_create')

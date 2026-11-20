@@ -48,3 +48,19 @@ class LocalBudgetTests(SimpleTestCase):
         self.assertEqual(sdk.call_count,1)
         self.assertEqual(sdk.call_args.kwargs['max_retries'],0)
         self.assertEqual(status(self.path)['accounted_cents'],206)
+
+    @override_settings(OPENAI_API_KEY='mock-only',OPENAI_LIVE_CONFIRMED=True,OPENAI_MODEL='gpt-6.1-sol',OPENAI_MAX_OUTPUT_TOKENS=1800,OPENAI_TIMEOUT_SECONDS=45)
+    @patch('core.openai_client.OpenAI')
+    def test_exact_scope_is_ledger_only_and_cannot_join_other_owners(self, sdk):
+        from .openai_client import responses_create
+        create = sdk.return_value.__enter__.return_value.responses.create
+        create.return_value.model_dump.return_value = self.response
+        with override_settings(LOCAL_AI_BUDGET_PATH=str(self.path)):
+            responses_create(_local_scope='account-one', input='same-bytes', max_output_tokens=1800)
+            with self.assertRaisesMessage(BudgetError, 'duplicate_call'):
+                responses_create(_local_scope='account-one', input='same-bytes', max_output_tokens=1800)
+            responses_create(_local_scope='account-two', input='same-bytes', max_output_tokens=1800)
+        self.assertEqual(create.call_count, 2)
+        self.assertEqual(create.call_args_list[0].kwargs, create.call_args_list[1].kwargs)
+        self.assertNotIn('_local_scope', create.call_args.kwargs)
+        self.assertEqual(status(self.path)['accounted_cents'],209)
