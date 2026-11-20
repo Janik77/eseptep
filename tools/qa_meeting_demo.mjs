@@ -25,6 +25,16 @@ for(const width of [1440,390]){
   assert.equal(await page.locator('.typical-card').count(),3);
   await shot(page,`typical-catalog-${language}-${width}`);
   await page.locator('form:has(input[name=sample][value=studio]) button').click();
+  // Catalog examples now lead to a clearly tagged ready estimate.
+  await page.locator('#whole-result [data-offline-example]').waitFor();
+  assert.match(await page.locator('.whole-facts').innerText(),/36\s*м²/);
+  await shot(page,`typical-result-${language}-${width}`);
+  // Separately exercise the still supported single-room/manual compatibility path.
+  await page.goto(base+'/projects/upload/');
+  const clearCsrf=await page.locator('#own-plan [name=csrfmiddlewaretoken]').inputValue();
+  const clear=await context.request.post(base+'/projects/examples/select/',{
+    form:{sample:'clear',csrfmiddlewaretoken:clearCsrf}});
+  await page.goto(clear.url());
   await page.locator('.plan-image').waitFor();await pause(page);
   // Pause native submission for a UI-only pending-state check; never mock an AI response.
   await page.locator('[data-plan-analysis-form]').evaluate(form=>form.addEventListener('submit',event=>event.preventDefault(),{once:true}));

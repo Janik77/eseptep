@@ -1,6 +1,7 @@
 from core.localization import render
 from core.renovation_rates import rate_configuration, renovation_estimate, LEGACY_VERSION, LEGACY_RATES
 from django.db import transaction
+from django.conf import settings
 from calculators.pricing import lock_price_configuration
 from django.utils.translation import gettext as _
 from django.contrib import messages
@@ -107,8 +108,12 @@ def project_upload(request):
                 from .whole_plan import initial_rooms, persist_estimate
                 try:
                     analysis = analyze(upload)
-                    if analysis.status == 'completed':
-                        persist_estimate(upload, initial_rooms(analysis), analysis.pk)
+                    if analysis.status == 'completed' and analysis.rooms:
+                        from .whole_plan import EstimateChanged
+                        try:
+                            persist_estimate(upload, initial_rooms(analysis), analysis.pk, initialize=True)
+                        except EstimateChanged:
+                            pass
                 except PlanError as exc:
                     from .plan_messages import plan_message
                     messages.warning(request, plan_message(str(exc)))
@@ -117,6 +122,7 @@ def project_upload(request):
     from .demo_samples import typical_plans
     return render(request, 'projects/upload.html', {
         'typical_plans': typical_plans(),
+        'analysis_available': bool(settings.PLAN_AI_ENABLED and getattr(settings, 'OPENAI_API_KEY', '')),
         'rate_config': rate_config,
         'upload': upload, 'estimate': estimate, 'upload_form': upload_form, 'estimate_form': estimate_form,
         'ai_summary': upload.ai_summary if upload else None, 'ai_analysis_mode': AI_ANALYSIS_MODE,

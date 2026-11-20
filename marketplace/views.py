@@ -1,15 +1,15 @@
 from core.localization import render
+from django.urls import reverse
+from urllib.parse import urlencode
+from decimal import Decimal
 from core.renovation_rates import rate_configuration, renovation_estimate, LEGACY_RATES
 
 from calculators.validation import InputValidationError, validate_fields
 
 CITIES = ['Астана', 'Шымкент', 'Алматы']
-DEVELOPERS = ['BI', 'OTAU', 'Bazis', 'Rise Group']
 PACKAGE_FIELDS = [
     {'name': 'area', 'label': 'Квадратура квартиры', 'min': 1},
-    *[{'name': name, 'label': label, 'type': 'select',
-       'options': [{'value': value} for value in values]}
-      for name, label, values in [('city', 'Город', CITIES), ('developer', 'Застройщик', DEVELOPERS)]],
+    {'name': 'city', 'label': 'Город', 'type': 'select', 'options': [{'value': value} for value in CITIES]},
 ]
 
 TURNKEY_PACKAGES = [
@@ -69,8 +69,7 @@ TURNKEY_PACKAGES = [
 
 def marketplace_home(request):
     form_data = {
-        'city': 'Астана',
-        'developer': 'BI',
+        'city': 'Шымкент',
         'area': '',
     }
     results = []
@@ -87,11 +86,15 @@ def marketplace_home(request):
         except InputValidationError as exc:
             form_errors = exc.errors
         else:
-            area = float(cleaned['area'])
+            from accounts.turnkey_views import meeting_master, signed_quote
+            provider = meeting_master()
+            area = format(Decimal(cleaned['area']).quantize(Decimal('.01')), 'f')
             for package in TURNKEY_PACKAGES:
+                estimate = renovation_estimate(area, package['key'], rate_config)
+                quote_url = reverse('accounts:turnkey_preview') + '?' + urlencode({'quote':signed_quote(estimate, cleaned['city'], provider)}) if provider else ''
                 results.append({
                     **package,
-                    'total': renovation_estimate(cleaned['area'], package['key'], rate_config)['total'],
+                    'total': estimate['total'], 'quote_url': quote_url,
                     'price_per_m2': rate_config['rates'][package['key']],
                     'area': area,
                 })
@@ -106,6 +109,5 @@ def marketplace_home(request):
             'results': results,
             'form_errors': form_errors,
             'cities': CITIES,
-            'developers': DEVELOPERS,
         },
     )

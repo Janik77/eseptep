@@ -12,12 +12,23 @@ from .views import accessible_uploads
 
 
 def current_analysis(upload):
+    claimed_id = (upload.ai_summary or {}).get('claimed_plan_analysis')
+    if upload.user_id and isinstance(claimed_id, int):
+        claimed = PlanAnalysis.objects.filter(pk=claimed_id).first()
+        if claimed:
+            return claimed
     try:
         with upload.file.open('rb') as file:
             raw = file.read(5 * 1024 * 1024 + 1)
     except OSError:
         return None
     owner = f'user:{upload.user_id}' if upload.user_id else f'session:{upload.guest_session_key}'
+    if upload.comment.startswith('MEETING_SAMPLE:'):
+        fixture = PlanAnalysis.objects.filter(
+            identity=analysis_identity(f'demo-sample:{upload.pk}', raw),
+            upload=upload, model='offline-fixture').first()
+        if fixture:
+            return fixture
     identity = analysis_identity(owner, raw)
     return PlanAnalysis.objects.filter(identity=identity).first()
 

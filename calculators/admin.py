@@ -47,7 +47,7 @@ class MaterialPriceForm(forms.ModelForm):
         self.fields['unit'].help_text = _('Укажите единицу точно как в выбранном материале. Мешки, кг, м и м² не взаимозаменяемы. Для цены за упаковку укажите её фактическое содержимое в той же единице.')
         self.fields['material_key'].help_text = _('Выберите устойчивый идентификатор из справочника. Совпадение названия не подтверждает техническую пригодность товара.')
         self.fields['price'].help_text = _('Цена в тенге за расчётную единицу или одну упаковку, согласно выбранной основе. Не итог строки.')
-        self.fields['pack_coverage'].help_text = _('Укажите, сколько м² или м в упаковке по данным магазина. Для обычной цены оставьте пустым.')
+        self.fields['pack_coverage'].help_text = _('Укажите, сколько м² или м в упаковке по данным магазина. Если магазин продаёт вразвес, оставьте пустым. При оплате упаковками укажите площадь упаковки и основу цены из прайса.')
 
     class Meta:
         model = MaterialPrice
@@ -71,6 +71,17 @@ class MaterialPriceInline(admin.TabularInline):
 
 @admin.register(PriceBook)
 class PriceBookAdmin(admin.ModelAdmin):
+    change_list_template = "admin/calculators/pricebook/change_list.html"
+    def get_urls(self):
+        from django.urls import path
+        from .admin_price_import import import_view
+        return [path('import-csv/', self.admin_site.admin_view(lambda request: import_view(request, self)),
+                     name='calculators_pricebook_import_csv')] + super().get_urls()
+
+    def changelist_view(self, request, extra_context=None):
+        from .admin_price_import import can_import
+        return super().changelist_view(request, {**(extra_context or {}), 'can_import_floor_prices':can_import(self, request)})
+
     list_display = ('store_name', 'version', 'price_date', 'is_active', 'published_at')
     inlines = [MaterialPriceInline]
     actions = ['activate', 'deactivate']

@@ -96,3 +96,35 @@ class PilotAlgorithmRegressionTests(TestCase):
                             self.assertEqual(result['meta']['input'][field['name']], selected_data[field['name']].replace(',', '.'))
                     if variant:
                         self.assertEqual(result['selected_variant'], variant['key'])
+
+    def test_realistic_apartment_inputs_exercise_all_12_calculators(self):
+        from decimal import Decimal
+        from .definitions import CALCULATORS
+        from .tests import defaults
+        # Plausible scopes within one illustrative 72 m² apartment; not job advice.
+        cases = {
+            'demontazh': {'area':'72','demolition_type':'partial'},
+            'elektrika': {'area':'72','rooms':'3'},
+            'santehnika': {'area':'72','bathrooms':'1'},
+            'shtukaturka': {'area':'72','thickness':'1.5'},
+            'gipsokarton-potolok': {'area':'18','rooms':'1','construction_type':'ceiling'},
+            'nalivnoy-pol': {'area':'65.4','thickness':'2'},
+            'plitka-keramogranit': {'area':'6.6','zone':'floor','tile_format':'60x60'},
+            'laminat-spc-parket': {'area':'65.4','covering_type':'laminate'},
+            'malyarka': {'floor_area':'18','type':'paint'},
+            'natyazhnoy-potolok': {'area':'72','rooms':'4'},
+            'dveri': {'count':'4'},
+            'teplyy-pol': {'area':'4.5','type':'electric_mat'},
+        }
+        self.assertEqual(set(cases), {row['slug'] for row in CALCULATORS})
+        for slug, overrides in cases.items():
+            with self.subTest(slug=slug):
+                definition = CALCULATORS_BY_SLUG[slug]
+                result = calculate_materials(definition, {**defaults(definition), **overrides})
+                self.assertTrue(result['materials'])
+                self.assertTrue(all(Decimal(str(row['quantity'])).is_finite() and row['quantity'] >= 0 for row in result['materials']))
+                self.assertEqual(result['materials_total'], sum(row['reference_total'] for row in result['materials']))
+                self.assertEqual(result['grand_total'],result['materials_total']+result['labor_total']+result.get('additional_total',0))
+        for kind, label in [('laminate','Ламинат'),('spc','SPC покрытие')]:
+            result=calculate_materials(CALCULATORS_BY_SLUG['laminat-spc-parket'],{'area':'65.4','covering_type':kind})
+            self.assertEqual(next(r for r in result['materials'] if r['title']==label)['quantity'],69)

@@ -168,6 +168,8 @@ class ServiceRequest(models.Model):
         SupplierProfile, on_delete=models.PROTECT, null=True, blank=True,
         related_name='targeted_requests',
     )
+    target_master = models.ForeignKey(MasterProfile, on_delete=models.PROTECT, null=True, blank=True, related_name='pilot_requests', editable=False)
+    pilot_key = models.CharField(max_length=64, unique=True, null=True, blank=True, editable=False)
     whole_estimate = models.ForeignKey('SavedWholeEstimate', on_delete=models.PROTECT, null=True, blank=True, related_name='requests')
     request_snapshot = models.JSONField(default=dict, blank=True, editable=False)
     request_type = models.CharField(max_length=20, choices=RequestType.choices)

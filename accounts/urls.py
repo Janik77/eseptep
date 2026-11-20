@@ -38,9 +38,13 @@ urlpatterns = [
     path('dashboard/supplier/materials/create/', supplier_material_create, name='supplier_material_create'),
 ]
 
-from . import whole_views
+from . import whole_views, whole_guest, turnkey_views
 urlpatterns += [
+    path('turnkey/preview/',turnkey_views.preview,name='turnkey_preview'),
+    path('turnkey/<int:pk>/',turnkey_views.receipt,name='turnkey_request'),
+    path('turnkey/<int:pk>/reply/',turnkey_views.reply,name='turnkey_reply'),
     path('whole/save/<int:estimate_id>/',whole_views.save_whole,name='save_whole'),
+    path('whole/guest-save/<int:estimate_id>/',whole_guest.guest_save,name='whole_guest_save'),
     path('whole/<int:pk>/',whole_views.whole_saved,name='whole_saved'),
     path('whole/<int:pk>/request/',whole_views.whole_preview,name='whole_preview'),
     path('whole/<int:pk>/pdf/',whole_views.saved_whole_pdf,name='saved_whole_pdf'),

@@ -1,0 +1,4 @@
+{% load eseptep_i18n %}
+<p>{{ snapshot.city|system_text }} · {{ snapshot.area|money }} м² · {% if snapshot.package == 'economy' %}{% if LANGUAGE_CODE == 'kk' %}Үнемді{% else %}Эконом{% endif %}{% elif snapshot.package == 'premium' %}Премиум{% else %}Стандарт{% endif %}</p>
+<p><strong>{% if LANGUAGE_CODE == 'kk' %}Алдын ала бюджет{% else %}Предварительный бюджет{% endif %}: {{ snapshot.budget|money }} ₸</strong></p>
+<p>{% if LANGUAGE_CODE == 'kk' %}Жұмыс пен материалдардың ортақ бағдары. Нақты құрам мен баға тексеруден кейін келісіледі.{% else %}Общий ориентир на работы и материалы. Точный состав и цена согласуются после осмотра.{% endif %}</p>

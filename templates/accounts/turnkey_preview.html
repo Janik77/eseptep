@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+{% block content %}<section class="dashboard"><div class="dashboard-card">
+<a href="{% url 'marketplace:home' %}">{% if LANGUAGE_CODE == 'kk' %}Бюджетке оралу{% else %}Вернуться к бюджету{% endif %}</a>
+<h1>{% if LANGUAGE_CODE == 'kk' %}Шеберге өтінімді тексеріңіз{% else %}Проверьте запрос мастеру{% endif %}</h1>
+<p>{% if LANGUAGE_CODE == 'kk' %}Алушы{% else %}Получатель{% endif %}: <strong>{{ snapshot.recipient }}</strong></p>
+{% include "accounts/turnkey_summary.html" %}
+<p>{% if LANGUAGE_CODE == 'kk' %}Тек сынақ шеберінің кабинетіне. Хабарлама, төлем және келісімшарт жоқ.{% else %}Только в кабинет тестового мастера. Без внешнего сообщения, оплаты и договора.{% endif %}</p>
+<form method="post" class="auth-form">{% csrf_token %}<input type="hidden" name="quote" value="{{ token }}">
+<label><input required type="checkbox" name="confirm" value="yes"> {% if LANGUAGE_CODE == 'kk' %}Құрамы мен алушыны растаймын{% else %}Подтверждаю состав и получателя{% endif %}</label>
+<button class="btn btn--primary" type="submit">{% if LANGUAGE_CODE == 'kk' %}Шеберден ұсыныс сұрау{% else %}Запросить предложение{% endif %}</button></form>
+</div></section>{% endblock %}

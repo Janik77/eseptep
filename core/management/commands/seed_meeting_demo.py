@@ -6,14 +6,14 @@ from django.contrib.auth.models import User
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 from django.utils import timezone
-from accounts.models import UserProfile, SupplierProfile, ClientProject
+from accounts.models import UserProfile, SupplierProfile, MasterProfile, ClientProject
 from calculators.models import PriceBook, MaterialPrice, RenovationRateEdition
 from calculators.definitions import CALCULATORS_BY_SLUG
 from calculators.services import calculate_materials
 from calculators.material_keys import material_key
 
 DEMO_PASSWORD = 'Demo-Meeting-2026!'
-USERNAMES = ('demo-client@example.test', 'demo-supplier@example.test')
+USERNAMES = ('demo-client@example.test', 'demo-supplier@example.test', 'demo-master@example.test')
 
 class Command(BaseCommand):
     help = 'Prepare repeatable synthetic meeting data only in a separate demo database.'
@@ -31,7 +31,7 @@ class Command(BaseCommand):
                 or RenovationRateEdition.objects.exclude(version__startswith='meeting-demo-').exists()):
             raise CommandError('Database contains non-meeting records. Refusing to seed; choose a separate empty demo database.')
         users=[]
-        for name,role in zip(USERNAMES, ('client','supplier')):
+        for name,role in zip(USERNAMES, ('client','supplier','master')):
             user,created=User.objects.get_or_create(username=name, defaults={'email':name})
             if created:
                 user.set_password(DEMO_PASSWORD);user.save(update_fields=['password'])
@@ -43,6 +43,8 @@ class Command(BaseCommand):
             'city':'Шымкент','area_m2':Decimal('36.50'),'rooms':2,'repair_segment':'comfort'})
         SupplierProfile.objects.get_or_create(user=users[1], defaults={'company_name':'ДЕМО-магазин ESEPTEP',
             'city':'Шымкент','address':'Учебный адрес, не реальный магазин','description':'Только демонстрационные заявки; внешние уведомления отключены.'})
+        MasterProfile.objects.get_or_create(user=users[2], defaults={'full_name':'ДЕМО-мастер ESEPTEP',
+            'city':'Шымкент','specialization':'Учебный ремонт под ключ','description':'Только тестовые ответы внутри кабинета.'})
         version=options['price_version']
         book,created=PriceBook.objects.get_or_create(version='meeting-demo-'+version, defaults={
             'store_name':'ДЕМО-магазин ESEPTEP','source_note':'Учебные цены. Не коммерческое предложение.',

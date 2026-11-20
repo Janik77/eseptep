@@ -33,6 +33,8 @@ jobs:
           trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
           for i in $(seq 1 40); do curl -fsS http://127.0.0.1:8233/accounts/login/ >/dev/null && break || sleep 1; done
           PLAYWRIGHT_PACKAGE=/tmp/eseptep-browser-driver/node_modules/playwright node tools/qa_closed_pilot.mjs
+          python tools/run_closed_pilot_review.py --prepare-only --seed-area-pack-price
+          PLAYWRIGHT_PACKAGE=/tmp/eseptep-browser-driver/node_modules/playwright node tools/qa_apartment_pilot.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:

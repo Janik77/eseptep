@@ -32,6 +32,19 @@ def save_whole(request, estimate_id):
     source = get_object_or_404(WholePlanEstimate.objects.select_related('upload'), pk=estimate_id, upload__user=request.user)
     if request.method == 'GET':
         return render(request,'accounts/whole_choose_project.html',{'source':source,'projects':ClientProject.objects.filter(user=request.user), 'next_action':'save' if request.GET.get('next')=='save' else 'quote'})
+    if request.POST.get('project_id') == 'new':
+        from .whole_guest import new_floor_project
+        with transaction.atomic():
+            # An explicitly requested first project is stored with its immutable estimate.
+            ProjectUpload.objects.filter(pk=source.upload_id,user=request.user).update(ai_status=F('ai_status'))
+            source = get_object_or_404(WholePlanEstimate.objects.select_related('upload'),pk=source.pk,upload__user=request.user)
+            saved = SavedWholeEstimate.objects.filter(source=source,project__user=request.user).order_by('-pk').first()
+            if saved is None:
+                if source.upload.ai_summary.get('whole_estimate_id') != source.pk:
+                    return HttpResponseBadRequest(tr('Расчёт изменился. Откройте текущую версию.', 'Есеп өзгерді. Ағымдағы нұсқаны ашыңыз.'))
+                project = new_floor_project(request.user, source)
+                saved = SavedWholeEstimate.objects.create(project=project,source=source,snapshot=deepcopy(source.snapshot))
+        return redirect('accounts:whole_preview' if request.POST.get('next') == 'quote' and _meeting_supplier() else 'accounts:whole_saved', pk=saved.pk)
     project = get_object_or_404(ClientProject, pk=parse_positive_id(request.POST.get('project_id')) or 0, user=request.user)
     # First statement inside the transaction is a write: no SQLite lock upgrade race.
     with transaction.atomic():
@@ -44,7 +57,7 @@ def save_whole(request, estimate_id):
             if source.upload.ai_summary.get('whole_estimate_id') != source.pk:
                 return HttpResponseBadRequest(tr('Расчёт изменился. Откройте текущую версию.', 'Есеп өзгерді. Ағымдағы нұсқаны ашыңыз.'))
             saved = SavedWholeEstimate.objects.create(project=project,source=source,snapshot=deepcopy(source.snapshot))
-    return redirect('accounts:whole_preview' if request.POST.get('next') == 'quote' else 'accounts:whole_saved', pk=saved.pk)
+    return redirect('accounts:whole_preview' if request.POST.get('next') == 'quote' and _meeting_supplier() else 'accounts:whole_saved', pk=saved.pk)
 
 
 def owned_saved(request, pk):
@@ -76,7 +89,7 @@ def whole_preview(request, pk):
         'city':saved.project.city,'supplier_name':supplier.company_name}
     # Suppliers receive only reviewed procurement rows, not drawing or room evidence.
     fields = ('title','unit','quantity','unit_price','line_total','material_key','calculator_slug','variant','specification',
-        'purchase_quantity','purchase_unit','pack_coverage','price_basis')
+        'purchase_quantity','purchase_unit','purchase_covered_quantity','pack_coverage','price_basis','catalog_unit_price')
     all_lines = [{**{key:deepcopy(row[key]) for key in fields if key in row},'line_id':str(i)}
                  for i,row in enumerate(saved.snapshot['procurement'])]
     if not all_lines:
