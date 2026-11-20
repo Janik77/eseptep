@@ -115,15 +115,24 @@ class GuestWholeTests(TestCase):
         preview = self.client.get(url, {'select':'1','line':ids})
         self.assertContains(preview,'32 упак.')
         self.assertContains(preview,'316 800')
+        self.assertContains(preview,'Редакция каталога исходной сметы ESEPTEP: sq-m-and-packs-v1')
+        new_book, _ = import_floor_prices(raw.replace(b'4500.00', b'9000.00'), store='Synthetic',
+            version='sq-m-and-packs-v2', source='Synthetic', date_text='2026-11-20', write=True)
+        book.is_active = False; book.save(update_fields=['is_active'])
+        new_book.is_active = True; new_book.published_at = timezone.now(); new_book.save()
         data={'token':preview.context['token'],'confirm':'yes'}
         for _ in range(2):
             self.assertEqual(self.client.post(url,data).status_code,302)
         req=ServiceRequest.objects.get()
         self.assertEqual(req.request_snapshot['priced_subtotal'],saved.snapshot['priced_subtotal'])
         frozen=deepcopy(req.request_snapshot)
+        self.assertNotIn('price_version', frozen)  # Existing signed flow/schema stays unchanged.
+        self.assertContains(self.client.get(reverse('accounts:whole_saved',args=[saved.pk])),'sq-m-and-packs-v1')
         pdf=self.client.get(reverse('accounts:saved_whole_pdf',args=[saved.pk]))
         extract=lambda response: ' '.join(' '.join(p.extract_text() for p in PdfReader(BytesIO(response.content)).pages).split())
         self.assertIn('32 упак.',extract(pdf));self.assertIn('316800.00',extract(pdf));self.assertIn('к закупке 70.4 м²',extract(pdf))
+        self.assertIn('Редакция каталога сметы ESEPTEP: sq-m-and-packs-v1',extract(pdf))
+        self.assertNotIn('sq-m-and-packs-v2',extract(pdf))
         self.client.post(reverse('projects:whole_plan',args=[upload.pk]),{'action':'update','estimate_id':estimate.pk,'room':'0','finish':'tile'})
         req.refresh_from_db()
         self.assertEqual(req.request_snapshot,frozen)
@@ -139,6 +148,13 @@ class GuestWholeTests(TestCase):
         self.assertContains(self.client.get(response_url),'316 800')
         offer_pdf=self.client.get(reverse('accounts:whole_offer_pdf',args=[req.pk]))
         self.assertIn('316800.00',extract(offer_pdf))
+        self.assertIn('каталога исходной сметы ESEPTEP: sq-m-and-packs-v1',extract(offer_pdf))
+        self.assertIn('Цены предложения указаны магазином отдельно.',extract(offer_pdf))
+        self.assertNotIn('sq-m-and-packs-v2',extract(offer_pdf))
+        self.client.cookies[settings.LANGUAGE_COOKIE_NAME]='kk'
+        self.assertContains(self.client.get(response_url),'каталог нұсқасы: sq-m-and-packs-v1')
+        self.assertIn('каталог нұсқасы: sq-m-and-packs-v1',
+            extract(self.client.get(reverse('accounts:whole_offer_pdf',args=[req.pk]))))
 
     def test_authenticated_first_project_is_created_once_without_a_dead_end(self):
         self.client.force_login(self.account)
