@@ -85,11 +85,18 @@ if (engine === 'chrome') {
     await toggleKk(page);
     const manifestId = base + '/';
     await cdp.send('PWA.install', { manifestId });
+    // CDP installation leaves the desktop user's launch choice in browser mode
+    // on some Chrome builds. Select Open in window via actual OS app settings.
+    await cdp.send('PWA.changeAppUserSettings', { manifestId, displayMode: 'standalone' });
     const newApp = context.waitForEvent('page', { timeout: 15000 });
-    await cdp.send('PWA.launch', { manifestId });
+    const { targetId } = await cdp.send('PWA.launch', { manifestId });
     const app = await newApp;
     await app.waitForLoadState();
-    await app.waitForFunction(() => matchMedia('(display-mode: standalone)').matches);
+    const appSession = await context.newCDPSession(app);
+    assert.equal((await appSession.send('Target.getTargetInfo')).targetInfo.targetId, targetId);
+    const mode = await app.evaluate(() => ({ standalone: matchMedia('(display-mode: standalone)').matches, browser: matchMedia('(display-mode: browser)').matches, location: location.pathname }));
+    console.log('Chrome actual launched app display mode:', mode);
+    await app.waitForFunction(() => matchMedia('(display-mode: standalone)').matches, null, { timeout: 6000 });
     assert.equal(new URL(app.url()).pathname, '/');
     assert.equal(await app.locator('html').getAttribute('lang'), 'kk');
     await app.goto(base + '/accounts/dashboard/client/');
@@ -99,7 +106,7 @@ if (engine === 'chrome') {
     await app.locator('[data-installed-app]:not([hidden])').waitFor();
     await noOverflow(app);
     await app.screenshot({ path: output + '/chrome-installed-kk.png', fullPage: true });
-    record.checks.push('Actual Chrome PWA.install + PWA.launch started root in an app window and retained real login, Kazakh locale and saved project');
+    record.checks.push('Actual Chrome PWA.install, window preference and PWA.launch started root in an app window and retained real login, Kazakh locale and saved project');
     await offlineChecks(context, app);
     await cdp.send('PWA.uninstall', { manifestId });
   } finally {

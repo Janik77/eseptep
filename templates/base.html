@@ -9,6 +9,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <link rel="manifest" href="{% url 'core:pwa_manifest' %}">
+    <link rel="icon" type="image/png" href="{% static 'pwa/icon-192.png' %}">
     <link rel="apple-touch-icon" sizes="180x180" href="{% static 'pwa/icon-apple-180.png' %}">
     <title>{% block title %}{% translate 'ESEPTEP — расчёт ремонта и материалов' %}{% endblock %}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -57,9 +58,11 @@
         <main id="main-content">
             {% block content %}{% endblock %}
         </main>
+        {% if request.resolver_match.url_name != 'pwa_install' %}
         <footer class="site-app-footer">
             <a href="{% url 'core:pwa_install' %}">{% if LANGUAGE_CODE == 'kk' %}Телефонға орнату{% else %}На телефон{% endif %}</a>
         </footer>
+        {% endif %}
     </div>
 
     <script src="{% url 'javascript-catalog' %}"></script>
