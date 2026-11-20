@@ -14,3 +14,14 @@
 
 .whole-purchase-note{margin:0 14px 12px}
 @media(max-width:600px){#whole-result:has(.whole-correction input:focus) .whole-actions>[data-request-offer]{display:none}}
+
+/* The phone room header must not overlap the native coverage control. */
+@media(max-width:600px){
+  .whole-room-details>summary{min-height:58px;padding:10px 14px;line-height:1.2}
+  .whole-room-details>summary>span:first-child{min-width:0;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .whole-finish{top:62px}
+  .whole-room-details:not([open]){padding-bottom:60px}
+  .whole-room-details[open] .whole-room-body{margin-top:60px}
+  #whole-result:not(.whole-enhanced) .whole-room-details:not([open]){padding-bottom:110px}
+  #whole-result:not(.whole-enhanced) .whole-room-details[open] .whole-room-body{margin-top:110px}
+}
