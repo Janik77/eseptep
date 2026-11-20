@@ -1,0 +1,20 @@
+{% extends 'base.html' %}{% load eseptep_i18n %}
+{% block content %}<section class="dashboard"><div class="dashboard-card">
+{% if recipient %}<a href="{% url 'accounts:dashboard_master' %}">{% if LANGUAGE_CODE == 'kk' %}Шебер кабинеті{% else %}Кабинет мастера{% endif %}</a>{% else %}<a href="{% url 'accounts:dashboard_client' %}">{% if LANGUAGE_CODE == 'kk' %}Клиент кабинеті{% else %}Кабинет клиента{% endif %}</a>{% endif %}
+<h1>{% if LANGUAGE_CODE == 'kk' %}Толық жөндеу{% else %}Ремонт под ключ{% endif %} · #{{ service_request.pk }}</h1>
+<p>{{ snapshot.recipient }}</p>{% include "accounts/turnkey_summary.html" %}
+</div><div class="dashboard-card">
+{% if reply %}
+<h2>{% if LANGUAGE_CODE == 'kk' %}Шебердің жауабы{% else %}Ответ мастера{% endif %}</h2>
+<p><strong>{{ snapshot.recipient }} · {% if LANGUAGE_CODE == 'kk' %}Бастапқы баға{% else %}Цена от{% endif %} {{ reply.price_from|money }} ₸</strong></p>
+<p>{{ reply.message|linebreaksbr }}</p>
+<p>{% if LANGUAGE_CODE == 'kk' %}Сынақ жауабы: бұл тапсырыс емес.{% else %}Тестовый ответ: это не заказ.{% endif %}</p>
+{% elif recipient %}
+<h2>{% if LANGUAGE_CODE == 'kk' %}Клиентке ұсыныс{% else %}Предложение клиенту{% endif %}</h2>
+{% if error %}<p role="alert">{{ error }}</p>{% endif %}
+<form method="post" class="auth-form">{% csrf_token %}<input type="hidden" name="token" value="{{ token }}">
+<label class="auth-field">{% if LANGUAGE_CODE == 'kk' %}Бастапқы баға, ₸{% else %}Цена от, ₸{% endif %}<input name="price_from" inputmode="decimal" value="{{ form.price_from.value|default_if_none:'' }}" required></label>
+<label class="auth-field">{% if LANGUAGE_CODE == 'kk' %}Қандай жұмыс кіреді, келесі қадам{% else %}Что входит и следующий шаг{% endif %}<textarea name="message" rows="3" maxlength="2000">{{ form.message.value|default_if_none:'' }}</textarea></label>
+<button class="btn btn--primary" type="submit">{% if LANGUAGE_CODE == 'kk' %}Жауапты кабинетте сақтау{% else %}Сохранить ответ в кабинете{% endif %}</button></form>
+{% else %}<p role="status">{% if LANGUAGE_CODE == 'kk' %}Шебердің жауабын күтеміз. Жауап осы жерде пайда болады.{% else %}Ожидаем ответ мастера. Он появится здесь.{% endif %}</p>{% endif %}
+</div></section>{% endblock %}

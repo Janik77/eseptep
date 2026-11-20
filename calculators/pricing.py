@@ -23,14 +23,22 @@ def quotation(slug, variant, materials, book, *, include_packs=False):
             continue
         metadata = {}
         billed_quantity = quantity
-        if price.price_basis == 'pack':
+        unit_price = price.price
+        if include_packs and price.pack_coverage is not None:
             billed_quantity = (quantity / price.pack_coverage).to_integral_value(rounding=ROUND_CEILING)
             metadata = {'price_basis': 'pack', 'pack_coverage': format(price.pack_coverage.normalize(), 'f'),
                         'purchase_quantity': str(billed_quantity), 'purchase_unit': 'pack'}
-        line_total = (billed_quantity * price.price).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+            if price.price_basis == 'canonical':
+                unit_price = (price.price * price.pack_coverage).quantize(Decimal('.01'), rounding=ROUND_HALF_UP)
+                if not unit_price:
+                    # A positive catalog price must not silently become free after conversion.
+                    missing.append({'material_title': row['title'], 'unit_label': row['unit'], 'quantity': str(quantity)})
+                    continue
+                metadata['catalog_unit_price'] = str(price.price)
+        line_total = (billed_quantity * unit_price).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
         total += line_total
         rows.append({'material_key': price.material_key, 'material_title': row['title'], 'unit_label': row['unit'], 'quantity': str(quantity),
-                     'unit_price': str(price.price), 'line_total': str(line_total), **metadata})
+                     'unit_price': str(unit_price), 'line_total': str(line_total), **metadata})
     return {'store_name': book.store_name, 'version': book.version, 'source_note': book.source_note,
             'price_date': book.price_date.isoformat(), 'currency': 'KZT', 'method_version': 'reference-quantities@pilot-exact-match-v2',
             'variant_key': variant, 'rows': rows, 'missing': missing, 'complete': not missing and bool(rows),

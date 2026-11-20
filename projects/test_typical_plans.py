@@ -19,8 +19,8 @@ class TypicalPlansTests(TestCase):
   with patch('projects.plan_analysis.responses_create') as api:
    for item in typical_plans():
     r=self.client.post('/projects/examples/select/',{'sample':item['key']});self.assertEqual(r.status_code,302)
-    view=self.client.get(r.url);self.assertContains(view,'Проанализировать план');self.assertNotContains(view,'Что прочитал ИИ')
-   self.assertFalse(api.called);self.assertEqual(PlanAnalysis.objects.count(),0)
+    view=self.client.get(r.url);self.assertContains(view,'Готовый учебный расчёт');self.assertNotContains(view,'Что прочитал ИИ')
+   self.assertFalse(api.called);self.assertEqual(PlanAnalysis.objects.filter(model='offline-fixture').count(),3)
  def test_ground_truth_is_own_and_consistent(self):
   data=json.loads(Path(settings.BASE_DIR,'tests/fixtures/plans/typical-manifest.json').read_text(encoding='utf8'))
   for item in data:

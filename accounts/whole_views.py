@@ -76,7 +76,7 @@ def whole_preview(request, pk):
         'city':saved.project.city,'supplier_name':supplier.company_name}
     # Suppliers receive only reviewed procurement rows, not drawing or room evidence.
     fields = ('title','unit','quantity','unit_price','line_total','material_key','calculator_slug','variant','specification',
-        'purchase_quantity','purchase_unit','pack_coverage','price_basis')
+        'purchase_quantity','purchase_unit','pack_coverage','price_basis','catalog_unit_price')
     all_lines = [{**{key:deepcopy(row[key]) for key in fields if key in row},'line_id':str(i)}
                  for i,row in enumerate(saved.snapshot['procurement'])]
     if not all_lines:

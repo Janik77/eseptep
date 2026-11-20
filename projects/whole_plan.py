@@ -79,7 +79,7 @@ def calculate_snapshot(rooms, analysis_id):
                     'calculator_slug': slug, 'variant': 'comfort' if finish == 'tile' else '',
                     'specification': '60x60' if finish == 'tile' else finish}
             if price and price.get('price_basis') == 'pack':
-                item.update({key: price[key] for key in ('price_basis', 'pack_coverage', 'purchase_quantity', 'purchase_unit')})
+                item.update({key: price[key] for key in ('price_basis', 'pack_coverage', 'purchase_quantity', 'purchase_unit', 'catalog_unit_price') if key in price})
             group_rows.append(item)
             procurement.append(item)
         # Room rows are transparent proportional allocations of the grouped kit.
@@ -87,7 +87,7 @@ def calculate_snapshot(rooms, analysis_id):
         for member in members:
             ratio = Decimal(member['area']) / total_area
             member['materials'] = [
-                {**{k: v for k, v in r.items() if k not in ('purchase_quantity', 'purchase_unit', 'pack_coverage', 'price_basis')},
+                {**{k: v for k, v in r.items() if k not in ('purchase_quantity', 'purchase_unit', 'pack_coverage', 'price_basis', 'catalog_unit_price')},
                  'unit_price': None if r.get('price_basis') == 'pack' else r['unit_price'],
                  'quantity': str((Decimal(r['quantity']) * ratio).quantize(Decimal('.0001'))),
                  'line_total': decimal_text(Decimal(r['line_total']) * ratio) if r['line_total'] is not None else None}
@@ -127,10 +127,11 @@ class EstimateChanged(ValueError):
 
 
 @transaction.atomic
-def persist_estimate(upload, rooms, analysis_id, expected_id=None):
+def persist_estimate(upload, rooms, analysis_id, expected_id=None, *, initialize=False):
     lock_price_configuration()
     upload.refresh_from_db(fields=['ai_summary'])
-    if expected_id is not None and upload.ai_summary.get('whole_estimate_id') != expected_id:
+    current = upload.ai_summary.get('whole_estimate_id')
+    if (expected_id is not None and current != expected_id) or (initialize and current is not None):
         raise EstimateChanged('estimate_changed')
     snapshot = calculate_snapshot(rooms, analysis_id)
     fingerprint = hashlib.sha256(json.dumps(snapshot, sort_keys=True, ensure_ascii=False).encode()).hexdigest()

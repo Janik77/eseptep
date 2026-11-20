@@ -57,7 +57,7 @@
           <span class="status-badge status-badge--{{ req.status }}">{{ req.get_status_display|system_text }}</span>
           · {{ req.created_at|date:'d.m.Y' }}
         </p>
-        {% if req.whole_estimate_id %}{% if req.status == 'responded' %}<a href="{% url 'accounts:whole_request' req.pk %}">{% if LANGUAGE_CODE == 'kk' %}Дүкеннің жауабын ашу{% else %}Открыть ответ магазина{% endif %}</a>{% endif %}{% else %}<small>{% translate 'Ответов мастеров:' %} {{ req.master_responses_count }} {% translate '· поставщиков:' %} {{ req.supplier_responses_count }}</small>{% endif %}
+        {% if req.target_master_id %}<a data-turnkey-receipt href="{% url 'accounts:turnkey_request' req.pk %}">{% if req.status == 'responded' %}{% if LANGUAGE_CODE == 'kk' %}Шебердің жауабын ашу{% else %}Открыть ответ мастера{% endif %}{% else %}{% if LANGUAGE_CODE == 'kk' %}Шеберге өтінімді ашу{% else %}Открыть запрос мастеру{% endif %}{% endif %}</a>{% elif req.whole_estimate_id %}{% if req.status == 'responded' %}<a href="{% url 'accounts:whole_request' req.pk %}">{% if LANGUAGE_CODE == 'kk' %}Дүкеннің жауабын ашу{% else %}Открыть ответ магазина{% endif %}</a>{% endif %}{% else %}<small>{% translate 'Ответов мастеров:' %} {{ req.master_responses_count }} {% translate '· поставщиков:' %} {{ req.supplier_responses_count }}</small>{% endif %}
       </article>
       {% empty %}<div class="empty-state">{% translate 'Заявок пока нет.' %}</div>{% endfor %}
     </div>

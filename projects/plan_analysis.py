@@ -116,6 +116,11 @@ def normalize_rooms(values, frames, strict=False):
 
 
 def analyze(upload):
+    claimed_id = (upload.ai_summary or {}).get('claimed_plan_analysis')
+    if upload.user_id and isinstance(claimed_id, int):
+        claimed = PlanAnalysis.objects.filter(pk=claimed_id).first()
+        if claimed:
+            return claimed
     raw, frames = pages(upload)
     owner = f'user:{upload.user_id}' if upload.user_id else f'session:{upload.guest_session_key}'
     legacy_identity = hashlib.sha256(owner.encode() + b'\0' + raw).hexdigest()

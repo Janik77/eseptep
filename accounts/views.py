@@ -44,7 +44,16 @@ class AccountLoginView(LoginView):
     template_name = 'accounts/login.html'
     authentication_form = EseptepAuthenticationForm
 
+    def form_valid(self, form):
+        from .whole_guest import finish_guest_save
+        origin = self.request.session.session_key
+        default = super().form_valid(form)
+        return finish_guest_save(self.request, origin) or default
+
     def get_success_url(self):
+        safe_next = self.get_redirect_url()
+        if safe_next:
+            return safe_next
         profile = getattr(self.request.user, 'profile', None)
         if profile is None:
             return reverse_lazy('core:home')
@@ -69,9 +78,11 @@ def register_view(request):
     if request.method == 'POST':
         form = RegisterForm(request.POST)
         if form.is_valid():
+            from .whole_guest import finish_guest_save
+            origin = request.session.session_key
             user = form.save()
             login(request, user)
-            return redirect(_dashboard_url_by_role(user.profile.role))
+            return finish_guest_save(request, origin) or redirect(_dashboard_url_by_role(user.profile.role))
     else:
         form = RegisterForm()
     return render(request, 'accounts/register.html', {'form': form})
@@ -108,7 +119,7 @@ def client_dashboard(request):
         with transaction.atomic():
             response = get_object_or_404(
                 model.objects.select_for_update(), pk=response_id,
-                request__client=request.user, request__project__user=request.user,
+                request__client=request.user, request__project__user=request.user, request__target_master__isnull=True,
             )
             service_request = ServiceRequest.objects.select_for_update().get(pk=response.request_id)
             if (response.status != model.Status.PENDING
@@ -130,7 +141,7 @@ def client_dashboard(request):
         .select_related('project', 'target_supplier')
         .annotate(master_responses_count=Count('master_responses', distinct=True), supplier_responses_count=Count('supplier_responses', distinct=True))[:10]
     )
-    master_responses = MasterResponse.objects.filter(request__client=request.user).select_related('master', 'request').order_by('-created_at')[:20]
+    master_responses = MasterResponse.objects.filter(request__client=request.user,request__target_master__isnull=True).select_related('master', 'request').order_by('-created_at')[:20]
     supplier_responses = SupplierResponse.objects.filter(request__client=request.user).select_related('supplier', 'request').order_by('-created_at')[:20]
     for supplier_response in supplier_responses:
         msg = supplier_response.message or ''
@@ -182,7 +193,7 @@ def master_dashboard(request):
         if request_id is None:
             return HttpResponseBadRequest(translate('Некорректная заявка.'))
         service_request = get_object_or_404(
-            ServiceRequest.objects.filter(project__user=F('client')).exclude(client=request.user).select_related('project', 'calculation'),
+            ServiceRequest.objects.filter(project__user=F('client'),target_master__isnull=True).exclude(client=request.user).select_related('project', 'calculation'),
             id=request_id,
             request_type__in=[ServiceRequest.RequestType.MASTER, ServiceRequest.RequestType.FULL_REPAIR],
             status__in=OPEN_REQUEST_STATUSES,
@@ -199,7 +210,7 @@ def master_dashboard(request):
 
     new_requests = ServiceRequest.objects.filter(
         Q(request_type=ServiceRequest.RequestType.MASTER) | Q(request_type=ServiceRequest.RequestType.FULL_REPAIR)
-    ).filter(status__in=OPEN_REQUEST_STATUSES).select_related('project', 'calculation')[:12]
+    ).filter(status__in=OPEN_REQUEST_STATUSES,target_master__isnull=True).select_related('project', 'calculation')[:12]
 
     my_responses = MasterResponse.objects.filter(master=master_profile).select_related('request', 'request__project').order_by('-created_at')[:12]
 
@@ -208,6 +219,8 @@ def master_dashboard(request):
         'accounts/dashboard_master.html',
         {
             'master_profile': master_profile,
+            'turnkey_requests': ServiceRequest.objects.filter(target_master=master_profile, project__user=F('client')).order_by('-pk')[:12],
+
             'new_requests': new_requests,
             'response_form': form,
             'my_responses': my_responses,

@@ -50,10 +50,10 @@ def parse_floor_prices(data):
                     raise ValueError(f'Use canonical unit {expected_unit}; put pack in price_basis, not unit.')
                 if basis == 'pack':
                     coverage = _positive(coverage_text, 6, 4)
-                elif basis == 'canonical' and not coverage_text:
-                    coverage = None
+                elif basis == 'canonical':
+                    coverage = _positive(coverage_text, 6, 4) if coverage_text else None
                 else:
-                    raise ValueError('Use canonical with blank coverage, or pack with positive coverage.')
+                    raise ValueError('Use canonical (optional coverage) or pack (positive coverage required).')
                 rows.append(dict(calculator_slug=slug, variant_key=variant, material_key=key, unit=unit,
                     price_basis=basis, pack_coverage=coverage, price=_positive(price, 10, 2)))
                 seen.add(material)

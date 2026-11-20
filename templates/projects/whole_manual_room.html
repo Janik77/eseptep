@@ -1,0 +1,11 @@
+<details class="whole-purchase" id="manual-room"{% if manual_error or not snapshot %} open{% endif %}>
+<summary>{% if LANGUAGE_CODE == 'kk' %}Бөлмені қосу{% else %}Добавить комнату вручную{% endif %}</summary>
+{% if manual_error %}<p class="whole-error" role="alert">{{ manual_error }}</p>{% endif %}
+<form method="post" class="whole-correction whole-manual">
+{% csrf_token %}<input type="hidden" name="action" value="add_room"><input type="hidden" name="estimate_id" value="{{ estimate.pk }}">
+<label>{% if LANGUAGE_CODE == 'kk' %}Бөлме атауы{% else %}Название комнаты{% endif %}<input name="name" required maxlength="100" value="{{ manual_input.name }}"></label>
+<label>{% if LANGUAGE_CODE == 'kk' %}Ауданы, м²{% else %}Площадь, м²{% endif %}<input name="area" required inputmode="decimal" maxlength="15" value="{{ manual_input.area }}"></label>
+<label>{% if LANGUAGE_CODE == 'kk' %}Еден жабыны{% else %}Покрытие пола{% endif %}<select name="finish" required><option value="laminate">Ламинат</option><option value="tile"{% if manual_input.finish == 'tile' %} selected{% endif %}>{% if LANGUAGE_CODE == 'kk' %}Тақташа{% else %}Плитка{% endif %}</option><option value="spc"{% if manual_input.finish == 'spc' %} selected{% endif %}>SPC</option><option value="parquet"{% if manual_input.finish == 'parquet' %} selected{% endif %}>Паркет</option></select></label>
+<button type="submit" class="btn btn--secondary">{% if LANGUAGE_CODE == 'kk' %}Бөлмені қосу{% else %}Добавить комнату{% endif %}</button>
+</form>
+</details>

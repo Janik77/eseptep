@@ -47,7 +47,7 @@ class FloorPriceImportTests(TestCase):
     def test_bad_row_does_not_leave_partial_draft(self):
         for row in ('unknown,м²,canonical,,1', 'underlay,упак,pack,2,1',
                     'underlay,м²,pack,,1', 'underlay,м²,pack,0,1',
-                    'underlay,м²,pack,2.22222,1', 'underlay,м²,canonical,2,1',
+                    'underlay,м²,pack,2.22222,1', 'underlay,м²,canonical,0,1',
                     'underlay,м²,canonical,,NaN', 'underlay,м²,canonical,,0',
                     'underlay,м²,canonical,,12345678901', 'underlay,м²,canonical,,-1',
                     'laminate,м²,canonical,,1'):
@@ -94,3 +94,24 @@ class FloorPriceImportTests(TestCase):
         self.assertIn('24 упак.',text)
         self.assertIn('2448.00',text)
         self.assertIn(snapshot['priced_subtotal'],text)
+
+    def test_existing_admin_import_permission_preview_and_draft_only(self):
+        from django.contrib.auth.models import User
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from django.urls import reverse
+        staff = User.objects.create_user('limited', is_staff=True)
+        editor = User.objects.create_superuser('price-editor','editor@example.test','unused-synthetic-passphrase')
+        url = reverse('admin:calculators_pricebook_import_csv')
+        self.client.force_login(staff)
+        self.assertEqual(self.client.get(url).status_code,403)
+        self.client.force_login(editor)
+        self.assertContains(self.client.get(reverse('admin:calculators_pricebook_changelist')),url)
+        page = self.client.post(url, {**{k:META[k] for k in ['store','source','version']},
+            'date':META['date_text'],'file':SimpleUploadedFile('synthetic.csv',DATA.encode())})
+        self.assertContains(page,'Проверено строк')
+        self.assertFalse(PriceBook.objects.exists())
+        token=page.context['token']
+        self.assertEqual(self.client.post(url,{'confirm':'yes','token':token}).status_code,302)
+        book=PriceBook.objects.get();self.assertFalse(book.is_active);self.assertIsNone(book.published_at)
+        self.assertEqual(self.client.post(url,{'confirm':'yes','token':token}).status_code,400)
+        self.assertEqual(PriceBook.objects.count(),1)

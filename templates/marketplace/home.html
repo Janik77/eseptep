@@ -4,12 +4,11 @@
 
 {% block content %}
 {% translate "Выберите значение" as i18n_default_0 %}
-{% translate "Выберите значение" as i18n_default_1 %}
 <section class="page-hero page-hero--compact turnkey-hero">
     <span class="hero__badge">{% translate 'Ремонт под ключ' %}</span>
     <p>{% translate 'Демонстрационные тарифы и сроки. Это не коммерческое предложение; актуальную цену нужно подтвердить у исполнителя.' %}</p>
     <h1>{% translate 'Предварительная оценка бюджета ремонта' %}</h1>
-    <p>{% translate 'Выберите город, застройщика и квадратуру — мы подготовим предварительный расчёт стоимости ремонта.' %}</p>
+    <p>{% if LANGUAGE_CODE == 'kk' %}Қаланы таңдап, пәтер ауданын көрсетіңіз. Жұмыс пен материалдарға арналған алдын ала бюджетті көресіз.{% else %}Выберите город и укажите площадь. Покажем предварительный бюджет на работы и материалы.{% endif %}</p>
 </section>
 
 <section class="turnkey-layout" aria-label="{% translate 'Расчёт ремонта под ключ' %}">
@@ -22,15 +21,6 @@
                 {% if form_errors.city %}<option value="{{ form_data.city }}" selected>{{ form_data.city|default:i18n_default_0|system_text }}</option>{% endif %}
                 {% for city in cities %}
                     <option value="{{ city }}" {% if form_data.city == city %}selected{% endif %}>{{ city }}</option>
-                {% endfor %}
-            </select>
-        </label>
-        <label>
-            <span>{% translate 'Застройщик' %}</span>
-            <select name="developer">
-                {% if form_errors.developer %}<option value="{{ form_data.developer }}" selected>{{ form_data.developer|default:i18n_default_1|system_text }}</option>{% endif %}
-                {% for developer in developers %}
-                    <option value="{{ developer }}" {% if form_data.developer == developer %}selected{% endif %}>{{ developer }}</option>
                 {% endfor %}
             </select>
         </label>
@@ -53,23 +43,23 @@
     {% for package in results %}
         <details class="turnkey-card{% if package.key == 'standard' %} is-active{% endif %}" {% if package.key == 'standard' %}open{% endif %}>
             <summary>
-                <span>{{ package.title }}</span>
+                <span>{{ package.title|system_text }}</span>
                 <strong>₸ {{ package.total|money }}</strong>
-                <small>{{ package.description }} · {{ package.duration }}</small>
+                <small>{{ package.description|system_text }}</small>
             </summary>
             <div class="turnkey-card__body">
                 <p>{{ package.area }} {% translate 'м²' %} × {{ package.price_per_m2|money }} ₸/м²</p>
                 <p>{% translate 'Что входит:' %}</p>
                 <ul>
                     {% for item in package.items %}
-                        <li>{{ item }}</li>
+                        <li>{{ item|system_text }}</li>
                     {% endfor %}
                 </ul>
-                <div class="turnkey-card__meta"><span>{% translate 'Срок' %}</span><b>{{ package.duration }}</b></div>
+                {% if package.quote_url %}<a class="btn btn--primary" href="{{ package.quote_url }}" data-turnkey-quote="{{ package.key }}">{% if LANGUAGE_CODE == 'kk' %}Шеберден ұсыныс сұрау{% else %}Запросить предложение мастера{% endif %}</a>{% endif %}
             </div>
         </details>
     {% endfor %}
-<p>{% translate 'Это предварительный бюджет по опубликованным тарифам, не заказ и не договор. Состав и окончательную цену нужно согласовать отдельно.' %}</p><a class="btn btn--primary" href="{% url 'accounts:client_project_create' %}">{% translate 'Создать проект для дальнейших расчётов' %}</a>
+<p>{% translate 'Это предварительный бюджет по опубликованным тарифам, не заказ и не договор. Состав и окончательную цену нужно согласовать отдельно.' %}</p>
 </section>
 {% else %}
 <section class="turnkey-results turnkey-results--empty" aria-label="{% translate 'Пакеты ремонта под ключ' %}">

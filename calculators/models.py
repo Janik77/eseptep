@@ -86,7 +86,7 @@ class MaterialPrice(models.Model):
             models.CheckConstraint(condition=models.Q(price__gt=0), name='positive_material_price'),
             models.CheckConstraint(
                 condition=(models.Q(price_basis='canonical', pack_coverage__isnull=True)
-                           | models.Q(price_basis='pack', unit__in=['м²', 'м'],
+                           | models.Q(price_basis__in=['canonical', 'pack'], unit__in=['м²', 'м'],
                                       pack_coverage__isnull=False, pack_coverage__gt=0)),
                 name='valid_material_price_basis',
             ),
@@ -101,13 +101,11 @@ class MaterialPrice(models.Model):
             raise ValidationError({'material_key': _('Материал не найден или единица не совпадает со справочником.')})
         if self.calculator_slug not in CALCULATORS_BY_SLUG:
             raise ValidationError({'calculator_slug': _('Выберите существующий калькулятор.')})
-        if self.price_basis == 'pack' and (
+        if (self.price_basis == 'pack' or self.pack_coverage is not None) and (
             self.unit not in ('м²', 'м') or self.pack_coverage is None
             or not isinstance(self.pack_coverage, Decimal) or not self.pack_coverage.is_finite() or self.pack_coverage <= 0
         ):
             raise ValidationError({'pack_coverage': _('Укажите положительное количество м² или м в упаковке.')})
-        if self.price_basis == 'canonical' and self.pack_coverage is not None:
-            raise ValidationError({'pack_coverage': _('Для цены за расчётную единицу оставьте поле пустым.')})
         from .material_keys import variant_keys
         if self.variant_key not in variant_keys(self.calculator_slug):
             raise ValidationError({'variant_key': _('Этот вариант не относится к выбранному калькулятору.')})

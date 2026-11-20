@@ -1,0 +1,15 @@
+{% extends "admin/base_site.html" %}{% load i18n %}
+{% block content %}
+<p><a href="{% url 'admin:calculators_pricebook_changelist' %}">{% translate 'Вернуться к прайсам' %}</a></p>
+<p>CSV UTF-8: <code>material,unit,price_basis,pack_coverage,price_kzt</code>.<br>
+<code>laminate</code>, <code>underlay</code> и <code>tile_60x60</code> — м²; <code>skirting</code> — м.
+<code>canonical</code> — цена за м²/м; если продаётся упаковками, добавьте её площадь или длину.
+<code>pack</code> — цена за упаковку, её размер обязателен.</p>
+{% if error %}<p role="alert" class="errornote">{{ error }}</p>{% endif %}
+{% if token %}
+<p>Проверено строк: <strong>{{ count }}</strong>. Сохранение создаст неактивную редакцию, клиентские цены не изменятся.</p>
+<form method="post">{% csrf_token %}<input type="hidden" name="token" value="{{ token }}"><button type="submit" name="confirm" value="yes">Сохранить черновик</button></form>
+{% else %}
+<form method="post" enctype="multipart/form-data">{% csrf_token %}{{ form.as_p }}<button type="submit">Проверить CSV</button></form>
+{% endif %}
+{% endblock %}

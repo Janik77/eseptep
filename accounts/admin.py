@@ -74,8 +74,8 @@ class ServiceRequestAdmin(admin.ModelAdmin):
 
     def get_readonly_fields(self, request, obj=None):
         # Whole-estimate associations are created only by the owner-confirmed workflow.
-        fields = super().get_readonly_fields(request, obj) + ('whole_estimate',)
-        if obj and obj.whole_estimate_id:
+        fields = super().get_readonly_fields(request, obj) + ('whole_estimate', 'target_master', 'pilot_key')
+        if obj and (obj.whole_estimate_id or obj.target_master_id):
             fields += ('client', 'project', 'target_supplier', 'request_type', 'calculation', 'request_snapshot')
         return fields
 
