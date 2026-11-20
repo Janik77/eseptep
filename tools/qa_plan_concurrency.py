@@ -14,14 +14,14 @@ from django.test import override_settings
 from django.contrib.auth.models import User
 from django.db import close_old_connections
 from django.core.files.uploadedfile import SimpleUploadedFile
-from PIL import Image
+from PIL import Image, ImageDraw
 from projects.models import ProjectUpload, PlanAnalysisBudget
 from projects.plan_analysis import analyze
 
 user = User.objects.create_user('plan-concurrency')
 ids=[]
 for i in range(16):
-    file=io.BytesIO();Image.new('RGB',(20,20),(i*10,20,30)).save(file,'PNG')
+    file=io.BytesIO(); image=Image.new('RGB',(20,20),(i*10,20,30)); ImageDraw.Draw(image).rectangle((3,3,16,16),outline='white',width=2); image.save(file,'PNG')
     ids.append(ProjectUpload.objects.create(user=user,file=SimpleUploadedFile(f'plan-{i}.png',file.getvalue())).pk)
 lock=threading.Lock()
 calls=0
@@ -30,7 +30,7 @@ def provider(*args, **kwargs):
     global calls
     with lock:
         calls+=1
-    return {'status':'completed','output':[{'content':[{'type':'output_text','text':'{"rooms": []}'}]}]}
+    return {'status':'completed','output':[{'content':[{'type':'output_text','text':'{"document_kind":"floor_plan","floor_pages":[1],"rooms":[]}'}]}]}
 
 def execute(pk):
     close_old_connections()

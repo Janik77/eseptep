@@ -25,13 +25,13 @@ test('autosave action input cannot shadow destination URL; network failure prese
 });
 
 test('file picker validates suffix and size locally, resets on a supported choice, and speaks RU/KK',()=>{
- const handlers={}; let error=''; let reportCount=0;
+ const handlers={}; let error=''; const notice={hidden:true,textContent:''}; const attribute={};
  const file={files:[],dataset:{analysisMaxBytes:String(5*1024*1024)},
-  addEventListener:(n,f)=>handlers[n]=f,setCustomValidity:m=>error=m,reportValidity:()=>{reportCount++}};
- const document={documentElement:{lang:'ru'},querySelector:()=>file,addEventListener(){},getElementById:()=>null};
+  addEventListener:(n,f)=>handlers[n]=f,setCustomValidity:m=>error=m,setAttribute:(k,v)=>attribute[k]=v,removeAttribute:k=>delete attribute[k]};
+ const document={documentElement:{lang:'ru'},querySelector:()=>file,addEventListener(){},getElementById:id=>id==='plan-file-selection-error'?notice:null};
  vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../../static/js/whole-plan.js'),'utf8'),{document,window:{addEventListener(){}}});
- file.files=[{name:'plan.heic',size:100}]; handlers.change(); assert.match(error,/Выберите PDF/);
+ file.files=[{name:'plan.heic',size:100}]; handlers.change(); assert.match(error,/Выберите PDF/); assert.equal(notice.hidden,false); assert.equal(attribute['aria-invalid'],'true');
  document.documentElement.lang='kk';file.files=[{name:'plan.pdf',size:6*1024*1024}]; handlers.change(); assert.match(error,/5 МБ/);
  file.files=[{name:'plan.WEBP',size:100}]; handlers.change(); assert.equal(error,'');
- assert.equal(reportCount,2);
+ assert.equal(notice.hidden,true); assert.equal(notice.textContent,''); assert.equal(attribute['aria-invalid'],undefined);
 });
