@@ -55,8 +55,14 @@ def owned_saved(request, pk):
 @require_GET
 def whole_saved(request, pk):
     saved = owned_saved(request,pk)
+    requests = saved.requests.filter(client=request.user).select_related('target_supplier','whole_offer').order_by('-pk')
+    latest_answer = requests.filter(whole_offer__supplier_id=F('target_supplier_id')).first()
+    answer_lines = latest_answer.whole_offer.snapshot.get('lines',[]) if latest_answer else []
+    available = [row for row in answer_lines if row.get('availability') == 'available']
+    unavailable = [row for row in answer_lines if row.get('availability') == 'unavailable']
     return render(request,'accounts/whole_saved.html',{'saved':saved,'supplier':_meeting_supplier(),
-        'requests':saved.requests.filter(client=request.user).select_related('target_supplier')})
+        'requests':requests, 'latest_answer':latest_answer, 'available':available, 'unavailable':unavailable, 'priced_positions':sum(
+            row.get('line_total') is not None for row in saved.snapshot.get('procurement',[]))})
 
 
 @role_required(UserProfile.Role.CLIENT)
@@ -68,18 +74,45 @@ def whole_preview(request, pk):
         raise Http404
     snapshot = {'schema':'whole-offer-v1','demo':True,'saved_id':saved.pk,'project_title':saved.project.title,
         'city':saved.project.city,'supplier_name':supplier.company_name}
-    # Suppliers receive only what the confirmation preview shows, never room evidence or file metadata.
-    fields = ('title','unit','quantity','unit_price','line_total','material_key','calculator_slug','variant','specification')
-    snapshot['lines'] = [{**{key:deepcopy(row[key]) for key in fields if key in row},'line_id':str(i)}
-                         for i,row in enumerate(saved.snapshot['procurement'])]
-    if not snapshot['lines']:
+    # Suppliers receive only reviewed procurement rows, not drawing or room evidence.
+    fields = ('title','unit','quantity','unit_price','line_total','material_key','calculator_slug','variant','specification',
+        'purchase_quantity','purchase_unit','pack_coverage','price_basis')
+    all_lines = [{**{key:deepcopy(row[key]) for key in fields if key in row},'line_id':str(i)}
+                 for i,row in enumerate(saved.snapshot['procurement'])]
+    if not all_lines:
         return HttpResponseBadRequest(tr('Сначала уточните площади комнат.', 'Алдымен бөлмелердің ауданын нақтылаңыз.'))
-    payload = {'user':request.user.pk,'saved':saved.pk,'supplier':supplier.pk,'digest':digest(snapshot)}
+    if request.method == 'GET':
+        existing = saved.requests.filter(client=request.user,target_supplier=supplier).first()
+        if existing:
+            return redirect('accounts:whole_request',pk=existing.pk)
+    valid_ids = {row['line_id'] for row in all_lines}
+    reviewing = request.method == 'GET' and request.GET.get('select') == '1'
+    posted = None
+    try:
+        if request.method == 'POST':
+            posted = signing.loads(request.POST.get('token',''),salt='whole-request-v1',max_age=3600)
+            ids = posted.get('ids') if isinstance(posted,dict) else None
+        else:
+            ids = request.GET.getlist('line') if reviewing else list(valid_ids)
+        if (not isinstance(ids,list) or not ids or len(ids)>len(valid_ids)
+                or any(not isinstance(i,str) or i not in valid_ids for i in ids)
+                or len(set(ids))!=len(ids)):
+            raise ValueError
+    except (signing.BadSignature,ValueError):
+        if request.method == 'POST':
+            return HttpResponseBadRequest(tr('Проверьте состав и подтвердите запрос заново.', 'Құрамын тексеріп, сұранысты қайта растаңыз.'))
+        snapshot['lines'] = all_lines
+        return render(request,'accounts/whole_preview.html',{'saved':saved,'snapshot':snapshot,'reviewing':False,
+            'selection_error':tr('Выберите хотя бы одну позицию.', 'Кемінде бір позицияны таңдаңыз.')},status=400)
+    selected_ids = set(ids)
+    snapshot['lines'] = [row for row in all_lines if row['line_id'] in selected_ids]
+    priced_lines = [Decimal(row['line_total']) for row in snapshot['lines'] if row.get('line_total') is not None]
+    snapshot['priced_subtotal'] = str(sum(priced_lines, Decimal(0))) if priced_lines else None
+    snapshot['unpriced_positions'] = len(snapshot['lines']) - len(priced_lines)
+    payload = {'user':request.user.pk,'saved':saved.pk,'supplier':supplier.pk,
+        'ids':[row['line_id'] for row in snapshot['lines']],'digest':digest(snapshot)}
     if request.method == 'POST':
-        try:
-            if signing.loads(request.POST.get('token',''),salt='whole-request-v1',max_age=3600) != payload or request.POST.get('confirm') != 'yes':
-                raise ValueError
-        except (signing.BadSignature,ValueError):
+        if posted != payload or request.POST.get('confirm') != 'yes':
             return HttpResponseBadRequest(tr('Проверьте состав и подтвердите запрос заново.', 'Құрамын тексеріп, сұранысты қайта растаңыз.'))
         with transaction.atomic():
             SavedWholeEstimate.objects.filter(pk=saved.pk).update(snapshot=F('snapshot'))
@@ -91,9 +124,10 @@ def whole_preview(request, pk):
                 return HttpResponseBadRequest(tr('Смета изменилась.', 'Смета өзгерді.'))
             req,_ = ServiceRequest.objects.get_or_create(whole_estimate=locked,target_supplier=supplier,
                 defaults={'client':request.user,'project':locked.project,'request_type':'supplier','request_snapshot':snapshot})
+        # A retry or second tab opens the immutable original, not a pretend new request.
         return redirect('accounts:whole_request',pk=req.pk)
-    return render(request,'accounts/whole_preview.html',{'saved':saved,'snapshot':snapshot,
-        'token':signing.dumps(payload,salt='whole-request-v1')})
+    return render(request,'accounts/whole_preview.html',{'saved':saved,'snapshot':snapshot,'reviewing':reviewing,
+        'token':signing.dumps(payload,salt='whole-request-v1') if reviewing else None})
 
 
 def accessible_request(request, pk):
@@ -127,7 +161,7 @@ def offer_snapshot(post, snapshot):
             except InvalidOperation:
                 raise ValueError
         # Price alone is not a confirmed offer when stock is unknown/unavailable.
-        total=(price*Decimal(row['quantity'])).quantize(Decimal('.01'),rounding=ROUND_HALF_UP) if price is not None and availability=='available' else None
+        total=(price*Decimal(row.get('purchase_quantity', row['quantity']))).quantize(Decimal('.01'),rounding=ROUND_HALF_UP) if price is not None and availability=='available' else None
         rows.append({**deepcopy(row),'unit_price':str(price) if price is not None else None,
             'availability':availability,'line_total':str(total) if total is not None else None})
     known=sum(Decimal(r['line_total']) for r in rows if r['line_total'] is not None)

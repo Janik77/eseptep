@@ -35,7 +35,11 @@ def build_pdf(estimate):
     for row in s['procurement']:
         price = row['unit_price'] if row['unit_price'] is not None else tr('уточнить цену','бағаны нақтылау')
         total = row['line_total'] if row['line_total'] is not None else '?'
-        items.append(p(f"{row['title']}: {row['quantity']} {row['unit']} × {price} = {total} ₸"))
+        quantity = row['quantity'] + ' ' + row['unit']
+        if row.get('purchase_unit') == 'pack':
+            pack = tr('упак.', 'қапт.')
+            quantity = f"{row['purchase_quantity']} {pack} ({row['pack_coverage']} {row['unit']} / {pack}; {tr('нужно', 'қажет')} {quantity})"
+        items.append(p(f"{row['title']}: {quantity} × {price} = {total} ₸"))
     items.extend([p(tr('Подытог позиций с ценой: ', 'Бағасы бар позициялар жиыны: ')+s['priced_subtotal']+' ₸'),
                   p(tr('Окончательная стоимость неизвестна. Согласуйте работы и недостающие данные.',
                        'Соңғы құны белгісіз. Жұмысты және жетіспейтін деректерді келісіңіз.'))])

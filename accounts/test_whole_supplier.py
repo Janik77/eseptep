@@ -41,13 +41,65 @@ class WholeSupplierTests(TestCase):
 
     def requested(self):
         saved=self.saved()
-        page=self.client.get(reverse('accounts:whole_preview',args=[saved.pk]))
+        page=self.client.get(reverse('accounts:whole_preview',args=[saved.pk]),{'select':'1','line':['0','1']})
         self.assertEqual(page.status_code,200)
         token=page.context['token']
         url=reverse('accounts:whole_preview',args=[saved.pk])
         for _ in range(2): self.assertEqual(self.client.post(url,{'token':token,'confirm':'yes'}).status_code,302)
         self.assertEqual(ServiceRequest.objects.count(),1)
         return ServiceRequest.objects.get()
+
+    def test_selection_is_reviewed_and_only_signed_rows_are_sent(self):
+        saved=self.saved()
+        url=reverse('accounts:whole_preview',args=[saved.pk])
+        choose=self.client.get(url)
+        self.assertContains(choose,'data-choose-lines')
+        self.assertIsNone(choose.context['token'])
+        for bad in ([],['999'],['0','0']):
+            self.assertEqual(self.client.get(url,{'select':'1','line':bad}).status_code,400)
+        self.assertFalse(ServiceRequest.objects.exists())
+        review=self.client.get(url,{'select':'1','line':['1']})
+        self.assertEqual([r['line_id'] for r in review.context['snapshot']['lines']],['1'])
+        token=review.context['token']
+        self.assertEqual(self.client.post(url,{'token':token+'x','confirm':'yes'}).status_code,400)
+        for unused in range(2):
+            self.assertEqual(self.client.post(url,{'token':token,'confirm':'yes','line':'0','quantity':'999'}).status_code,302)
+        req=ServiceRequest.objects.get()
+        self.assertEqual([(r['line_id'],r['quantity']) for r in req.request_snapshot['lines']],[('1','2.25')])
+        self.assertIsNone(req.request_snapshot['priced_subtotal'])
+
+    def test_pack_billing_frozen_across_selected_request_pdf_and_reply(self):
+        from io import BytesIO
+        from pypdf import PdfReader
+        row=self.source.snapshot['procurement'][0]
+        row.update(quantity='51',purchase_quantity='24',purchase_unit='pack',price_basis='pack',pack_coverage='2.2',unit_price='102',line_total='2448.00')
+        self.source.snapshot['priced_subtotal']='2448.00'
+        self.source.save(update_fields=['snapshot'])
+        saved=self.saved()
+        url=reverse('accounts:whole_preview',args=[saved.pk])
+        review=self.client.get(url,{'select':'1','line':['0']})
+        self.assertContains(review,'24 упак.')
+        self.assertEqual(review.context['snapshot']['priced_subtotal'],'2448.00')
+        self.assertEqual(self.client.post(url,{'token':review.context['token'],'confirm':'yes'}).status_code,302)
+        req=ServiceRequest.objects.get()
+        self.assertEqual([(r['purchase_quantity'],r['line_total']) for r in req.request_snapshot['lines']],[('24','2448.00')])
+        estimate_pdf=self.client.get(reverse('accounts:saved_whole_pdf',args=[saved.pk]))
+        text=PdfReader(BytesIO(estimate_pdf.content)).pages[0].extract_text()
+        self.assertIn('24 упак.',text)
+        self.assertIn('2448.00',text)
+        self.client.force_login(self.vendor)
+        response_url=reverse('accounts:whole_request',args=[req.pk])
+        page=self.client.get(response_url)
+        self.assertContains(page,'Цена за упак.')
+        self.assertEqual(self.client.post(response_url,{'token':page.context['token'],'price_0':'102','availability_0':'available'}).status_code,302)
+        offer=WholeSupplierOffer.objects.get()
+        self.assertEqual(offer.snapshot['total'],'2448.00')
+        self.client.force_login(self.owner)
+        self.assertContains(self.client.get(reverse('accounts:whole_saved',args=[saved.pk])),'data-latest-answer')
+        offer_pdf=self.client.get(reverse('accounts:whole_offer_pdf',args=[req.pk]))
+        text=PdfReader(BytesIO(offer_pdf.content)).pages[0].extract_text()
+        self.assertIn('24 упак.',text)
+        self.assertIn('2448.00',text)
 
     def test_save_preview_request_are_owned_immutable_and_idempotent(self):
         req=self.requested()
@@ -81,11 +133,11 @@ class WholeSupplierTests(TestCase):
         self.assertEqual(self.client.post(reverse('accounts:save_whole',args=[self.source.pk]),{'project_id':self.project.pk}).status_code,400)
         self.upload.ai_summary={'whole_estimate_id':self.source.pk};self.upload.save()
         saved=self.saved();url=reverse('accounts:whole_preview',args=[saved.pk])
-        token=self.client.get(url).context['token']
+        token=self.client.get(url,{'select':'1','line':['0','1']}).context['token']
         self.project.title='Changed project';self.project.save()
         self.assertEqual(self.client.post(url,{'token':token,'confirm':'yes'}).status_code,400)
         self.assertFalse(ServiceRequest.objects.exists())
-        fresh=self.client.get(url).context['token']
+        fresh=self.client.get(url,{'select':'1','line':['0','1']}).context['token']
         self.assertEqual(self.client.post(url,{'token':fresh}).status_code,400)
 
     def test_line_offer_partial_unknown_zero_and_duplicate_submission(self):
@@ -137,7 +189,7 @@ class WholeSupplierTests(TestCase):
 
     def test_missing_confirmation_and_expired_tokens_create_nothing(self):
         saved=self.saved();url=reverse('accounts:whole_preview',args=[saved.pk])
-        page=self.client.get(url);token=page.context['token']
+        page=self.client.get(url,{'select':'1','line':['0','1']});token=page.context['token']
         with patch('django.core.signing.time.time',return_value=1):
             old=signing.dumps(signing.loads(token,salt='whole-request-v1'),salt='whole-request-v1')
         self.assertEqual(self.client.post(url,{'token':old,'confirm':'yes'}).status_code,400)

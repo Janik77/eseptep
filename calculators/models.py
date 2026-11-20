@@ -1,3 +1,4 @@
+from decimal import Decimal
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
@@ -72,6 +73,10 @@ class MaterialPrice(models.Model):
     material_key = models.CharField(_('Материал'), max_length=30)
     unit = models.CharField(_('Единица'), max_length=30)
     price = models.DecimalField(_('Цена за единицу, ₸'), max_digits=12, decimal_places=2)
+    price_basis = models.CharField(_('Основа цены'), max_length=12,
+        choices=[('canonical', _('За расчётную единицу')), ('pack', _('За упаковку'))], default='canonical')
+    pack_coverage = models.DecimalField(_('В упаковке, в расчётных единицах'),
+        max_digits=10, decimal_places=4, null=True, blank=True)
 
     class Meta:
         verbose_name = _('цена материала')
@@ -79,6 +84,12 @@ class MaterialPrice(models.Model):
         constraints = [
             models.UniqueConstraint(fields=['book', 'calculator_slug', 'variant_key', 'material_key', 'unit'], name='unique_scoped_material_price'),
             models.CheckConstraint(condition=models.Q(price__gt=0), name='positive_material_price'),
+            models.CheckConstraint(
+                condition=(models.Q(price_basis='canonical', pack_coverage__isnull=True)
+                           | models.Q(price_basis='pack', unit__in=['м²', 'м'],
+                                      pack_coverage__isnull=False, pack_coverage__gt=0)),
+                name='valid_material_price_basis',
+            ),
         ]
 
     def clean(self):
@@ -90,6 +101,13 @@ class MaterialPrice(models.Model):
             raise ValidationError({'material_key': _('Материал не найден или единица не совпадает со справочником.')})
         if self.calculator_slug not in CALCULATORS_BY_SLUG:
             raise ValidationError({'calculator_slug': _('Выберите существующий калькулятор.')})
+        if self.price_basis == 'pack' and (
+            self.unit not in ('м²', 'м') or self.pack_coverage is None
+            or not isinstance(self.pack_coverage, Decimal) or not self.pack_coverage.is_finite() or self.pack_coverage <= 0
+        ):
+            raise ValidationError({'pack_coverage': _('Укажите положительное количество м² или м в упаковке.')})
+        if self.price_basis == 'canonical' and self.pack_coverage is not None:
+            raise ValidationError({'pack_coverage': _('Для цены за расчётную единицу оставьте поле пустым.')})
         from .material_keys import variant_keys
         if self.variant_key not in variant_keys(self.calculator_slug):
             raise ValidationError({'variant_key': _('Этот вариант не относится к выбранному калькулятору.')})

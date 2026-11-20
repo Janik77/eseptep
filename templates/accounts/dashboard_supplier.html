@@ -41,6 +41,11 @@
       <article class="dashboard-item">
         <b>{{ req.project.title }}</b>
         <p>{{ req.project.city }} · {{ req.project.area_m2 }} {% translate 'м²' %}</p>
+        {% if req.whole_estimate_id %}
+        <p>{% translate 'Демонстрационная заявка' %} #{{ req.pk }} · {{ req.get_status_display|system_text }}</p>
+        <p>{% translate 'Материалы:' %} {{ req.request_snapshot.lines|length }} {% translate 'позиций' %}</p>
+        <p><a class="btn btn--primary" href="{% url 'accounts:whole_request' req.pk %}">{% translate 'Открыть заявку' %}</a></p>
+        {% else %}
         <p>{% translate 'Материалы:' %} {% if req.calculation and req.calculation.result_data.materials %}{{ req.calculation.result_data.materials|length }} {% translate 'позиций' %}{% else %}{% translate 'не указано' %}{% endif %}</p>
         <small>{{ req.comment|default:i18n_default_0 }}</small>
         {% if req.target_supplier_id %}
@@ -51,6 +56,7 @@
         <p><a class="btn btn--primary" href="{% url 'accounts:supplier_request_detail' req.pk %}">{% translate 'Открыть заявку' %}</a></p>
         {% endif %}
 
+        {% endif %}
         {% if not req.whole_estimate_id %}<form method="post" class="master-response-form">
           {% csrf_token %}
           <input type="hidden" name="request_id" value="{{ req.id }}">

@@ -28,10 +28,10 @@ with tempfile.TemporaryDirectory(prefix='eseptep-supplier-') as tmp:
  race(fixture.owner,reverse('accounts:save_whole',args=[fixture.source.pk]),{'project_id':fixture.project.pk})
  assert SavedWholeEstimate.objects.count()==1
  saved=SavedWholeEstimate.objects.get()
- url=reverse('accounts:whole_preview',args=[saved.pk]);token=fixture.client.get(url).context
+ url=reverse('accounts:whole_preview',args=[saved.pk])
  # Outside Django test runner response.context isn't instrumented; extract only signed form token.
  import re,html
- token=html.unescape(re.search(r'name="token" value="([^"]+)"',fixture.client.get(url).content.decode()).group(1))
+ token=html.unescape(re.search(r'name="token" value="([^"]+)"',fixture.client.get(url,{'select':'1','line':['0','1']}).content.decode()).group(1))
  race(fixture.owner,url,{'token':token,'confirm':'yes'})
  assert ServiceRequest.objects.count()==1
  req=ServiceRequest.objects.get();url=reverse('accounts:whole_request',args=[req.pk])
