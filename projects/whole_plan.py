@@ -36,6 +36,8 @@ def calculate_snapshot(rooms, analysis_id):
     output, grouped, procurement = [], {}, []
     for original in rooms:
         row = {k: original.get(k) for k in ('index','name','area','source','page','evidence','visual_evidence','finish','finish_proposed','finish_evidence','finish_source')}
+        if original.get('schedule_floor_page'):
+            row.update(schedule_floor_page=original['schedule_floor_page'], line=original['line'])
         row['finish_source'] = row.get('finish_source') or ('suggested' if row['finish_proposed'] else 'plan' if row.get('finish_evidence') else 'user')
         row['area'] = area(row['area'])
         row['known'] = row['area'] is not None and Decimal(row['area']) >= 1

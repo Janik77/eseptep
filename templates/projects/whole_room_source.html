@@ -1,0 +1,9 @@
+{% if room.schedule_floor_page and room.page and room.line and room.evidence %}
+<p class="whole-muted" data-room-schedule-source>
+  <a href="{% url 'projects:plan_image' upload.pk room.page %}" target="_blank" rel="noopener">{% if LANGUAGE_CODE == 'kk' %}Бөлмелер кестесі, {{ room.page }}-бет{% else %}Экспликация помещений, стр. {{ room.page }}{% endif %}</a>
+  {% if LANGUAGE_CODE == 'kk' %}· мәтін қабатының {{ room.line }}-жолы{% else %}· строка {{ room.line }} текстового слоя{% endif %}: «{{ room.evidence }}»
+</p>
+<a href="{% url 'projects:plan_image' upload.pk room.schedule_floor_page %}" target="_blank" rel="noopener">{% if LANGUAGE_CODE == 'kk' %}Сызбаны көру{% else %}Посмотреть чертёж{% endif %}</a>
+{% elif room.page %}
+<a href="{% url 'projects:plan_image' upload.pk room.page %}" target="_blank" rel="noopener">{% if LANGUAGE_CODE == 'kk' %}Сызбаны көру{% else %}Посмотреть чертёж{% endif %}</a>
+{% endif %}

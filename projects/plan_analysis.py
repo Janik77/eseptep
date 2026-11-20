@@ -18,6 +18,7 @@ from PIL import Image, ImageOps, ImageStat
 from pypdf import PdfReader
 
 from .models import PlanAnalysis, PlanAnalysisBudget
+from .plan_schedule import add_schedule_areas, is_separate_schedule
 
 # Configurable, bounded model list is validated by the shared SDK boundary.
 MAX_BYTES = 5 * 1024 * 1024
@@ -279,7 +280,7 @@ def analyze(upload):
                   'area': {'type': ['number', 'null']}, 'width': {'type': ['number', 'null']},
                   'length': {'type': ['number', 'null']}, 'page': {'type': ['integer', 'null']},
                   'source': {'type': 'string', 'enum': ['stated', 'dimensions', 'unknown']},
-                  'evidence': {'type': 'string'},
+                  'evidence': {'type': 'string'}, 'schedule_evidence': {'type': 'string'},
                   'page_type': {'type': 'string', 'enum': ['floor_plan', 'elevation', 'other']},
                   'finish': {'type': ['string', 'null'], 'enum': ['tile', 'laminate', 'spc', 'parquet', None]},
                   'finish_evidence': {'type': 'string'}}
@@ -293,8 +294,12 @@ def analyze(upload):
     content = [{'type': 'input_text', 'text': (
         'First classify the supplied apartment document. Only actual floor-plan geometry with identifiable room divisions qualifies; '
         'a photograph of a legible floor plan qualifies, but pictures of interiors/exteriors, facade or section drawings, a standalone room schedule '
-        'and unclear content do not. Ignore covers, elevations and sections; with mixed documents report original page numbers only for actual '
-        'floor-plan pages and clearly associated room schedules. If no floor plan exists, use facade/photo/other/unclear, empty floor_pages and rooms, '
+        'and unclear content do not. Ignore covers, elevations, sections and standalone schedules when choosing floor_pages. '
+        'Return each room anchored to its actual floor-plan page; do not set a separate schedule page as a room source. '
+        'Keep the printed room name without its separate reference code. If its area is only on a separate schedule, return null area with source=unknown; '
+        'if a clearly matching schedule row is visible, quote its room number, name, area and square-metre units in schedule_evidence; '
+        'otherwise schedule_evidence is an empty string. The application independently checks the quote against the PDF text. '
+        'If no floor plan exists, use facade/photo/other/unclear, empty floor_pages and rooms, '
         'and stop without extracting anything. On accepted floor plans return all rooms once, including dry rooms, named corridors and bathrooms. '
         'Use only visible floor areas, never apartment totals or wall areas. Include unknown rooms with null area. Do not infer from scale. '
         'Use source=stated only for explicit area, dimensions only for rectangular rooms with two readable dimensions in metres, otherwise unknown. '
@@ -329,10 +334,17 @@ def analyze(upload):
                 or len(set(floor_pages)) != len(floor_pages)
                 or not isinstance(document.get('rooms'), list)):
             raise PlanError('invalid_classification')
+        floor_pages = [page for page in floor_pages if not is_separate_schedule(frames[page - 1][1])]
+        if not floor_pages:
+            result.status, result.error_code = 'failed', 'not_floor_plan'
+            result.elapsed_ms = int((time.monotonic() - start) * 1000)
+            result.save()
+            return result
         eligible = [row for row in document['rooms']
                     if isinstance(row, dict) and row.get('page_type') == 'floor_plan'
                     and type(row.get('page')) is int and row['page'] in floor_pages]
         result.rooms = normalize_rooms(eligible, frames, strict=True)
+        add_schedule_areas(result.rooms, eligible[:20], frames, floor_pages, area)
         if sum(Decimal(r['area']) for r in result.rooms if r.get('area')) > 10000:
             raise PlanError('area_limit')
         result.status = 'completed'

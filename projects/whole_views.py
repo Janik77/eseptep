@@ -83,7 +83,10 @@ def whole_plan(request, pk):
                         name = request.POST['name'].strip()
                         if not name or len(name) > 100 or any(ord(c) < 32 for c in name):
                             raise ValueError
+                        renamed = name != row['name']
                         row['name'] = name
+                    else:
+                        renamed = False
                     if request.POST.get('area'):
                         number = area(request.POST['area'])
                         if number is None or Decimal(number) < 1:
@@ -91,6 +94,11 @@ def whole_plan(request, pk):
                         if number != area(row.get('area')):
                             row['area'], row['source'] = number, 'manual'
                             row['visual_evidence'] = ''
+                    if row.get('schedule_floor_page') and (renamed or row['source'] == 'manual'):
+                        # The verified row described the original name and area only.
+                        row['page'] = row.pop('schedule_floor_page')
+                        row['source'], row['evidence'], row['visual_evidence'] = 'manual', '', ''
+                        row.pop('line', None)
                     persist_estimate(upload, rows, estimate.snapshot['analysis_id'], expected_id=estimate.pk)
                 except EstimateChanged:
                     return HttpResponseBadRequest('Есеп өзгерді. Бетті жаңартып, қайталаңыз.' if (get_language() or '').startswith('kk') else 'Расчёт изменился. Обновите страницу и повторите изменение.')
@@ -142,7 +150,7 @@ def whole_plan(request, pk):
         'calculated_rooms': sum(bool(r.get('known')) for r in estimate.snapshot['rooms']) if estimate else 0,
         'priced_positions': sum(r.get('line_total') is not None for r in estimate.snapshot['procurement']) if estimate else 0,
         'total_positions': len(estimate.snapshot['procurement']) if estimate else 0,
-        'preview_page': next((r['page'] for r in (analysis.rooms if analysis else []) if r.get('area') and r.get('page')), 1),
+        'preview_page': next((r.get('schedule_floor_page') or r['page'] for r in (analysis.rooms if analysis else []) if r.get('area') and r.get('page')), 1),
     }, status=400 if manual_error else 200)
 
 
