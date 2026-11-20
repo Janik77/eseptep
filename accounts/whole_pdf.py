@@ -22,7 +22,11 @@ def offer_pdf(request, offer):
     for line in s['lines']:
         price=line['unit_price'] if line['unit_price'] is not None else tr('уточнить','нақтылау')
         amount=line['line_total'] if line['line_total'] is not None else tr('не подтверждено','расталмаған')
-        rows.append(p(f"{line['title']}: {line['quantity']} {line['unit']} × {price} ₸; {statuses[line['availability']]}; {amount} ₸"))
+        quantity = line['quantity'] + ' ' + line['unit']
+        if line.get('purchase_unit') == 'pack':
+            pack = tr('упак.', 'қапт.')
+            quantity = f"{line['purchase_quantity']} {pack} ({line['pack_coverage']} {line['unit']} / {pack}; {tr('нужно', 'қажет')} {quantity})"
+        rows.append(p(f"{line['title']}: {quantity} × {price} ₸; {statuses[line['availability']]}; {amount} ₸"))
     rows += [p((tr('Сумма предложения: ','Ұсыныстың жалпы сомасы: ') if s['total'] is not None else tr('Подтверждённая часть: ','Расталған бөлігі: '))+(s['confirmed_subtotal']+' ₸' if s['confirmed_subtotal'] is not None else tr('пока нет подтверждённых цен','расталған баға әзірге жоқ'))),
              p(tr('Неподтверждённых позиций: ','Расталмаған позициялар: ')+str(s['unconfirmed'])),p(s['message'])]
     out=BytesIO();SimpleDocTemplate(out).build(rows);return out.getvalue()

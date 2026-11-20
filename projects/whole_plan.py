@@ -54,10 +54,21 @@ def calculate_snapshot(rooms, analysis_id):
         else:
             inputs['covering_type'] = finish
         result = calculate_materials(definition, inputs)
-        quote = quotation(slug, 'comfort' if finish == 'tile' else '', result['materials'], book)
+        # Sum canonical requirements before applying any pack ceiling. Other
+        # finish/spec groups deliberately remain distinct, even for equal labels.
+        requirements = {}
+        for material in result['materials']:
+            key = material['title'], material['unit']
+            if key not in requirements:
+                requirements[key] = dict(material)
+            else:
+                requirements[key]['quantity'] = str(
+                    Decimal(str(requirements[key]['quantity'])) + Decimal(str(material['quantity'])))
+        materials = list(requirements.values())
+        quote = quotation(slug, 'comfort' if finish == 'tile' else '', materials, book, include_packs=True)
         priced = {(r['material_title'], r['unit_label']): r for r in quote['rows']} if quote else {}
         group_rows = []
-        for material in result['materials']:
+        for material in materials:
             if Decimal(str(material['quantity'])) <= 0:
                 continue
             price = priced.get((material['title'], material['unit']))
@@ -67,15 +78,21 @@ def calculate_snapshot(rooms, analysis_id):
                     'material_key': material_key(material['title'], material['unit']),
                     'calculator_slug': slug, 'variant': 'comfort' if finish == 'tile' else '',
                     'specification': '60x60' if finish == 'tile' else finish}
+            if price and price.get('price_basis') == 'pack':
+                item.update({key: price[key] for key in ('price_basis', 'pack_coverage', 'purchase_quantity', 'purchase_unit')})
             group_rows.append(item)
             procurement.append(item)
         # Room rows are transparent proportional allocations of the grouped kit.
         # Purchase rounding happens once per finish, never once per room.
         for member in members:
             ratio = Decimal(member['area']) / total_area
-            member['materials'] = [{**r, 'quantity': str((Decimal(r['quantity'])*ratio).quantize(Decimal('.0001'))),
-                                    'line_total': decimal_text(Decimal(r['line_total'])*ratio) if r['line_total'] is not None else None}
-                                   for r in group_rows]
+            member['materials'] = [
+                {**{k: v for k, v in r.items() if k not in ('purchase_quantity', 'purchase_unit', 'pack_coverage', 'price_basis')},
+                 'unit_price': None if r.get('price_basis') == 'pack' else r['unit_price'],
+                 'quantity': str((Decimal(r['quantity']) * ratio).quantize(Decimal('.0001'))),
+                 'line_total': decimal_text(Decimal(r['line_total']) * ratio) if r['line_total'] is not None else None}
+                for r in group_rows
+            ]
             member['subtotal'] = decimal_text(sum(Decimal(r['line_total']) for r in member['materials'] if r['line_total'] is not None))
             member['allocation'] = 'area-share-of-grouped-kit'
     combined = {}

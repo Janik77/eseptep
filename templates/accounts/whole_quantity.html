@@ -1,0 +1,2 @@
+{% load eseptep_i18n %}
+<small>{% if LANGUAGE_CODE == 'kk' %}Саны{% else %}Кол-во{% endif %}: {% if row.purchase_unit == 'pack' %}{{ row.purchase_quantity|money }} {% if LANGUAGE_CODE == 'kk' %}қапт.{% else %}упак.{% endif %} · {{ row.pack_coverage|money }} {{ row.unit|system_text }}/{% if LANGUAGE_CODE == 'kk' %}қапт.{% else %}упак.{% endif %}<br>{% if LANGUAGE_CODE == 'kk' %}Қажет мөлшер{% else %}Потребность{% endif %}: {{ row.quantity|money }} {{ row.unit|system_text }}{% else %}{{ row.quantity|money }} {{ row.unit|system_text }}{% endif %}</small>

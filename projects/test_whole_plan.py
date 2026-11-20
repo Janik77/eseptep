@@ -61,6 +61,34 @@ class WholePlanTests(TestCase):
         self.assertEqual(self.client.post(f'/projects/{self.upload.pk}/whole/', {'action':'update','room':'1','finish':'tile','estimate_id':estimate.pk}).status_code,400)
 
     @patch('projects.plan_analysis.responses_create')
+    def test_estimate_price_heading_has_three_states_in_both_languages(self, api):
+        estimate = self.prepared(api)
+        url = f'/projects/{self.upload.pk}/whole/'
+        for language, labels in [('ru', ('Магазин уточнит стоимость','Сумма по известным ценам','Итого за материалы')),
+                                 ('kk', ('Дүкен құнын нақтылайды','Бағасы белгілі позициялар сомасы','Материалдардың жалпы құны'))]:
+            original = WholePlanEstimate.objects.get(pk=estimate.pk).snapshot
+            data = estimate.snapshot
+            self.client.cookies['django_language'] = language
+            self.assertContains(self.client.get(url), labels[0])
+            self.assertNotContains(self.client.get(url), 'class="whole-price">0')
+            data['procurement'][0]['line_total'] = '0.00'
+            data['priced_subtotal'] = '0.00'
+            data['priced_positions'] = 1
+            estimate.save(update_fields=['snapshot'])
+            self.assertContains(self.client.get(url), labels[1])
+            self.assertContains(self.client.get(url), 'class="whole-price">0 ₸')
+            for row in data['procurement']:
+                row['line_total'] = '5.00'
+            data['priced_positions'] = len(data['procurement'])
+            data['materials_total'] = str(5 * len(data['procurement']))
+            estimate.save(update_fields=['snapshot'])
+            page = self.client.get(url)
+            self.assertContains(page, labels[2])
+            self.assertNotContains(page, labels[1])
+            estimate.snapshot = original
+            estimate.save(update_fields=['snapshot'])
+
+    @patch('projects.plan_analysis.responses_create')
     def test_partial_and_different_file_isolation(self, api):
         self.rooms[2]['area'] = None; self.rooms[2]['source']='unknown'
         estimate = self.prepared(api)

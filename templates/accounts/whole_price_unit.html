@@ -1,0 +1,1 @@
+{% load eseptep_i18n %}{% if row.purchase_unit == 'pack' %}{% if LANGUAGE_CODE == 'kk' %}қапт.{% else %}упак.{% endif %}{% else %}{{ row.unit|system_text }}{% endif %}

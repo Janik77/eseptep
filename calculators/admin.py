@@ -44,9 +44,10 @@ class MaterialPriceForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         for name in ('material_key', 'calculator_slug', 'variant_key'):
             self.fields[name].label = MaterialPrice._meta.get_field(name).verbose_name
-        self.fields['unit'].help_text = _('Укажите единицу точно как в выбранном материале. Мешки, кг, м и м² не взаимозаменяемы; автоматического пересчёта нет.')
+        self.fields['unit'].help_text = _('Укажите единицу точно как в выбранном материале. Мешки, кг, м и м² не взаимозаменяемы. Для цены за упаковку укажите её фактическое содержимое в той же единице.')
         self.fields['material_key'].help_text = _('Выберите устойчивый идентификатор из справочника. Совпадение названия не подтверждает техническую пригодность товара.')
-        self.fields['price'].help_text = _('Положительная цена в тенге за одну указанную единицу. Не стоимость всей позиции.')
+        self.fields['price'].help_text = _('Цена в тенге за расчётную единицу или одну упаковку, согласно выбранной основе. Не итог строки.')
+        self.fields['pack_coverage'].help_text = _('Укажите, сколько м² или м в упаковке по данным магазина. Для обычной цены оставьте пустым.')
 
     class Meta:
         model = MaterialPrice

@@ -29,9 +29,9 @@ class AdminGuidanceTests(TestCase):
         data = {'store_name': 'Synthetic updated', 'version': 'qa-v1', 'source_note': 'Synthetic only', 'price_date': '2026-01-01',
                 'entries-TOTAL_FORMS': '1', 'entries-INITIAL_FORMS': '0', 'entries-MIN_NUM_FORMS': '0', 'entries-MAX_NUM_FORMS': '1000',
                 'entries-0-calculator_slug': slug, 'entries-0-variant_key': '', 'entries-0-material_key': entry['key'],
-                'entries-0-unit': entry['unit'], 'entries-0-price': '12.34', '_save': '1'}
+                'entries-0-unit': entry['unit'], 'entries-0-price': '12.34', 'entries-0-price_basis': 'canonical', '_save': '1'}
         response = self.client.post(url, data)
-        self.assertEqual(response.status_code, 302, getattr(response, 'context', None))
+        self.assertEqual(response.status_code, 302)
         book.refresh_from_db()
         self.assertIsNone(book.published_at)
         self.assertEqual(book.entries.get().price, Decimal('12.34'))

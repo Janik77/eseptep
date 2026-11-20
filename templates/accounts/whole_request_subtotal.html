@@ -1,0 +1,1 @@
+{% load eseptep_i18n %}{% if snapshot.priced_subtotal != None %}<p>{% if LANGUAGE_CODE == 'kk' %}Белгілі бағалар бойынша{% else %}Сумма по известным ценам{% endif %}: <strong>{{ snapshot.priced_subtotal|money }} ₸</strong></p>{% endif %}

@@ -1,4 +1,4 @@
-/** Saved synthetic 72m² fixture only. No upload/analyze/provider calls. */
+/** Synthetic 72m² fixture. Ordinary upload reuses saved recognition; no provider call. */
 import {createRequire} from 'node:module';
 import fs from 'node:fs/promises';
 import assert from 'node:assert/strict';
@@ -23,6 +23,9 @@ try{
    await page.goto(base+'/projects/1/whole/');await lang(page,language);
    assert.equal(await page.locator('.whole-room').count(),5);
    assert.match(await page.locator('.whole-facts').innerText(),/5.*72\s*м²/);
+   assert.match(await page.locator('.whole-price-caption').innerText(),language==='ru'?/Сумма по известным ценам/:/Бағасы белгілі/);
+   if(width===390){const positions=await page.locator('.whole-actions a').evaluateAll(xs=>xs.map(x=>getComputedStyle(x).position));assert.equal(positions[0],'fixed');assert.equal(positions.filter(x=>x==='fixed').length,1);}
+
    assert.match((await page.locator('.whole-price').innerText()).replace(/\s/g,''),/61200₸/);
    assert.match(await page.locator('.whole-summary .whole-muted').innerText(),/7/);
    assert.equal(await page.locator('#purchase[open]').count(),0);
@@ -51,17 +54,47 @@ try{
   }
   const video=page.video();await context.close();await video.saveAs(`${output}/coverage-switch-${width}.webm`);
  }
- // One ordinary targeted request in isolated synthetic DB, never a real merchant message.
- const client=await browser.newContext({storageState,viewport:{width:1440,height:900}});const page=await client.newPage();page.on('pageerror',e=>errors.push(e.message));
- await page.goto(base+'/projects/1/whole/');await lang(page,'ru');await page.locator('[data-request-offer]').click();
- await page.locator('#whole-project').selectOption({index:0});await page.locator('form:has(#whole-project) button').click();
- await page.locator('[name=confirm]').waitFor();await shot(page,'request-preview-1440');
- await page.locator('[name=confirm]').check();await page.locator('form:has([name=confirm]) button').click();await page.waitForURL(/whole-requests\/\d+\//);const requestUrl=page.url();
- const supplier=await browser.newContext();const sp=await supplier.newPage();await login(sp,'supplier');await sp.goto(requestUrl);
- await sp.locator('[name=price_0]').fill('100');await sp.locator('[name=availability_0]').selectOption('available');await sp.locator('form:has([name=price_0]) button[type=submit]').click();
- await sp.locator('[name=price_0]').waitFor({state:'detached'});await supplier.close();
- await page.reload();assert.match(await page.locator('h2').allTextContents().then(x=>x.join(' ')),/Ответ магазина/);
- for(const width of [1440,390]){await page.setViewportSize({width,height:900});await shot(page,`supplier-response-${width}`);}
- await client.close();checks.push({supplierFlow:'explicit recipient/content preview → confirmed synthetic request → partial supplier answer → client receipt',externalMessages:0});
+
+ // Ordinary upload from the existing synthetic plan; PLAN_AI_ENABLED=0 on fixture server.
+ const client=await browser.newContext({storageState,viewport:{width:390,height:900}});const page=await client.newPage();page.on('pageerror',e=>errors.push(e.message));
+ await page.goto(base+'/projects/upload/');await lang(page,'ru');
+ await page.locator('#own-plan input[name=file]').setInputFiles('tests/fixtures/plans/typical-two-room.pdf');
+ await page.locator('#own-plan button[type=submit]').click();await page.waitForURL(/projects\/\d+\/whole\//);
+ assert.equal(await page.locator('.whole-room').count(),5);
+ assert.match(await page.locator('.whole-facts').innerText(),/5.*72\s*м²/);
+ assert.equal(await page.locator('[data-whole-submit]').count(),0);
+ const initial=await page.locator('#finish-0').inputValue();
+ await change(page,initial==='tile'?'laminate':'tile');await shot(page,'ordinary-upload-changed-ru-390');
+ await page.locator('[data-request-offer]').click();
+ await page.locator('#whole-project').selectOption({label:'ESEPTEP · 72 м²'});await page.locator('form:has(#whole-project) button').click();
+ const picks=page.locator('[data-choose-lines] [name=line]');assert((await picks.count())>2);
+ for(let i=2;i<await picks.count();i++)await picks.nth(i).uncheck();
+ await page.locator('[data-choose-lines] button[type=submit]').click();
+ const confirm=page.locator('form:has([name=confirm])');await confirm.waitFor();
+ const savedUrl=new URL(page.url());savedUrl.pathname=savedUrl.pathname.replace(/request\/$/,'');savedUrl.search='';
+ assert.equal(await page.locator('.whole-materials li').count(),2);assert.match(await page.locator('.dashboard').innerText(),/ESEPTEP · 72 м²/);await shot(page,'request-review-ru-390');
+ await confirm.locator('[name=confirm]').check();await confirm.locator('button').click();await page.waitForURL(/whole-requests\/\d+\//);const requestUrl=page.url();
+ const supplier=await browser.newContext({viewport:{width:390,height:900}});const sp=await supplier.newPage();sp.on('pageerror',e=>errors.push(e.message));await login(sp,'supplier');
+ const requestPath=new URL(requestUrl).pathname;
+ await sp.locator('a[href="'+requestPath+'"]').first().click();
+ await sp.locator('[name=price_0]').fill('100');await sp.locator('[name=availability_0]').selectOption('available');
+ await sp.locator('[name=availability_1]').selectOption('unavailable');
+ await sp.locator('form:has([name=price_0]) button[type=submit]').click();await sp.locator('[name=price_0]').waitFor({state:'detached'});await supplier.close();
+ await page.goto(base+'/accounts/dashboard/client/');
+ await page.locator('a[href="'+savedUrl.pathname+'"]').first().click();
+ await page.locator('[data-latest-answer]').waitFor();
+ for(const width of [390,1440]){
+  await page.setViewportSize({width,height:900});
+  for(const language of ['ru','kk']){
+   await page.goto(savedUrl.href);await lang(page,language);
+   await shot(page,'saved-answer-'+language+'-'+width);
+   await page.locator('[data-latest-answer] a').click();
+   const detail=await page.locator('.dashboard').innerText();
+   assert.match(detail,language==='ru'?/Ответ магазина/:/Дүкеннің жауабы/);
+   assert.match(detail,language==='ru'?/В наличии/:/Бар/);assert.match(detail,language==='ru'?/Нет в наличии/:/Жоқ/);
+   assert.match(detail,/100\s*₸/);await shot(page,'supplier-response-'+language+'-'+width);
+  }
+ }
+ await client.close();checks.push({supplierFlow:'ordinary upload → cached analysis → changed flooring → selected purchase lines → confirmed demo request → seller price+stock → reopened buyer project',externalMessages:0,realApiCalls:0});
  assert.deepEqual(errors,[]);await fs.writeFile(`${output}/checks.json`,JSON.stringify({passed:true,checks,pageErrors:errors},null,2));
 }finally{await browser.close();}
