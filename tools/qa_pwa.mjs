@@ -89,25 +89,30 @@ if (engine === 'chrome') {
     // on some Chrome builds. Select Open in window via actual OS app settings.
     await cdp.send('PWA.changeAppUserSettings', { manifestId, displayMode: 'standalone' });
     const { targetId } = await cdp.send('PWA.launch', { manifestId });
-    // Chrome may open an extra installation tab. Observe the actual target
-    // returned for the explicit OS launch, not the first arbitrary page event.
+    assert.ok(targetId, 'Chrome did not return its launched app target');
+    // A Chrome browser-side app/tab target may have a separate renderer-side
+    // page target. Verify the real isolated app window with display-mode and
+    // origin, instead of requiring those two implementation IDs to be equal.
     let app;
-    for (let attempts = 0; !app && attempts < 48; attempts++) {
+    const observedModes = new Set();
+    for (let attempts = 0; !app && attempts < 40; attempts++) {
       for (const candidate of context.pages()) {
-        const session = await context.newCDPSession(candidate).catch(() => null);
-        if (!session) continue;
-        try {
-          const { targetInfo } = await session.send('Target.getTargetInfo').catch(() => ({}));
-          if (targetInfo?.targetId === targetId) { app = candidate; break; }
-        } finally { await session.detach().catch(() => {}); }
+        if (candidate === page || !candidate.url().startsWith(base + '/')) continue;
+        const mode = await candidate.evaluate(() => ({
+          standalone: matchMedia('(display-mode: standalone)').matches,
+          browser: matchMedia('(display-mode: browser)').matches,
+          path: location.pathname,
+        })).catch(() => null);
+        if (!mode) continue;
+        observedModes.add(JSON.stringify(mode));
+        if (mode.standalone && mode.path === '/') { app = candidate; break; }
       }
       if (!app) await new Promise(resolve => setTimeout(resolve, 250));
     }
-    assert.ok(app, 'Chrome did not expose its launched app target');
+    const { targetInfo } = await cdp.send('Target.getTargetInfo', { targetId }).catch(() => ({}));
+    console.log('Chrome launch target kind:', targetInfo?.type, 'observed renderer display modes:', [...observedModes]);
+    assert.ok(app, 'Actual Chrome standalone window was not observed');
     await app.waitForLoadState();
-    const mode = await app.evaluate(() => ({ standalone: matchMedia('(display-mode: standalone)').matches, browser: matchMedia('(display-mode: browser)').matches, location: location.pathname }));
-    console.log('Chrome actual launched app display mode:', mode);
-    await app.waitForFunction(() => matchMedia('(display-mode: standalone)').matches, null, { timeout: 6000 });
     assert.equal(new URL(app.url()).pathname, '/');
     assert.equal(await app.locator('html').getAttribute('lang'), 'kk');
     await app.goto(base + '/accounts/dashboard/client/');
