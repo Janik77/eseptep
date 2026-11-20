@@ -17,7 +17,7 @@ from django.db.models import F
 from PIL import Image, ImageOps, ImageStat
 from pypdf import PdfReader
 
-from .models import PlanAnalysis, PlanAnalysisBudget
+from .models import PlanAnalysis, PlanAnalysisBudget, ProjectUpload
 from .plan_schedule import add_schedule_areas, is_separate_schedule
 
 # Configurable, bounded model list is validated by the shared SDK boundary.
@@ -220,20 +220,50 @@ def identity_for_upload(upload, raw):
     return analysis_identity(owner_scope(upload), raw, upload.source_sha256)
 
 
+def _owned_claim_for_same_bytes(upload, digest):
+    """Reuse only the attempt attached to a source explicitly moved to this account."""
+    if not re.fullmatch(r'[a-f0-9]{64}', upload.source_sha256):
+        return None
+    candidates = ProjectUpload.objects.filter(
+        user_id=upload.user_id, guest_session_key='',
+        source_sha256=upload.source_sha256,
+        ai_summary__claimed_plan_digest=digest,
+        ai_summary__has_key='claimed_plan_analysis',
+    ).exclude(pk=upload.pk).order_by('pk').values_list('pk', 'ai_summary')
+    unresolved_claim = False
+    for claimed_upload_id, summary in candidates.iterator():
+        claimed_id = summary.get('claimed_plan_analysis')
+        record = (PlanAnalysis.objects.filter(pk=claimed_id, upload_id=claimed_upload_id,
+                    upload__user_id=upload.user_id, upload__guest_session_key='').first()
+                  if type(claimed_id) is int else None)
+        if record is None:
+            # This includes duplicate guest uploads claimed without their
+            # originating analysis. Do not read any unclaimed guest data or admit a retry.
+            unresolved_claim = True
+        elif record.model != 'offline-fixture':
+            return record
+    if unresolved_claim:
+        raise PlanError('duplicate_call')
+    return None
+
+
 def scoped_analysis(upload, raw):
     lookup = (dict(upload__user_id=upload.user_id) if upload.user_id is not None else
               dict(upload__user__isnull=True, upload__guest_session_key=upload.guest_session_key))
     record = PlanAnalysis.objects.filter(identity=identity_for_upload(upload, raw), **lookup).first()
     if record or upload.user_id is None:
         return record
-    # An explicit guest transfer may keep its own original record for this
-    # upload only. Never follow a raw JSON id into a different owner's upload.
+    # Reopening the original upload preserves its own claim, including an offline fixture.
+    # Never follow a raw JSON id into a different upload.
     claimed_id = (upload.ai_summary or {}).get('claimed_plan_analysis')
     claim = (upload.ai_summary or {}).get('claimed_plan_digest')
     digest = hashlib.sha256(raw).hexdigest()
     if type(claimed_id) is int and claim == digest:
-        return PlanAnalysis.objects.filter(pk=claimed_id, upload=upload).first()
-    return None
+        own_claim = PlanAnalysis.objects.filter(pk=claimed_id, upload=upload,
+            upload__user_id=upload.user_id, upload__guest_session_key='').first()
+        if own_claim:
+            return own_claim
+    return _owned_claim_for_same_bytes(upload, digest)
 
 
 def analyze(upload):
@@ -264,6 +294,13 @@ def analyze(upload):
         # Acquire the shared writer/row lock before SELECT (SQLite deferred
         # transactions otherwise race during read-to-write upgrade).
         PlanAnalysisBudget.objects.filter(pk=1).update(reserved_cents=F('reserved_cents'))
+        # Ownership may change during local decoding or a guest's first sign-in.
+        current_upload = ProjectUpload.objects.select_for_update().filter(pk=upload.pk).first()
+        if current_upload is None or identity_for_upload(current_upload, raw) != identity:
+            raise PlanError('legacy_analysis')
+        scoped = scoped_analysis(current_upload, raw)
+        if scoped is not None:
+            return scoped
         result, created = PlanAnalysis.objects.get_or_create(identity=identity, defaults={'upload': upload, 'model': settings.OPENAI_MODEL})
         if not created:
             # Recheck original scope: a guest source can be concurrently claimed.
