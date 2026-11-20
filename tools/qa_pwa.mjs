@@ -76,7 +76,7 @@ if (engine === 'chrome') {
     await menu(page);
     await ready(page);
     cdp = await context.newCDPSession(page);
-    const { manifestUrl, errors } = await cdp.send('Page.getAppManifest');
+    const { url: manifestUrl, errors } = await cdp.send('Page.getAppManifest');
     assert.equal(manifestUrl, base + '/manifest.webmanifest');
     assert.deepEqual(errors, []);
     assert.deepEqual((await cdp.send('Page.getInstallabilityErrors')).installabilityErrors, []);
@@ -84,7 +84,7 @@ if (engine === 'chrome') {
     await login(page);
     await toggleKk(page);
     const manifestId = base + '/';
-    await cdp.send('PWA.install', { manifestId, installUrl: base + '/' });
+    await cdp.send('PWA.install', { manifestId });
     const newApp = context.waitForEvent('page', { timeout: 15000 });
     await cdp.send('PWA.launch', { manifestId });
     const app = await newApp;
