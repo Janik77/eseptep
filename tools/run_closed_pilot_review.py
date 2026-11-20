@@ -18,14 +18,11 @@ from django.core.files.base import ContentFile
 from projects.models import ProjectUpload,PlanAnalysis
 from projects.whole_plan import initial_rooms,persist_estimate
 from projects.plan_analysis import analysis_identity
-# Never seed over an unrelated database.
-import sqlite3
-if DB.exists():
- with sqlite3.connect(DB.as_uri()+'?mode=ro',uri=True) as con:
-  tables={r[0] for r in con.execute("select name from sqlite_master where type='table'")}
-  if 'auth_user' in tables and con.execute("select count(*) from auth_user where username not in ('demo-client@example.test','demo-supplier@example.test','demo-master@example.test')").fetchone()[0]:raise SystemExit('Non-demo database; refusing')
+from tools.closed_pilot_db import inspect_db, mark_prepared
+prepared = inspect_db(DB)
 call_command('migrate',interactive=False)
-call_command('seed_meeting_demo',confirm_isolated=True)
+if not prepared:
+ call_command('seed_meeting_demo',confirm_isolated=True)
 user=User.objects.get(username='demo-client@example.test')
 ClientProject.objects.get_or_create(user=user,title='ESEPTEP · 72 м²',defaults={'city':'Шымкент','area_m2':'72.00','rooms':5})
 raw=(ROOT/'tests/fixtures/plans/typical-two-room.pdf').read_bytes()
@@ -37,6 +34,8 @@ if not analysis:
   for n,k,a in [('Гостиная','other','18.00'),('Спальня','other','18.00'),('Кухня','other','16.20'),('Коридор','other','13.20'),('Ванная','bathroom','6.60')]]
  analysis=PlanAnalysis.objects.create(upload=upload,identity=identity,status='completed',model='offline-fixture',rooms=rooms)
  persist_estimate(upload,initial_rooms(analysis),analysis.pk)
+if not prepared:
+ mark_prepared(DB)
 if '--seed-area-pack-price' in sys.argv:
  from django.db import transaction
  from django.utils import timezone
