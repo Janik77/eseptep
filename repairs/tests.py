@@ -211,3 +211,117 @@ class RepairFlowTests(TestCase):
                          {'username':self.reviewer.username, 'password':'Synthetic-only-password-2026'}, follow=True)
         self.assertEqual(response.redirect_chain[-1][0], reverse('repairs:review_queue'))
         self.assertContains(response, self.project.title)
+
+
+class RepairSupplierEstimateHandoffTests(TestCase):
+    def test_real_spc_estimate_offer_and_split_delivery_keep_whole_packages(self):
+        from datetime import date
+        from django.test import override_settings
+        from django.utils import timezone
+        from calculators.material_keys import material_key
+        from calculators.models import MaterialPrice, PriceBook
+        from calculators.pricing import quotation
+        from projects.whole_plan import persist_estimate
+
+        buyer = RepairFlowTests.user_for('spc-buyer@example.test', 'client')
+        store = RepairFlowTests.user_for('demo-supplier@example.test', 'supplier')
+        outsider = RepairFlowTests.user_for('spc-outsider@example.test', 'client')
+        reviewer = RepairFlowTests.user_for('spc-reviewer@example.test', 'admin')
+        project = ClientProject.objects.create(user=buyer, title='Synthetic SPC', city='Шымкент', area_m2=52, rooms=2)
+        SupplierProfile.objects.create(user=store, company_name='Synthetic store', city='Шымкент', address='')
+        city = PilotCity.objects.create(name='Шымкент', enabled=True)
+        repair = Repair.objects.create(project=project, city=city, reviewer=reviewer, enabled=True)
+
+        slug, material = 'laminat-spc-parket', 'SPC покрытие'
+        book = PriceBook.objects.create(store_name='Synthetic store', version='exact-spc-test',
+                                        source_note='Synthetic prices only', price_date=date(2026, 11, 21))
+        price = MaterialPrice(book=book, calculator_slug=slug, material_key=material_key(material, 'м²'),
+                              unit='м²', price=Decimal('10000.00'), price_basis='pack', pack_coverage=Decimal('2.196'))
+        price.full_clean()
+        price.save()
+        book.is_active = True
+        book.published_at = timezone.now()
+        book.save()
+
+        direct = quotation(slug, '', [{'title': material, 'unit': 'м²', 'quantity': '50.55'}],
+                           book, include_packs=True)
+        self.assertEqual(direct['rows'][0]['purchase_quantity'], '24')
+        rooms = [{'index': i, 'name': f'Synthetic {i}', 'area': area, 'finish': 'spc', 'finish_proposed': False}
+                 for i, area in enumerate(('24', '28'))]
+        upload = ProjectUpload.objects.create(user=buyer, file='synthetic-not-read.pdf')
+        estimate = persist_estimate(upload, rooms, None, initialize=True)
+        i, row = next((i, r) for i, r in enumerate(estimate.snapshot['procurement']) if r['title'] == material)
+        key = str(i)
+        self.assertEqual((row['quantity'], row['purchase_quantity'], row['purchase_unit'], row['pack_coverage'],
+                          row['purchase_covered_quantity'], row['line_total']),
+                         ('55', '26', 'pack', '2.196', '57.096', '260000.00'))
+
+        clients = [Client() for _ in range(3)]
+        client, seller, other = clients
+        for browser, user in zip(clients, (buyer, store, outsider)):
+            browser.force_login(user)
+        with override_settings(ESEPTEP_DEMO_MODE=True, PRODUCTION=False, PLAN_AI_ENABLED=False,
+                               EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend'):
+            self.assertEqual(client.post(reverse('accounts:save_whole', args=[estimate.pk]),
+                                         {'project_id': project.pk}).status_code, 302)
+            saved = SavedWholeEstimate.objects.get(project=project)
+            review = reverse('accounts:whole_preview', args=[saved.pk])
+            signed = client.get(review, {'select': '1', 'line': [key]})
+            self.assertEqual(signed.status_code, 200)
+            self.assertEqual(client.post(review, {'token': signed.context['token'], 'confirm': 'yes'}).status_code, 302)
+            request = ServiceRequest.objects.get(project=project)
+            quote_url = reverse('accounts:whole_request', args=[request.pk])
+            quote = seller.get(quote_url)
+            self.assertEqual(quote.status_code, 200)
+            self.assertEqual(seller.post(quote_url, {'token': quote.context['token'],
+                                                    f'price_{key}': '10000',
+                                                    f'availability_{key}': 'available'}).status_code, 302)
+            offer = WholeSupplierOffer.objects.get(request=request)
+            self.assertEqual(offer.snapshot['total'], '260000.00')
+            offered_line, = offer.snapshot['lines']
+            self.assertEqual((offered_line['title'], offered_line['quantity'], offered_line['purchase_quantity'],
+                              offered_line['purchase_unit']), (material, '55', '26', 'pack'))
+            self.assertNotIn('name', offered_line)
+
+            action = reverse('repairs:action', args=[project.pk])
+            detail = reverse('repairs:detail', args=[project.pk])
+
+            def post(browser, name, status=302, token=None, **fields):
+                response = browser.post(action, {'action': name, 'token': token or str(uuid.uuid4()), **fields})
+                self.assertEqual(response.status_code, status)
+
+            offered, = offer_rows(repair)
+            fields = {'kind': 'materials', 'offer_id': offer.pk, 'confirm': 'yes',
+                      'offer_token': offer_token(repair, buyer, offered)}
+            self.assertEqual(seller.get(detail).status_code, 404)
+            self.assertEqual(other.get(detail).status_code, 404)
+            post(other, 'accept_offer', status=404, **fields)
+            post(client, 'accept_offer', **fields)
+            agreement = Agreement.objects.get(repair=repair)
+            terms = agreement.versions.get()
+            self.assertEqual(terms.total, Decimal('260000'))
+            self.assertEqual(terms.lines, [{'id': key, 'name': material, 'unit': 'pack',
+                                            'quantity': '26', 'unit_price': '10000'}])
+            from django.utils.translation import override
+            for language, unit in [('ru', 'упак.'), ('kk', 'қапт.')]:
+                with override(language):
+                    seller.cookies['django_language'] = language
+                    self.assertContains(seller.get(detail), f'26 {unit}')
+            self.assertEqual(other.get(detail).status_code, 404)
+            window = {'window_start': '2030-01-09T10:00', 'window_end': '2030-01-09T13:00'}
+            post(seller, 'schedule_delivery', agreement_id=agreement.pk, **{f'qty_{key}': '26'}, **window)
+            first = agreement.deliveries.get()
+            token = str(uuid.uuid4())
+            for _ in range(2):
+                post(client, 'confirm_delivery', token=token, delivery_id=first.pk,
+                     **{f'received_{key}': '25', f'damaged_{key}': '0'})
+            self.assertEqual(receipt_balance(agreement), {key: Decimal('1')})
+            self.assertEqual(agreement.events.filter(action='confirm_delivery').count(), 1)
+            post(seller, 'schedule_delivery', status=400, agreement_id=agreement.pk, **{f'qty_{key}': '2'}, **window)
+            post(seller, 'schedule_delivery', agreement_id=agreement.pk, **{f'qty_{key}': '1'}, **window)
+            second = agreement.deliveries.latest('pk')
+            post(client, 'confirm_delivery', delivery_id=second.pk, **{f'received_{key}': '1', f'damaged_{key}': '0'})
+            self.assertEqual(receipt_balance(agreement), {key: Decimal('0')})
+            self.assertEqual(agreement.events.filter(action='confirm_delivery').count(), 2)
+            offer.refresh_from_db()
+            self.assertEqual(offer.snapshot['lines'], [offered_line])

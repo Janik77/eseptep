@@ -144,7 +144,12 @@ def normalized_lines(rows):
         if not qty or row.get('availability') != 'available':
             raise InvalidAction
         price = number(row.get('unit_price'), MONEY_MAX)
-        out.append({'id': ident, 'name': str(row['name'])[:255],
+        # Current supplier replies keep the procurement title; early pilot
+        # snapshots used name. The stored agreement always has a canonical name.
+        name = row.get('name') or row.get('title')
+        if not isinstance(name, str) or not name.strip():
+            raise InvalidAction
+        out.append({'id': ident, 'name': name[:255],
                     'unit': str(row.get('purchase_unit') or row.get('unit', ''))[:30],
                     'quantity': str(qty), 'unit_price': str(price)})
     return out

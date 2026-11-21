@@ -32,7 +32,7 @@
         {% if offer.total != None %}<b>{{ offer.total|money }} ₸</b>{% endif %}
       </header>
       {% if offer.start or offer.end %}<p class="repair-meta">{{ offer.start|default_if_none:'' }}{% if offer.start and offer.end %} – {% endif %}{{ offer.end|default_if_none:'' }}</p>{% endif %}
-      {% if offer.lines %}<details><summary>{% if LANGUAGE_CODE == 'kk' %}Ұсыныстың құрамы{% else %}Состав предложения{% endif %}</summary><ul class="repair-terms">{% for item in offer.lines %}<li>{{ item.title|default:item.name }}{% if item.quantity != None %} · {{ item.quantity }} {{ item.unit }}{% endif %}{% if item.total != None %} · {{ item.total|money }} ₸{% endif %}</li>{% endfor %}</ul></details>{% endif %}
+      {% if offer.lines %}<details><summary>{% if LANGUAGE_CODE == 'kk' %}Ұсыныстың құрамы{% else %}Состав предложения{% endif %}</summary><ul class="repair-terms">{% for item in offer.lines %}<li>{{ item.title|default:item.name }}{% if item.quantity != None %} · {{ item.quantity }} {{ item.unit|repair_unit }}{% endif %}{% if item.total != None %} · {{ item.total|money }} ₸{% endif %}</li>{% endfor %}</ul></details>{% endif %}
       {% if offer.description %}<p>{{ offer.description }}</p>{% endif %}
       <form class="repair-form" method="post" action="{% url 'repairs:action' repair.project_id %}">
         {% csrf_token %}
