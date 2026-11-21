@@ -1,0 +1,29 @@
+{% if entry.problems %}
+<section class="repair-section" aria-label="{% if LANGUAGE_CODE == 'kk' %}Мәселелерді қарау{% else %}Рассмотрение проблем{% endif %}">
+  <h2>{% if LANGUAGE_CODE == 'kk' %}Мәселелерді қарау{% else %}Рассмотрение проблем{% endif %}</h2>
+  {% for problem in entry.problems %}
+    <article class="repair-card" id="issue-{{ problem.id }}" data-repair-issue="{{ problem.id }}">
+      <div class="repair-summary"><h3>{{ problem.title }}</h3><span class="repair-badge">{{ problem.label }}</span></div>
+      <p>{{ problem.comment }}</p>
+      {% for photo in problem.photos %}<img src="{% url 'repairs:photo' photo.id %}" class="repair-evidence" alt="{% if LANGUAGE_CODE == 'kk' %}Мәселе бойынша фото{% else %}Фото проблемы{% endif %}" loading="lazy">{% endfor %}
+      {% for reply in problem.replies %}<div><p>{{ reply.comment }}</p>{% if reply.photo %}<img src="{% url 'repairs:photo' reply.photo.id %}" class="repair-evidence" alt="{% if LANGUAGE_CODE == 'kk' %}Жауапқа тіркелген фото{% else %}Фото к ответу{% endif %}" loading="lazy">{% endif %}{% if reply.created_at %}<time class="repair-meta" datetime="{{ reply.created_at|date:'c' }}">{{ reply.created_at|date:'d.m.Y, H:i' }}</time>{% endif %}</div>{% endfor %}
+      {% if problem.resolution %}<p><strong>{% if LANGUAGE_CODE == 'kk' %}Қарау қорытындысы{% else %}Итог рассмотрения{% endif %}:</strong> {{ problem.resolution }}</p>{% endif %}
+      {% if problem.can_reply %}
+      <form class="repair-form" method="post" enctype="multipart/form-data" action="{% url 'repairs:action' repair.project_id %}">
+        {% include 'repairs/_fields.html' with operation='issue_reply' problem_id=problem.id form_token=problem.reply_token %}
+        <label>{% if LANGUAGE_CODE == 'kk' %}Жауап{% else %}Ответ{% endif %}<textarea name="comment" rows="2" maxlength="1500" required></textarea></label>
+        <label>{% if LANGUAGE_CODE == 'kk' %}Фото (міндетті емес){% else %}Фото (необязательно){% endif %}<input name="photo" type="file" accept="image/jpeg,image/png,image/webp"></label>
+        <button class="btn btn--secondary" type="submit">{% if LANGUAGE_CODE == 'kk' %}Жауап жіберу{% else %}Отправить ответ{% endif %}</button>
+      </form>
+      {% endif %}
+      {% if problem.can_resolve %}
+      <form class="repair-form" method="post" action="{% url 'repairs:action' repair.project_id %}">
+        {% include 'repairs/_fields.html' with operation='resolve_issue' problem_id=problem.id form_token=problem.resolve_token %}
+        <label>{% if LANGUAGE_CODE == 'kk' %}Қорытынды{% else %}Итог{% endif %}<textarea name="comment" rows="2" maxlength="1500" required></textarea></label>
+        <button class="btn btn--secondary" type="submit">{% if LANGUAGE_CODE == 'kk' %}Қарауды аяқтау{% else %}Завершить рассмотрение{% endif %}</button>
+      </form>
+      {% endif %}
+    </article>
+  {% endfor %}
+</section>
+{% endif %}

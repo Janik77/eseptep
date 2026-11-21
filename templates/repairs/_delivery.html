@@ -1,0 +1,26 @@
+{% load l10n %}
+<article class="repair-card" id="delivery-{{ delivery.id }}" data-repair-delivery="{{ delivery.id }}">
+  <header>
+    <div class="repair-summary"><h3>{% if LANGUAGE_CODE == 'kk' %}Жеткізу{% else %}Поставка{% endif %}</h3><span class="repair-badge{% if delivery.confirmed %} repair-ready{% endif %}">{{ delivery.label }}</span></div>
+    {% if delivery.window_start %}<p class="repair-meta"><time datetime="{{ delivery.window_start|date:'c' }}">{{ delivery.window_start|date:'d.m.Y, H:i' }}</time>{% if delivery.window_end %} – <time datetime="{{ delivery.window_end|date:'c' }}">{{ delivery.window_end|date:'d.m.Y, H:i' }}</time>{% endif %}</p>{% endif %}
+    {% if delivery.address %}<p>{{ delivery.address }}</p>{% endif %}
+  </header>
+  {% if delivery.can_confirm %}
+  <form class="repair-form" method="post" action="{% url 'repairs:action' repair.project_id %}">
+    {% include 'repairs/_fields.html' with operation='confirm_delivery' delivery_id=delivery.id form_token=delivery.confirm_token %}
+    {% for line in delivery.lines %}
+    <fieldset class="repair-delivery-line">
+      <legend>{{ line.title|default:line.name }} · {{ line.quantity }} {{ line.unit }}</legend>
+      <div class="repair-form__numbers">
+        <label>{% if LANGUAGE_CODE == 'kk' %}Алынды (зақымдалғанын қоса){% else %}Получено (включая повреждённые){% endif %}<input name="received_{{ line.line_id }}" type="number" min="0" max="{{ line.quantity|unlocalize }}" step="any" value="{{ line.quantity|unlocalize }}" required></label>
+        <label>{% if LANGUAGE_CODE == 'kk' %}Соның ішінде зақымдалғаны{% else %}Из них повреждено{% endif %}<input name="damaged_{{ line.line_id }}" type="number" min="0" max="{{ line.quantity|unlocalize }}" step="any" value="0" required></label>
+      </div>
+    </fieldset>
+    {% endfor %}
+    <button class="btn btn--secondary" type="submit">{% if LANGUAGE_CODE == 'kk' %}Нақты алынғанын растау{% else %}Подтвердить фактическое получение{% endif %}</button>
+  </form>
+  {% elif delivery.lines %}
+    <ul class="repair-terms">{% for line in delivery.lines %}<li>{{ line.title|default:line.name }} · {{ line.quantity }} {{ line.unit }}{% if line.received != None %}<br><span class="repair-meta">{% if LANGUAGE_CODE == 'kk' %}Алынды{% else %}Получено{% endif %}: {{ line.received }} · {% if LANGUAGE_CODE == 'kk' %}Зақымдалғаны{% else %}Повреждено{% endif %}: {{ line.damaged }}{% if line.remaining != None %} · {% if LANGUAGE_CODE == 'kk' %}Осы жеткізілімде алынбады{% else %}Не получено в этой поставке{% endif %}: {{ line.remaining }}{% endif %}</span>{% endif %}</li>{% endfor %}</ul>
+  {% endif %}
+  {% if delivery.can_report %}{% include 'repairs/_problem_form.html' with target_kind='delivery' target_id=delivery.id form_token=delivery.issue_token %}{% endif %}
+</article>

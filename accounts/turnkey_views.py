@@ -59,11 +59,26 @@ def preview(request):
         snapshot = valid_snapshot(token, master)
     except (signing.BadSignature, ValueError):
         return HttpResponseBadRequest(tr('Расчёт устарел. Откройте предварительную оценку заново.', 'Есеп ескірді. Бастапқы бағалауды қайта ашыңыз.'))
-    key = hashlib.sha256(f'{request.user.pk}:{digest(snapshot)}'.encode()).hexdigest()
+    from repairs.models import Repair, city_key
+    from repairs.services import scoped_repair
+    pilot_projects = [row.project for row in Repair.objects.filter(project__user=request.user,
+                      enabled=True, city__enabled=True, city__key=city_key(snapshot['city'])).select_related('project','city')
+                      if city_key(row.project.city) == row.city.key]
+    selected = request.POST.get('repair_project', '') if request.method == 'POST' else ''
+    if selected and not any(str(project.pk) == selected for project in pilot_projects):
+        raise Http404
+    identity = f'{request.user.pk}:{digest(snapshot)}' + (f':repair:{selected}' if selected else '')
+    key = hashlib.sha256(identity.encode()).hexdigest()
     if request.method == 'POST':
         if request.POST.get('confirm') != 'yes':
             return HttpResponseBadRequest(tr('Подтвердите состав и получателя.', 'Құрамы мен алушыны растаңыз.'))
         with transaction.atomic():
+            project = None
+            if selected:
+                repair, role = scoped_repair(request.user, int(selected), lock=True)
+                if role != 'client' or city_key(repair.project.city) != city_key(snapshot['city']):
+                    raise Http404
+                project = repair.project
             lock_price_configuration()
             master = meeting_master()
             if not master or master.pk != snapshot['recipient_id'] or master.full_name != snapshot['recipient']:
@@ -75,15 +90,16 @@ def preview(request):
             current = renovation_estimate(snapshot['area'], snapshot['package'], config)
             if (config['version'], current['total'], current['rate_per_m2']) != (snapshot['rate_version'], snapshot['budget'], snapshot['rate']):
                 return HttpResponseBadRequest(tr('Тарифы изменились. Пересчитайте бюджет перед подтверждением.', 'Тарифтер өзгерді. Растау алдында бюджетті қайта есептеңіз.'))
-            project = ClientProject.objects.create(
-                user=request.user, title=tr('Ремонт под ключ', 'Толық жөндеу'),
-                city=snapshot['city'], area_m2=snapshot['area'], rooms=0,
-            )
+            if project is None:
+                project = ClientProject.objects.create(
+                    user=request.user, title=tr('Ремонт под ключ', 'Толық жөндеу'),
+                    city=snapshot['city'], area_m2=snapshot['area'], rooms=0,
+                )
             req = ServiceRequest.objects.create(client=request.user, project=project,
                 request_type=ServiceRequest.RequestType.FULL_REPAIR, target_master=master,
                 pilot_key=key, request_snapshot=snapshot)
         return redirect('accounts:turnkey_request', pk=req.pk)
-    return render(request, 'accounts/turnkey_preview.html', {'snapshot':snapshot, 'token':token})
+    return render(request, 'accounts/turnkey_preview.html', {'snapshot':snapshot, 'token':token, 'pilot_projects':pilot_projects})
 
 
 @require_http_methods(['GET', 'POST'])

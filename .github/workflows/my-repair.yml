@@ -1,0 +1,51 @@
+name: Private My Repair mobile acceptance
+on:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  mobile-acceptance:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    env:
+      DJANGO_ENV: test
+      DJANGO_DEBUG: 'true'
+      ESEPTEP_REPAIR_BROWSER_QA: '1'
+      PLAN_AI_ENABLED: '0'
+      ESTIMATE_AI_ENABLED: '0'
+      OPENAI_LIVE_CONFIRMED: '0'
+      OPENAI_API_KEY: ''
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - uses: actions/setup-node@v4
+        with: {node-version: '24'}
+      - run: python -m pip install -r requirements.txt
+      - run: python manage.py test repairs --noinput && python manage.py makemigrations --check --dry-run
+      - run: npm install --prefix /tmp/eseptep-repair-browser-driver playwright@1.65.0
+      - run: /tmp/eseptep-repair-browser-driver/node_modules/.bin/playwright install ffmpeg
+      - name: Review synthetic repairs on RU and KK mobile screens
+        run: |
+          set -euo pipefail
+          export REPAIR_QA_DIR="$RUNNER_TEMP/eseptep-repair-evidence"
+          export DJANGO_DB_PATH="$REPAIR_QA_DIR/repair-browser.sqlite3"
+          export DJANGO_PRIVATE_MEDIA_ROOT="$REPAIR_QA_DIR/private-media"
+          export PLAYWRIGHT_PACKAGE=/tmp/eseptep-repair-browser-driver/node_modules/playwright
+          mkdir -p "$DJANGO_PRIVATE_MEDIA_ROOT"
+          python tools/seed_repair_browser_qa.py "$REPAIR_QA_DIR"
+          python manage.py runserver 127.0.0.1:8241 --noreload > "$REPAIR_QA_DIR/server.log" 2>&1 &
+          SERVER_PID=$!
+          trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
+          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:8241/accounts/login/ >/dev/null && break || sleep 1; done
+          node tools/qa_my_repair.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: private-repair-synthetic-mobile-evidence
+          path: |
+            ${{ runner.temp }}/eseptep-repair-evidence/*.webm
+            ${{ runner.temp }}/eseptep-repair-evidence/*.png
+            ${{ runner.temp }}/eseptep-repair-evidence/repair-checks.json
+          retention-days: 14

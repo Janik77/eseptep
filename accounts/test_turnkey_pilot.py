@@ -75,3 +75,23 @@ class DemoTurnkeyTests(TestCase):
         self.assertFalse(ServiceRequest.objects.exists())
         with override_settings(PRODUCTION=True):
             self.assertEqual(self.client.get(draft).status_code,404)
+
+    def test_turnkey_can_attach_to_the_same_explicitly_enabled_project(self):
+        from accounts.models import ClientProject
+        from repairs.models import PilotCity, Repair
+        self.client.force_login(self.owner)
+        city = PilotCity.objects.create(name='Шымкент', enabled=True)
+        project = ClientProject.objects.create(user=self.owner,title='Один ремонт',city='Шымкент',area_m2=36,rooms=2)
+        repair = Repair.objects.create(project=project,city=city,enabled=True)
+        draft = self.quote()
+        preview = self.client.get(draft)
+        self.assertContains(preview,'Один ремонт')
+        payload={'quote':preview.context['token'],'confirm':'yes','repair_project':str(project.pk)}
+        self.assertEqual(self.client.post(draft,payload).status_code,302)
+        self.assertEqual(self.client.post(draft,payload).status_code,302)
+        self.assertEqual(ServiceRequest.objects.get().project_id,project.pk)
+        self.assertEqual(ClientProject.objects.filter(user=self.owner,title='Один ремонт').count(),1)
+        repair.enabled=False
+        repair.save(update_fields=['enabled'])
+        self.assertNotContains(self.client.get(draft),'Один ремонт')
+        self.assertEqual(self.client.post(draft,payload).status_code,404)

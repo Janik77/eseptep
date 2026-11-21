@@ -58,6 +58,7 @@ INSTALLED_APPS = [
     'marketplace.apps.MarketplaceConfig',
     'projects.apps.ProjectsConfig',
     'accounts.apps.AccountsConfig',
+    'repairs',
 ]
 
 MIDDLEWARE = [

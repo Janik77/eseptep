@@ -1,0 +1,10 @@
+<details class="repair-problem-form">
+  <summary>{% if LANGUAGE_CODE == 'kk' %}Мәселе туралы хабарлау{% else %}Сообщить о проблеме{% endif %}</summary>
+  <p class="repair-muted">{% if LANGUAGE_CODE == 'kk' %}Мәселені тіркеп, қарауға жіберуге көмектесеміз.{% else %}Поможем зафиксировать проблему и передать её на рассмотрение.{% endif %}</p>
+  <form class="repair-form" method="post" enctype="multipart/form-data" action="{% url 'repairs:action' repair.project_id %}">
+    {% include 'repairs/_fields.html' with operation='report_issue' %}
+    <label>{% if LANGUAGE_CODE == 'kk' %}Не болды?{% else %}Что случилось?{% endif %}<textarea name="comment" rows="3" maxlength="1500" required></textarea></label>
+    <label>{% if LANGUAGE_CODE == 'kk' %}Фото (міндетті емес){% else %}Фото (необязательно){% endif %}<input name="photo" type="file" accept="image/jpeg,image/png,image/webp"></label>
+    <button class="btn btn--secondary" type="submit">{% if LANGUAGE_CODE == 'kk' %}Қарауға жіберу{% else %}Передать на рассмотрение{% endif %}</button>
+  </form>
+</details>
