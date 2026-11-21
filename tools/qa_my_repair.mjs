@@ -89,7 +89,7 @@ try {
       const confirm=action(buyer,'confirm_delivery');
       await confirm.locator('[name=received_1]').fill(String(received));
       const form=await confirm.evaluate(n=>Object.fromEntries(new FormData(n)));
-      const endpoint=await confirm.evaluate(n=>n.action);
+      const endpoint=new URL(await confirm.getAttribute('action'),buyer.url()).href;
       await submit(confirm);
       if (received===10) {
         assert.match(await buyer.locator('[data-repair-delivery]').first().innerText(),locale==='ru'?/Не получено в этой поставке:\s*2/:/Осы жеткізілімде алынбады:\s*2/);
