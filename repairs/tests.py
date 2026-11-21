@@ -202,3 +202,12 @@ class RepairFlowTests(TestCase):
         self.post(shop,'schedule_delivery',agreement_id=a.pk,qty_1='2',**window)
         self.assertEqual(receipt_balance(a),{'1':Decimal(0)})
         self.assertEqual(receipt_balance(a,pending=False),{'1':Decimal(2)})
+
+    def test_assigned_support_login_lands_in_review_cabinet(self):
+        self.reviewer.set_password('Synthetic-only-password-2026')
+        self.reviewer.username = self.reviewer.email = 'synthetic-reviewer@example.test'
+        self.reviewer.save(update_fields=['password','username','email'])
+        response = self.client.post(reverse('accounts:login'),
+                         {'username':self.reviewer.username, 'password':'Synthetic-only-password-2026'}, follow=True)
+        self.assertEqual(response.redirect_chain[-1][0], reverse('repairs:review_queue'))
+        self.assertContains(response, self.project.title)

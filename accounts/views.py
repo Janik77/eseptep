@@ -347,6 +347,8 @@ def supplier_profile_edit(request):
 
 
 def _dashboard_url_by_role(role):
+    if role == UserProfile.Role.ADMIN:
+        return reverse_lazy('repairs:review_queue')
     if role == UserProfile.Role.MASTER:
         return reverse_lazy('accounts:dashboard_master')
     if role == UserProfile.Role.SUPPLIER:
