@@ -1,0 +1,34 @@
+<article class="repair-card" id="stage-{{ stage.id }}" data-repair-stage="{{ stage.id }}">
+  <header>
+    <div class="repair-summary"><h3>{{ stage.title }}</h3><span class="repair-badge{% if stage.status == 'accepted' %} repair-ready{% elif stage.status == 'fix' %} repair-attention{% endif %}">{{ stage.label }}</span></div>
+    {% if stage.due_on %}<p class="repair-meta">{% if LANGUAGE_CODE == 'kk' %}Мерзімі{% else %}Срок{% endif %}: <time datetime="{{ stage.due_on|date:'Y-m-d' }}">{{ stage.due_on|date:'d.m.Y' }}</time></p>{% endif %}
+    {% if stage.comment %}<p>{{ stage.comment }}</p>{% endif %}
+  </header>
+  {% if stage.photos %}
+    {% for photo in stage.photos %}<img class="repair-evidence" src="{% url 'repairs:photo' photo.id %}" alt="{% if LANGUAGE_CODE == 'kk' %}Орындалған жұмыстың фотосы{% else %}Фото выполненной работы{% endif %}" loading="lazy">{% endfor %}
+  {% endif %}
+  {% if stage.can_submit %}
+  <form class="repair-form" method="post" enctype="multipart/form-data" action="{% url 'repairs:action' repair.project_id %}">
+    {% include 'repairs/_fields.html' with operation='submit_stage' stage_id=stage.id form_token=stage.submit_token %}
+    <label>{% if LANGUAGE_CODE == 'kk' %}Жұмыс фотосы{% else %}Фото работы{% endif %}<input type="file" name="photo" accept="image/jpeg,image/png,image/webp" required></label>
+    <label>{% if LANGUAGE_CODE == 'kk' %}Түсініктеме{% else %}Комментарий{% endif %}<textarea name="comment" rows="2" maxlength="1500"></textarea></label>
+    <button class="btn btn--secondary" type="submit">{% if LANGUAGE_CODE == 'kk' %}Қабылдауға жіберу{% else %}Передать на приёмку{% endif %}</button>
+  </form>
+  {% endif %}
+  {% if stage.can_review %}
+  <form class="repair-form" method="post" action="{% url 'repairs:action' repair.project_id %}">
+    {% include 'repairs/_fields.html' with operation='accept_stage' stage_id=stage.id form_token=stage.accept_token %}
+    <input type="hidden" name="submission" value="{{ stage.submission }}">
+    <button class="btn btn--secondary" type="submit">{% if LANGUAGE_CODE == 'kk' %}Жұмысты қабылдау{% else %}Принять работу{% endif %}</button>
+  </form>
+  <details><summary>{% if LANGUAGE_CODE == 'kk' %}Түзету сұрау{% else %}Запросить исправление{% endif %}</summary>
+    <form class="repair-form" method="post" action="{% url 'repairs:action' repair.project_id %}">
+      {% include 'repairs/_fields.html' with operation='request_fix' stage_id=stage.id form_token=stage.fix_token %}
+      <input type="hidden" name="submission" value="{{ stage.submission }}">
+      <label>{% if LANGUAGE_CODE == 'kk' %}Нені түзету керек?{% else %}Что исправить?{% endif %}<textarea name="comment" rows="3" maxlength="1500" required></textarea></label>
+      <button class="btn btn--secondary" type="submit">{% if LANGUAGE_CODE == 'kk' %}Ескертуді жіберу{% else %}Отправить замечание{% endif %}</button>
+    </form>
+  </details>
+  {% endif %}
+  {% if stage.can_report %}{% include 'repairs/_problem_form.html' with target_kind='stage' target_id=stage.id form_token=stage.issue_token %}{% endif %}
+</article>

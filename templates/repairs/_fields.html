@@ -1,0 +1,9 @@
+{% load repairs_ui %}
+{% csrf_token %}
+<input type="hidden" name="token" value="{% new_repair_token %}">
+<input type="hidden" name="action" value="{{ operation }}">
+{% if agreement_id %}<input type="hidden" name="agreement_id" value="{{ agreement_id }}">{% endif %}
+{% if delivery_id %}<input type="hidden" name="delivery_id" value="{{ delivery_id }}">{% endif %}
+{% if stage_id %}<input type="hidden" name="stage_id" value="{{ stage_id }}">{% endif %}
+{% if problem_id %}<input type="hidden" name="problem_id" value="{{ problem_id }}">{% endif %}
+{% if target_id %}<input type="hidden" name="target_id" value="{{ target_id }}"><input type="hidden" name="target_kind" value="{{ target_kind }}">{% endif %}
