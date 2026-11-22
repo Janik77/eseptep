@@ -1,4 +1,6 @@
 import json
+from decimal import Decimal
+from io import BytesIO
 from pathlib import Path
 from unittest.mock import patch
 from types import SimpleNamespace
@@ -8,6 +10,8 @@ from projects.models import PlanAnalysis
 from projects.demo_samples import typical_plans
 from core.openai_client import safe_error_code,ALLOWED_MODELS
 from accounts.ai_explanation import minimized_snapshot
+from pypdf import PdfReader
+from tools.closed_pilot_db import read_two_room_fixture
 
 @override_settings(ESEPTEP_DEMO_MODE=True,PLAN_AI_ENABLED=False,OPENAI_LIVE_CONFIRMED=False)
 class TypicalPlansTests(TestCase):
@@ -28,6 +32,17 @@ class TypicalPlansTests(TestCase):
    self.assertGreaterEqual(sum(r['kind']=='bathroom' for r in item['ground_truth']),1)
    self.assertTrue(Path(settings.BASE_DIR,'tests/fixtures/plans',item['pdf']).exists())
    self.assertNotIn('ground_truth',typical_plans()[0])
+ def test_closed_review_room_areas_match_pdf_explication(self):
+  raw, rooms = read_two_room_fixture(settings.BASE_DIR)
+  page = PdfReader(BytesIO(raw)).pages[0].extract_text(extraction_mode='layout')
+  shown = {}
+  for line in page.splitlines():
+   columns = line.split()
+   if len(columns) == 4 and columns[0] in ('01', '02', '03', '04', '05') and columns[3] == 'м²':
+    shown[columns[1]] = Decimal(columns[2])
+  self.assertEqual(len(shown), 5)
+  self.assertEqual({r['name']: Decimal(r['area']) for r in rooms}, shown)
+
  def test_provider_errors_are_whitelisted_and_null_quote_safe(self):
   self.assertIn('gpt-6.1-sol',ALLOWED_MODELS)
   self.assertEqual(safe_error_code(SimpleNamespace(status_code=401,code='invalid_api_key')),'invalid_api_key')
