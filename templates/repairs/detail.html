@@ -1,0 +1,55 @@
+{% extends 'base.html' %}{% load static i18n eseptep_i18n repairs_ui %}
+{% block title %}{% if LANGUAGE_CODE == 'kk' %}Менің жөндеуім{% else %}Мой ремонт{% endif %} — ESEPTEP{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/my-repair.css' %}">{% endblock %}
+{% block content %}
+<section class="repair-shell" data-repair-page>
+  <div class="repair-hero" aria-labelledby="repair-title">
+    <header>
+      <p class="repair-eyebrow">{% if LANGUAGE_CODE == 'kk' %}Жабық пилот{% else %}Закрытый пилот{% endif %}</p>
+      <h1 id="repair-title">{% if LANGUAGE_CODE == 'kk' %}Менің жөндеуім{% else %}Мой ремонт{% endif %}</h1>
+      <p class="repair-muted">{{ repair.project.title }}{% if city_label %} · {{ city_label }}{% endif %}</p>
+    </header>
+    <div>
+      <h2>{% if LANGUAGE_CODE == 'kk' %}Қазір не болып жатыр{% else %}Что происходит сейчас{% endif %}</h2>
+      {% if current_summary %}<p>{{ current_summary }}</p>{% elif agreements %}<p>{% if LANGUAGE_CODE == 'kk' %}Келісімдер күшінде. Жеткізу мен жұмыс кезеңдерін төменнен қараңыз.{% else %}Договорённости действуют. Поставки и этапы работ ниже.{% endif %}</p>{% else %}<p>{% if LANGUAGE_CODE == 'kk' %}Жөндеуді бастау үшін ұсынысты растаңыз.{% else %}Чтобы начать ремонт, подтвердите предложение.{% endif %}</p>{% endif %}
+      {% if next_event %}<p class="repair-meta" data-repair-next-event>{{ next_event }}</p>{% endif %}
+    </div>
+    {% if next_action %}
+      <a class="btn btn--primary repair-hero__action" href="#{{ next_action.anchor }}">{{ next_action.label }}</a>
+    {% elif offers %}
+      <a class="btn btn--primary repair-hero__action" href="#repair-offers">{% if LANGUAGE_CODE == 'kk' %}Ұсыныстарды қарау{% else %}Посмотреть предложения{% endif %}</a>
+    {% endif %}
+  </div>
+  {% if error %}<p class="repair-errors" role="alert">{{ error }}</p>{% endif %}
+  {% if offers %}
+  <section id="repair-offers" class="repair-section" aria-labelledby="repair-offer-heading">
+    <h2 id="repair-offer-heading">{% if LANGUAGE_CODE == 'kk' %}Ұсыныстар{% else %}Предложения{% endif %}</h2>
+    {% for offer in offers %}
+    <article class="repair-card" data-repair-offer="{{ offer.kind }}">
+      <header>
+        <p class="repair-eyebrow">{% if offer.kind == 'materials' %}{% if LANGUAGE_CODE == 'kk' %}Материалдар{% else %}Материалы{% endif %}{% else %}{% if LANGUAGE_CODE == 'kk' %}Жұмыстар{% else %}Работы{% endif %}{% endif %}</p>
+        <h3>{{ offer.provider }}</h3>
+        {% if offer.total != None %}<b>{{ offer.total|money }} ₸</b>{% endif %}
+      </header>
+      {% if offer.start or offer.end %}<p class="repair-meta">{{ offer.start|default_if_none:'' }}{% if offer.start and offer.end %} – {% endif %}{{ offer.end|default_if_none:'' }}</p>{% endif %}
+      {% if offer.lines %}<details><summary>{% if LANGUAGE_CODE == 'kk' %}Ұсыныстың құрамы{% else %}Состав предложения{% endif %}</summary><ul class="repair-terms">{% for item in offer.lines %}<li>{{ item.title|default:item.name }}{% if item.quantity != None %} · {{ item.quantity }} {{ item.unit|repair_unit }}{% endif %}{% if item.total != None %} · {{ item.total|money }} ₸{% endif %}</li>{% endfor %}</ul></details>{% endif %}
+      {% if offer.description %}<p>{{ offer.description }}</p>{% endif %}
+      <form class="repair-form" method="post" action="{% url 'repairs:action' repair.project_id %}">
+        {% csrf_token %}
+        <input type="hidden" name="token" value="{% new_repair_token %}">
+        <input type="hidden" name="action" value="accept_offer">
+        <input type="hidden" name="kind" value="{{ offer.kind }}">
+        <input type="hidden" name="offer_id" value="{{ offer.id }}">
+        <input type="hidden" name="offer_token" value="{{ offer.offer_token }}">
+        <label class="repair-consent"><input type="checkbox" name="confirm" value="yes" required> <span>{% if LANGUAGE_CODE == 'kk' %}Құрамын, бағасын және мерзімін растаймын{% else %}Подтверждаю состав, цену и сроки{% endif %}</span></label>
+        <button class="btn btn--secondary" type="submit">{% if LANGUAGE_CODE == 'kk' %}Ұсынысты қабылдау{% else %}Принять предложение{% endif %}</button>
+      </form>
+    </article>
+    {% endfor %}
+  </section>
+  {% endif %}
+  {% for item in agreements %}{% include 'repairs/_agreement.html' with entry=item %}{% empty %}
+  {% if not offers %}<div class="repair-empty">{% if LANGUAGE_CODE == 'kk' %}Әзірге белсенді келісімдер жоқ.{% else %}Пока нет активных договорённостей.{% endif %}</div>{% endif %}
+  {% endfor %}
+</section>
+{% endblock %}

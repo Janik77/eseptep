@@ -1,0 +1,22 @@
+{% extends 'base.html' %}{% load static %}
+{% block title %}{% if LANGUAGE_CODE == 'kk' %}Жөндеу жобаларын қарау{% else %}Рассмотрение проектов ремонта{% endif %} — ESEPTEP{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/my-repair.css' %}">{% endblock %}
+{% block content %}
+<section class="repair-shell" aria-labelledby="repair-review-title">
+  <div class="repair-hero">
+    <p class="repair-eyebrow">{% if LANGUAGE_CODE == 'kk' %}Жабық пилот{% else %}Закрытый пилот{% endif %}</p>
+    <h1 id="repair-review-title">{% if LANGUAGE_CODE == 'kk' %}Жөндеу жобаларын қарау{% else %}Рассмотрение проектов ремонта{% endif %}</h1>
+    <p>{% if LANGUAGE_CODE == 'kk' %}Бастапқы шарттар, өзгерістер және тараптардың жауаптары жоба ішінде сақталады.{% else %}Исходные условия, изменения и ответы сторон хранятся в проекте.{% endif %}</p>
+  </div>
+  <div class="repair-section">
+  {% for record in repairs %}
+    <article class="repair-card">
+      <h2>{{ record.project.title }}</h2><p class="repair-meta">{{ record.city.name }}</p>
+      <a class="btn btn--secondary" href="{% url 'repairs:detail' record.project_id %}">{% if LANGUAGE_CODE == 'kk' %}Жобаны ашу{% else %}Открыть проект{% endif %}</a>
+    </article>
+  {% empty %}
+    <p class="repair-empty">{% if LANGUAGE_CODE == 'kk' %}Сізге тағайындалған белсенді жобалар жоқ.{% else %}Нет активных проектов, в которых вы назначены ответственным.{% endif %}</p>
+  {% endfor %}
+  </div>
+</section>
+{% endblock %}

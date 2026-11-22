@@ -1,0 +1,5 @@
+{% load repair_access %}
+{% may_open_repair request.user repair_project_pk as repair_access %}
+{% if repair_access %}
+<a class="btn btn--secondary" data-repair-entry href="{% url 'repairs:detail' repair_project_pk %}">{% if LANGUAGE_CODE == 'kk' %}Менің жөндеуім{% else %}Мой ремонт{% endif %}</a>
+{% endif %}

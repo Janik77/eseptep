@@ -1,0 +1,45 @@
+/* Scoped to the private project timeline; existing customer pages are unchanged. */
+.repair-shell{--repair-text:#172c45;--repair-muted:#506780;--repair-line:#dce5ef;--repair-link:#2157c4;max-width:980px;margin:0 auto 48px;color:var(--repair-text);min-width:0;overflow-wrap:anywhere}
+.repair-shell :focus-visible{outline:3px solid #255fd7;outline-offset:3px}
+.repair-shell h1,.repair-shell h2,.repair-shell h3,.repair-shell p{margin:0}
+.repair-shell h1{font-size:clamp(30px,5vw,44px);line-height:1.09;letter-spacing:-.035em}
+.repair-shell h2{font-size:22px;line-height:1.2;letter-spacing:-.02em}
+.repair-shell h3{font-size:17px;line-height:1.3}
+.repair-shell header{display:grid;gap:8px}
+.repair-hero,.repair-card{padding:clamp(16px,3vw,26px);border:1px solid var(--repair-line);border-radius:14px;background:white;min-width:0}
+.repair-hero{background:#eef5ff;border-color:#cedef5;display:grid;gap:14px}
+.repair-eyebrow,.repair-muted,.repair-meta{color:var(--repair-muted);font-size:14px}
+.repair-eyebrow{font-size:12px;letter-spacing:.08em;text-transform:uppercase;font-weight:700}
+.repair-hero__action{justify-self:start}
+.repair-section{display:grid;gap:12px;margin-top:22px}
+.repair-card{display:grid;gap:12px}
+.repair-card--priority{border-color:#b6cbec}
+.repair-summary{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:10px}
+.repair-badge{font-size:13px;color:#244976;background:#eef4fb;border-radius:5px;padding:3px 8px}
+.repair-ready{background:#eaf6ee;color:#1a5939}
+.repair-attention{background:#fff3d9;color:#744d00}
+.repair-terms,.repair-history{margin:0;padding-inline-start:20px;display:grid;gap:8px}
+.repair-history time{color:var(--repair-muted);font-size:13px}
+.repair-shell details{min-width:0}
+.repair-shell details>summary{cursor:pointer;min-height:44px;padding:10px 0;font-weight:600;color:var(--repair-link)}
+.repair-shell details[open]>summary{margin-bottom:8px}
+.repair-form{display:grid;align-items:end;gap:10px;margin:0;min-width:0}
+.repair-form label{display:grid;gap:4px;min-width:0;font-size:14px;font-weight:600}
+.repair-form :is(input:not([type=hidden]),textarea,select){width:100%;min-width:0;min-height:44px;padding:9px 10px;border:1px solid #bccedd;border-radius:8px;background:#fff;color:inherit;font:inherit}
+.repair-form textarea{resize:vertical}
+.repair-form .btn,.repair-shell .btn{min-height:44px;white-space:normal}
+.repair-form .btn{justify-self:start}
+.repair-form__numbers{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,120px),1fr));gap:10px}
+.repair-errors{padding:12px 14px;background:#fff2ee;color:#842c1d;border-radius:9px}
+.repair-evidence{display:block;width:100%;max-width:340px;max-height:360px;object-fit:contain;border:1px solid var(--repair-line);border-radius:9px}
+.repair-empty{padding:14px 0;color:var(--repair-muted)}
+.repair-section [id]{scroll-margin-top:18px}
+@media (min-width:760px){.repair-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.repair-grid .repair-section{align-content:start}.repair-form--inline{grid-template-columns:1fr auto}}
+@media (max-width:600px){.repair-hero__action,.repair-form .btn{width:100%;justify-self:stretch}.repair-card{gap:10px}.repair-hero h2{font-size:19px}}
+.repair-form .repair-consent{display:flex;align-items:flex-start;gap:10px;padding:4px 0;min-height:44px}
+.repair-form .repair-consent input{width:18px;height:18px;min-height:0;margin-top:2px;flex:none}
+.repair-card>details+details{border-top:1px solid var(--repair-line)}
+.repair-hero h2+p{margin-top:5px}
+.repair-delivery-line{min-width:0;margin:0;padding:10px 12px;border:1px solid var(--repair-line);border-radius:9px}
+.repair-delivery-line legend{font-weight:600;font-size:14px}
+.repair-problem-form form{margin-top:12px}

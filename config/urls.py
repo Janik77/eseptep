@@ -32,6 +32,7 @@ urlpatterns = [
     path('masters/', marketplace_home, name='masters'),
     path('projects/', include('projects.urls')),
     path('accounts/', include('accounts.urls')),
+    path('repair/', include('repairs.urls')),
     path('dashboard/client/', client_dashboard, name='dashboard_client_root'),
     path('dashboard/client/projects/create/', client_project_create, name='dashboard_client_project_create_root'),
     path('dashboard/master/', master_dashboard, name='dashboard_master_root'),

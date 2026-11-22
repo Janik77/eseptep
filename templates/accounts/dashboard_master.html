@@ -25,7 +25,7 @@
     <a class="btn btn--secondary" href="{% url 'accounts:master_profile_edit' %}">{% translate 'Редактировать профиль' %}</a>
   </div>
 
-  {% if turnkey_requests %}<section class="dashboard-card"><h2>{% if LANGUAGE_CODE == 'kk' %}Сізге жіберілген сынақ өтінімдері{% else %}Тестовые запросы для вас{% endif %}</h2><ul class="dashboard-list">{% for item in turnkey_requests %}<li><a class="btn btn--secondary" data-turnkey-reply href="{% url 'accounts:turnkey_reply' item.pk %}">{{ item.project.title }} · {{ item.project.area_m2|money }} м² · #{{ item.pk }}</a></li>{% endfor %}</ul></section>{% endif %}
+  {% if turnkey_requests %}<section class="dashboard-card"><h2>{% if LANGUAGE_CODE == 'kk' %}Сізге жіберілген сынақ өтінімдері{% else %}Тестовые запросы для вас{% endif %}</h2><ul class="dashboard-list">{% for item in turnkey_requests %}<li><a class="btn btn--secondary" data-turnkey-reply href="{% url 'accounts:turnkey_reply' item.pk %}">{{ item.project.title }} · {{ item.project.area_m2|money }} м² · #{{ item.pk }}</a>{% include 'repairs/_entry_link.html' with repair_project_pk=item.project_id %}</li>{% endfor %}</ul></section>{% endif %}
   <div class="dashboard-card">
     <h2>{% translate 'Новые заявки' %}</h2>
     <div class="dashboard-list">
@@ -58,6 +58,7 @@
     <h2>{% translate 'Мои отклики' %}</h2>
     <div class="dashboard-list">
       {% for response in my_responses %}
+      {% include 'repairs/_entry_link.html' with repair_project_pk=response.request.project_id %}
       <article class="dashboard-item">
         <b>{{ response.request.project.title }}</b>
         <p>{% translate 'Цена: ₸' %} {{ response.price_from|money }} {% translate '· Статус:' %} {{ response.get_status_display|system_text }}</p>

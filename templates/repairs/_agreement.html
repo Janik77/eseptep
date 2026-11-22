@@ -1,0 +1,107 @@
+{% load eseptep_i18n l10n repairs_ui %}
+<section class="repair-section" id="agreement-{{ entry.agreement.id }}" data-repair-agreement="{{ entry.agreement.kind }}">
+  <h2>{% if entry.agreement.kind == 'materials' %}{% if LANGUAGE_CODE == 'kk' %}Материалдар мен жеткізу{% else %}Материалы и поставки{% endif %}{% else %}{% if LANGUAGE_CODE == 'kk' %}Жұмыс кезеңдері{% else %}Этапы работ{% endif %}{% endif %}</h2>
+  <div class="repair-card">
+    <header><h3>{{ entry.agreement.provider }}</h3><p class="repair-muted">{% if LANGUAGE_CODE == 'kk' %}Келісілген шарттар{% else %}Согласованные условия{% endif %}</p></header>
+    {% if entry.terms.total != None %}<p><strong>{{ entry.terms.total|money }} ₸</strong></p>{% endif %}
+    {% if entry.terms.starts_on or entry.terms.ends_on %}<p>{{ entry.terms.starts_on|date:'d.m.Y' }}{% if entry.terms.starts_on and entry.terms.ends_on %} – {% endif %}{{ entry.terms.ends_on|date:'d.m.Y' }}</p>{% endif %}
+    {% if entry.terms.description %}<p>{{ entry.terms.description }}</p>{% endif %}
+    {% if entry.terms.lines %}<ul class="repair-terms">{% for line in entry.terms.lines %}<li>{{ line.title|default:line.name }} · {{ line.quantity }} {{ line.unit|repair_unit }}{% if line.unit_price != None %} · {{ line.unit_price|money }} ₸{% endif %}</li>{% endfor %}</ul>{% endif %}
+    {% if entry.pending_terms %}
+    <div class="repair-card repair-card--priority" id="terms-{{ entry.agreement.id }}" data-repair-pending-terms>
+      <h3>{% if LANGUAGE_CODE == 'kk' %}Ұсынылған өзгерістер{% else %}Предложенные изменения{% endif %}</h3>
+      <p class="repair-muted">{% if LANGUAGE_CODE == 'kk' %}Расталғанға дейін бұрынғы шарттар күшінде қалады.{% else %}До подтверждения действуют прежние условия.{% endif %}</p>
+      {% if entry.pending_terms.total != None %}<p>{% if LANGUAGE_CODE == 'kk' %}Жаңа сома{% else %}Новая сумма{% endif %}: <strong>{{ entry.pending_terms.total|money }} ₸</strong></p>{% endif %}
+      {% if entry.pending_terms.starts_on or entry.pending_terms.ends_on %}<p>{{ entry.pending_terms.starts_on|date:'d.m.Y' }}{% if entry.pending_terms.starts_on and entry.pending_terms.ends_on %} – {% endif %}{{ entry.pending_terms.ends_on|date:'d.m.Y' }}</p>{% endif %}
+      {% if entry.pending_terms.description %}<p>{{ entry.pending_terms.description }}</p>{% endif %}
+      {% if entry.pending_terms.lines %}<ul class="repair-terms">{% for line in entry.pending_terms.lines %}<li>{{ line.title|default:line.name }} · {{ line.quantity }} {{ line.unit|repair_unit }}{% if line.unit_price != None %} · {{ line.unit_price|money }} ₸{% endif %}</li>{% endfor %}</ul>{% endif %}
+      {% if entry.can_confirm_terms %}
+      <form class="repair-form" method="post" action="{% url 'repairs:action' repair.project_id %}">
+        {% include 'repairs/_fields.html' with operation='confirm_terms' agreement_id=entry.agreement.id form_token=entry.actions.confirm_terms_token %}
+        <input type="hidden" name="revision_id" value="{{ entry.pending_terms.id }}">
+        <button class="btn btn--secondary" type="submit">{% if LANGUAGE_CODE == 'kk' %}Өзгерістерді растау{% else %}Подтвердить изменения{% endif %}</button>
+      </form>
+      {% endif %}
+    </div>
+    {% endif %}
+    {% if entry.can_propose %}
+    <details>
+      <summary>{% if LANGUAGE_CODE == 'kk' %}Шарттарды өзгертуді ұсыну{% else %}Предложить изменение условий{% endif %}</summary>
+      <form class="repair-form" method="post" action="{% url 'repairs:action' repair.project_id %}">
+        {% include 'repairs/_fields.html' with operation='propose_terms' agreement_id=entry.agreement.id form_token=entry.actions.propose_terms_token %}
+        <div class="repair-form__numbers">
+          <label>{% if LANGUAGE_CODE == 'kk' %}Жалпы баға, ₸{% else %}Общая цена, ₸{% endif %}<input type="number" name="total" min="0" step="0.01" value="{{ entry.terms.total|unlocalize }}" required></label>
+          <label>{% if LANGUAGE_CODE == 'kk' %}Басталуы{% else %}Начало{% endif %}<input type="date" name="starts_on" value="{{ entry.terms.starts_on|date:'Y-m-d' }}"></label>
+          <label>{% if LANGUAGE_CODE == 'kk' %}Аяқталуы{% else %}Окончание{% endif %}<input type="date" name="ends_on" value="{{ entry.terms.ends_on|date:'Y-m-d' }}"></label>
+        </div>
+        {% for line in entry.terms.lines %}<fieldset class="repair-delivery-line"><legend>{{ line.title|default:line.name }}</legend><div class="repair-form__numbers">
+          <label>{% if LANGUAGE_CODE == 'kk' %}Саны{% else %}Количество{% endif %}<input type="number" name="qty_{{ line.id }}" min="0" step="any" value="{{ line.quantity|unlocalize }}"></label>
+          <label>{% if LANGUAGE_CODE == 'kk' %}Бірлік бағасы, ₸{% else %}Цена за единицу, ₸{% endif %}<input type="number" name="price_{{ line.id }}" min="0" step="0.01" value="{{ line.unit_price|unlocalize }}"></label>
+        </div></fieldset>{% endfor %}
+        <label>{% if LANGUAGE_CODE == 'kk' %}Ауыстыру себебі{% else %}Причина изменения{% endif %}<textarea name="description" rows="2" maxlength="1500" required></textarea></label>
+        <button class="btn btn--secondary" type="submit">{% if LANGUAGE_CODE == 'kk' %}Клиентке растауға жіберу{% else %}Отправить клиенту на подтверждение{% endif %}</button>
+      </form>
+    </details>
+    {% endif %}
+  </div>
+  {% if entry.versions %}
+  <details class="repair-card" data-repair-terms-history>
+    <summary>{% if LANGUAGE_CODE == 'kk' %}Шарттар тарихы{% else %}История условий{% endif %}</summary>
+    {% for version in entry.versions %}
+    <div class="repair-card">
+      <p><strong>{% if LANGUAGE_CODE == 'kk' %}Нұсқа{% else %}Версия{% endif %} {{ version.revision }} · {{ version.total|money }} ₸</strong> <span class="repair-meta">{% if version.accepted_at %}{% if LANGUAGE_CODE == 'kk' %}Расталған{% else %}Подтверждена{% endif %}{% else %}{% if LANGUAGE_CODE == 'kk' %}Ұсынылған{% else %}Предложена{% endif %}{% endif %}</span></p>
+      {% if version.starts_on or version.ends_on %}<p>{{ version.starts_on|date:'d.m.Y' }}{% if version.starts_on and version.ends_on %} – {% endif %}{{ version.ends_on|date:'d.m.Y' }}</p>{% endif %}
+      {% if version.description %}<p>{{ version.description }}</p>{% endif %}
+      {% if version.lines %}<ul class="repair-terms">{% for line in version.lines %}<li>{{ line.name }} · {{ line.quantity }} {{ line.unit|repair_unit }} · {{ line.unit_price|money }} ₸</li>{% endfor %}</ul>{% endif %}
+    </div>
+    {% endfor %}
+  </details>
+  {% endif %}
+  {% if entry.can_schedule %}
+  <article class="repair-card" id="schedule-{{ entry.agreement.id }}">
+    <h3>{% if LANGUAGE_CODE == 'kk' %}Жеткізуді жоспарлау{% else %}Назначить поставку{% endif %}</h3>
+    <form class="repair-form" method="post" action="{% url 'repairs:action' repair.project_id %}">
+      {% include 'repairs/_fields.html' with operation='schedule_delivery' agreement_id=entry.agreement.id form_token=entry.actions.schedule_token %}
+      <div class="repair-form__numbers">
+        <label>{% if LANGUAGE_CODE == 'kk' %}Жеткізу басталады{% else %}Начало окна доставки{% endif %}<input type="datetime-local" name="window_start" required></label>
+        <label>{% if LANGUAGE_CODE == 'kk' %}Жеткізу аяқталады{% else %}Конец окна доставки{% endif %}<input type="datetime-local" name="window_end" required></label>
+      </div>
+      {% for line in entry.available_lines %}
+      <label>{{ line.title|default:line.name }} ({{ line.unit|repair_unit }}) · {% if LANGUAGE_CODE == 'kk' %}қалғаны{% else %}осталось{% endif %} {{ line.quantity }}<input type="number" name="qty_{{ line.id }}" min="0" max="{{ line.quantity|unlocalize }}" step="any" value="0" required></label>
+      {% endfor %}
+      <button class="btn btn--secondary" type="submit">{% if LANGUAGE_CODE == 'kk' %}Жеткізуді растау{% else %}Подтвердить поставку{% endif %}</button>
+    </form>
+  </article>
+  {% endif %}
+
+  {% if entry.agreement.kind == 'materials' %}
+  <div class="repair-card" data-repair-outstanding>
+    <h3>{% if LANGUAGE_CODE == 'kk' %}Жеткізуге қалғаны{% else %}Осталось доставить{% endif %}</h3>
+    {% if entry.outstanding_lines %}
+    <ul class="repair-terms">{% for line in entry.outstanding_lines %}<li>{{ line.name }} · <strong>{{ line.quantity }} {{ line.unit|repair_unit }}</strong></li>{% endfor %}</ul>
+    {% else %}
+    <p class="repair-muted">{% if LANGUAGE_CODE == 'kk' %}Келісілген материалдардың бәрі қабылданды.{% else %}Все согласованные материалы получены.{% endif %}</p>
+    {% endif %}
+  </div>
+  {% endif %}
+  {% for delivery in entry.deliveries %}{% include 'repairs/_delivery.html' %}{% endfor %}
+  {% if entry.can_plan %}
+  <article class="repair-card" id="plan-{{ entry.agreement.id }}">
+    <h3>{% if LANGUAGE_CODE == 'kk' %}Жұмыс кезеңін қосу{% else %}Добавить этап работ{% endif %}</h3>
+    <form class="repair-form" method="post" action="{% url 'repairs:action' repair.project_id %}">
+      {% include 'repairs/_fields.html' with operation='plan_stage' agreement_id=entry.agreement.id form_token=entry.actions.plan_token %}
+      <label>{% if LANGUAGE_CODE == 'kk' %}Кезең атауы{% else %}Название этапа{% endif %}<input name="title" type="text" maxlength="180" required></label>
+      <label>{% if LANGUAGE_CODE == 'kk' %}Мерзімі{% else %}Срок{% endif %}<input name="due_on" type="date" required></label>
+      <button class="btn btn--secondary" type="submit">{% if LANGUAGE_CODE == 'kk' %}Кезеңді қосу{% else %}Добавить этап{% endif %}</button>
+    </form>
+  </article>
+  {% endif %}
+  {% for stage in entry.stages %}{% include 'repairs/_stage.html' %}{% endfor %}
+  {% include 'repairs/_problems.html' %}
+  {% if entry.events %}
+  <details class="repair-card" data-repair-history>
+    <summary>{% if LANGUAGE_CODE == 'kk' %}Оқиғалар тарихы{% else %}История{% endif %}</summary>
+    <ol class="repair-history">{% for event in entry.events %}<li><strong>{{ event.label }}</strong> · <time datetime="{{ event.created_at|date:'c' }}">{{ event.created_at|date:'d.m.Y, H:i' }}</time>{% if event.comment %}<p>{{ event.comment }}</p>{% endif %}</li>{% endfor %}</ol>
+  </details>
+  {% endif %}
+</section>

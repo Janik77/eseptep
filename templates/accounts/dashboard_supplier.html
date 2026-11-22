@@ -54,6 +54,7 @@
         {% for row in req.request_snapshot.result.materials %}<tr><td>{{ row.title|system_text }}</td><td style="white-space:nowrap">{{ row.quantity }}&nbsp;{{ row.unit|system_text }}</td></tr>{% endfor %}
         </tbody></table></div>
         <p><a class="btn btn--primary" href="{% url 'accounts:supplier_request_detail' req.pk %}">{% translate 'Открыть заявку' %}</a></p>
+        {% include 'repairs/_entry_link.html' with repair_project_pk=req.project_id %}
         {% endif %}
 
         {% endif %}
@@ -73,7 +74,7 @@
   <div class="dashboard-card">
     <h2>{% translate 'Мои ответы' %}</h2>
     <div class="dashboard-list">
-      {% for item in whole_offers %}<article class="dashboard-item"><a href="{% url 'accounts:whole_request' item.request_id %}">{{ item.request.request_snapshot.project_title }} · {% if LANGUAGE_CODE == 'kk' %}Дүкеннің жауабы{% else %}Ответ магазина{% endif %}</a></article>{% endfor %}{% for response in my_responses %}
+      {% for item in whole_offers %}<article class="dashboard-item"><a href="{% url 'accounts:whole_request' item.request_id %}">{{ item.request.request_snapshot.project_title }} · {% if LANGUAGE_CODE == 'kk' %}Дүкеннің жауабы{% else %}Ответ магазина{% endif %}</a>{% include 'repairs/_entry_link.html' with repair_project_pk=item.request.project_id %}</article>{% endfor %}{% for response in my_responses %}
       <article class="dashboard-item">
         <b>{{ response.request.project.title }}</b>
         <p>{% translate 'Цена: ₸' %} {{ response.total_price }} {% translate '· Статус:' %} {{ response.get_status_display|system_text }}</p>
