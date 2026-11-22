@@ -18,22 +18,22 @@ from django.core.files.base import ContentFile
 from projects.models import ProjectUpload,PlanAnalysis
 from projects.whole_plan import initial_rooms,persist_estimate
 from projects.plan_analysis import analysis_identity
-from tools.closed_pilot_db import inspect_db, mark_prepared
+from tools.closed_pilot_db import inspect_db, mark_prepared, read_two_room_fixture
 prepared = inspect_db(DB)
 call_command('migrate',interactive=False)
 if not prepared:
  call_command('seed_meeting_demo',confirm_isolated=True)
 user=User.objects.get(username='demo-client@example.test')
 ClientProject.objects.get_or_create(user=user,title='ESEPTEP · 72 м²',defaults={'city':'Шымкент','area_m2':'72.00','rooms':5})
-raw=(ROOT/'tests/fixtures/plans/typical-two-room.pdf').read_bytes()
+raw, rooms = read_two_room_fixture(ROOT)
 identity=analysis_identity(f'user:{user.pk}',raw)
 analysis=PlanAnalysis.objects.filter(identity=identity).first()
 if not analysis:
  upload=ProjectUpload.objects.create(user=user,file=ContentFile(raw,name='synthetic-72m2.pdf'))
- rooms=[dict(name=n,kind=k,area=a,source='stated',page=1,evidence=f'{n} {a} м²',visual_evidence=f'{n} {a} м²',finish=None)
-  for n,k,a in [('Гостиная','other','18.00'),('Спальня','other','18.00'),('Кухня','other','16.20'),('Коридор','other','13.20'),('Ванная','bathroom','6.60')]]
  analysis=PlanAnalysis.objects.create(upload=upload,identity=identity,status='completed',model='offline-fixture',rooms=rooms)
  persist_estimate(upload,initial_rooms(analysis),analysis.pk)
+elif analysis.model == 'offline-fixture' and analysis.rooms != rooms:
+ print('Existing synthetic result kept unchanged. For the corrected plan, open a new typical-plan sample.', file=sys.stderr)
 if not prepared:
  mark_prepared(DB)
 if '--seed-area-pack-price' in sys.argv:

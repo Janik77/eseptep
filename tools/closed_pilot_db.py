@@ -1,4 +1,5 @@
 """Provenance guard for the offline PyCharm demonstration database only."""
+import json
 import sqlite3
 
 DEMO_NAMES = ('demo-client@example.test', 'demo-supplier@example.test', 'demo-master@example.test')
@@ -31,3 +32,15 @@ def inspect_db(path):
 def mark_prepared(path):
     with sqlite3.connect(path.resolve().as_uri()+'?mode=rw',uri=True) as con:
         con.execute(f'PRAGMA application_id={APPLICATION_ID}')
+
+def read_two_room_fixture(root):
+    directory = root / 'tests' / 'fixtures' / 'plans'
+    catalog = json.loads((directory / 'typical-manifest.json').read_text(encoding='utf-8'))
+    plan = next(item for item in catalog if item['key'] == 'two-room')
+    rooms = []
+    for row in plan['ground_truth']:
+        area = f"{row['area']:.2f}"
+        evidence = f"{row['name']} {area} м²"
+        rooms.append(dict(name=row['name'], kind=row['kind'], area=area, source='stated',
+                          page=row['page'], evidence=evidence, visual_evidence=evidence, finish=None))
+    return (directory / plan['pdf']).read_bytes(), rooms
