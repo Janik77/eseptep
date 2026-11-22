@@ -1,9 +1,11 @@
 import uuid
+from datetime import datetime, time
 from decimal import Decimal
 from django.core import signing
 from django.http import Http404, HttpResponse
 from django.shortcuts import redirect, render
 from django.utils import timezone
+from django.utils.timezone import now as current_time
 from django.views.decorators.http import require_GET, require_POST
 
 from accounts.whole_views import tr
@@ -48,7 +50,7 @@ def to_lines(row):
     return [{**x, 'line_id': x['id']} for x in row.lines]
 
 
-def wrap_agreement(a, role):
+def wrap_agreement(a, role, now):
     terms = current_terms(a)
     latest = latest_terms(a)
     pending = latest if latest and latest.accepted_at is None else None
@@ -84,9 +86,15 @@ def wrap_agreement(a, role):
                     rows.append({**x, 'quantity': Decimal(d.quantities[key]), 'received': recorded.get('received'),
                          'damaged': recorded.get('damaged'),
                          'remaining': (Decimal(missing) + Decimal(recorded['damaged'])) if missing is not None else None})
+            if d.receipt is not None:
+                label = tr('Получение отмечено', 'Қабылдау белгіленді')
+            elif d.window_end < now:
+                label = tr('Окно прошло', 'Жеткізу уақыты өтті')
+            else:
+                label = tr('Ожидается', 'Күтілуде')
             deliveries.append({'id': d.pk, 'window_start': d.window_start, 'window_end': d.window_end,
                  'confirmed': d.receipt is not None, 'lines': rows,
-                 'label': tr('Получение отмечено','Қабылдау белгіленді') if d.receipt is not None else tr('Ожидается','Күтілуде'),
+                 'label': label,
                  'address': a.repair.delivery_address if role in ('supplier','client') and d.receipt is None else '',
                  'can_confirm': role == 'client' and d.receipt is None, 'can_report': role != 'reviewer',
                  'confirm_token': uuid.uuid4(), 'issue_token': uuid.uuid4()})
@@ -110,40 +118,66 @@ def wrap_agreement(a, role):
             'actions': {key:uuid.uuid4() for key in ('propose_terms_token','confirm_terms_token','schedule_token','plan_token')}}
 
 
+def client_summary(entries, offers, now):
+    current_summary = next_event = ''
+    next_action = None
+    local_now = timezone.localtime(now)
+    deliveries = [d for entry in entries for d in entry['deliveries'] if d['can_confirm']]
+    stages = [s for entry in entries for s in entry['stages']]
+    upcoming = [(timezone.localtime(d['window_start']), 'delivery', d)
+                for d in deliveries if d['window_start'] >= now]
+    # Work deadlines have a day but no time. A timed delivery takes precedence
+    # over a deadline on the same local day.
+    upcoming.extend((datetime.combine(s['due_on'], time.max, tzinfo=local_now.tzinfo), 'stage', s)
+                    for s in stages if s['status'] in ('planned', 'fix') and s['due_on'] >= local_now.date())
+    if upcoming:
+        event_at, kind, event = min(upcoming, key=lambda item: (item[0], item[1], item[2]['id']))
+        if kind == 'delivery':
+            end = timezone.localtime(event['window_end'])
+            next_event = tr('Ближайшее окно доставки: ', 'Келесі жеткізу уақыты: ') + (
+                f"{event_at:%d.%m.%Y, %H:%M} – {end:%d.%m.%Y, %H:%M}")
+        else:
+            next_event = tr('Ближайший этап: ', 'Келесі кезең: ') + f"{event['title']} · {event_at:%d.%m.%Y}"
+
+    change = next((entry for entry in entries if entry['can_confirm_terms']), None)
+    review = next((s for s in stages if s['can_review']), None)
+    pending = min(deliveries, key=lambda d: (d['window_start'], d['id']), default=None)
+    if change:
+        current_summary = tr('Партнёр предложил изменить условия', 'Серіктес шарттарды өзгертуді ұсынды')
+        next_action = {'anchor': f"terms-{change['agreement'].pk}", 'label': tr('Проверить изменения','Өзгерістерді қарау')}
+    elif review:
+        current_summary = tr('Мастер передал этап на приёмку: ', 'Шебер қабылдауға тапсырған кезең: ') + review['title']
+        next_action = {'anchor': f"stage-{review['id']}", 'label': tr('Посмотреть работу','Жұмысты көру')}
+    elif pending:
+        if pending['window_end'] < now:
+            current_summary = tr('Окно доставки прошло. Отметьте, что получили.',
+                                 'Жеткізу уақыты өтті. Не алғаныңызды белгілеңіз.')
+            label = tr('Отметить получение', 'Қабылдауды белгілеу')
+        else:
+            current_summary = tr('Ожидается поставка','Жеткізу күтілуде')
+            label = tr('Посмотреть поставку','Жеткізуді көру')
+        next_action = {'anchor': f"delivery-{pending['id']}", 'label': label}
+    elif entries and not offers:
+        accepted = [s for s in stages if s['status'] == 'accepted']
+        if accepted:
+            current_summary = tr('Этап принят: ', 'Қабылданған кезең: ') + max(accepted, key=lambda row: row['id'])['title']
+        elif all(not entry['outstanding_lines'] and entry['deliveries'] for entry in entries):
+            current_summary = tr('Все согласованные материалы получены', 'Келісілген барлық материал алынды')
+        else:
+            current_summary = tr('Подтверждение от вас пока не требуется', 'Әзірге сіздің растауыңыз қажет емес')
+    return next_action, next_event, current_summary
+
+
 def display(request, repair, role, *, error='', status=200):
-    entries = [wrap_agreement(a, role) for a in agreement_scope(repair, request.user, role).order_by('kind')]
+    now = current_time()
+    entries = [wrap_agreement(a, role, now) for a in agreement_scope(repair, request.user, role).order_by('kind')]
     offers = [{**x, 'offer_token': offer_token(repair, request.user, x), 'token': uuid.uuid4(), 'start': '', 'end': ''}
               for x in offer_rows(repair)] if role == 'client' else []
     for x in offers:
         for row in x['lines']:
             row['total'] = str((Decimal(row['quantity']) * Decimal(row['unit_price'])).quantize(Decimal('.01')))
-    next_action, next_event, current_summary = None, '', ''
-    if role == 'client':
-        pending = min((d for e in entries for d in e['deliveries'] if d['can_confirm']),
-                      key=lambda d: d['window_start'], default=None)
-        if pending:
-            start, end = (timezone.localtime(pending[k]) for k in ('window_start','window_end'))
-            next_event = tr('Ближайшее окно доставки: ', 'Келесі жеткізу уақыты: ') + f"{start:%d.%m.%Y, %H:%M} – {end:%d.%m.%Y, %H:%M}"
-        change = next((e for e in entries if e['can_confirm_terms']), None)
-        if change:
-            current_summary = tr('Партнёр предложил изменить условия', 'Серіктес шарттарды өзгертуді ұсынды')
-            next_action = {'anchor': f"terms-{change['agreement'].pk}", 'label': tr('Проверить изменения','Өзгерістерді қарау')}
-        else:
-            stage = next((row for e in entries for row in e['stages'] if row['can_review']), None)
-            if stage:
-                current_summary = tr('Мастер передал этап на приёмку: ', 'Шебер қабылдауға тапсырған кезең: ') + stage['title']
-                next_action = {'anchor': f"stage-{stage['id']}", 'label': tr('Посмотреть работу','Жұмысты көру')}
-            elif pending:
-                current_summary = tr('Ожидается поставка','Жеткізу күтілуде')
-                next_action = {'anchor': f"delivery-{pending['id']}", 'label': tr('Посмотреть поставку','Жеткізуді көру')}
-            elif entries and not offers:
-                accepted = [row for e in entries for row in e['stages'] if row['status'] == 'accepted']
-                if accepted:
-                    current_summary = tr('Этап принят: ', 'Қабылданған кезең: ') + max(accepted, key=lambda row: row['id'])['title']
-                elif all(not e['outstanding_lines'] and e['deliveries'] for e in entries):
-                    current_summary = tr('Все согласованные материалы получены', 'Келісілген барлық материал алынды')
-                else:
-                    current_summary = tr('Подтверждение от вас пока не требуется', 'Әзірге сіздің растауыңыз қажет емес')
+    next_action, next_event, current_summary = (
+        client_summary(entries, offers, now) if role == 'client' else (None, '', ''))
     return secure(render(request, 'repairs/detail.html', {'repair':repair, 'agreements':entries, 'offers':offers,
                   'city_label':repair.city.name, 'new_token':uuid.uuid4(), 'current_summary':current_summary,
                   'next_event':next_event, 'next_action':next_action, 'error':error}, status=status))

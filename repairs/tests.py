@@ -1,6 +1,8 @@
 import io
 import uuid
+from datetime import datetime, timezone as datetime_timezone
 from decimal import Decimal
+from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -79,6 +81,60 @@ class RepairFlowTests(TestCase):
         b = io.BytesIO()
         Image.new('RGB',(20,20),'red').save(b,'PNG')
         return SimpleUploadedFile('demo.png', b.getvalue(), 'image/png')
+
+
+    def test_works_only_summary_shows_next_due_stage_in_both_languages(self):
+        self.accept('works')
+        buyer, master = self.browser(self.buyer), self.browser(self.master)
+        work = Agreement.objects.get(kind='works')
+        for title, due_on in [('Past stage', '2030-01-08'), ('Later stage', '2030-01-11'), ('Next stage', '2030-01-10')]:
+            self.post(master, 'plan_stage', agreement_id=work.pk, title=title, due_on=due_on)
+        now = datetime(2030, 1, 9, 5, tzinfo=datetime_timezone.utc)
+        with patch('repairs.views.current_time', return_value=now):
+            for language, prefix in [('ru', 'Ближайший этап:'), ('kk', 'Келесі кезең:')]:
+                with self.subTest(language=language):
+                    buyer.cookies['django_language'] = language
+                    page = buyer.get(self.url('detail'))
+                    self.assertEqual(page.status_code, 200)
+                    self.assertEqual(page.context['next_event'], f'{prefix} Next stage · 10.01.2030')
+                    self.assertIsNone(page.context['next_action'])
+
+    def test_summary_separates_expired_receipt_from_next_stage_or_delivery(self):
+        material, work = self.accept('materials'), self.accept('works')
+        buyer, shop, master = (self.browser(u) for u in (self.buyer, self.shop, self.master))
+        self.post(shop, 'schedule_delivery', agreement_id=material.pk, qty_1='6',
+                  window_start='2030-01-08T10:00', window_end='2030-01-08T13:00')
+        self.post(shop, 'schedule_delivery', agreement_id=material.pk, qty_1='6',
+                  window_start='2030-01-11T10:00', window_end='2030-01-11T13:00')
+        self.post(master, 'plan_stage', agreement_id=work.pk, title='Next stage', due_on='2030-01-10')
+        stage = Stage.objects.get(agreement=work)
+        expired = material.deliveries.earliest('window_start')
+        now = datetime(2030, 1, 9, 5, tzinfo=datetime_timezone.utc)
+        with patch('repairs.views.current_time', return_value=now):
+            for language, current, label, stage_prefix, delivery_prefix in [
+                ('ru', 'Окно доставки прошло.', 'Отметить получение', 'Ближайший этап:', 'Ближайшее окно доставки:'),
+                ('kk', 'Жеткізу уақыты өтті.', 'Қабылдауды белгілеу', 'Келесі кезең:', 'Келесі жеткізу уақыты:'),
+            ]:
+                with self.subTest(language=language):
+                    buyer.cookies['django_language'] = language
+                    page = buyer.get(self.url('detail'))
+                    self.assertTrue(page.context['current_summary'].startswith(current))
+                    self.assertEqual(page.context['next_event'], f'{stage_prefix} Next stage · 10.01.2030')
+                    self.assertEqual(page.context['next_action'], {'anchor': f'delivery-{expired.pk}', 'label': label})
+                    self.assertContains(page, 'repair-hero__action', count=1)
+                    # Stage and delivery on the same local day: the delivery
+                    # has a set time; the stage has only a due date.
+                    Stage.objects.filter(pk=stage.pk).update(due_on='2030-01-11')
+                    page = buyer.get(self.url('detail'))
+                    self.assertEqual(page.context['next_event'],
+                                     f'{delivery_prefix} 11.01.2030, 10:00 – 11.01.2030, 13:00')
+                    Stage.objects.filter(pk=stage.pk).update(due_on='2030-01-10')
+            self.post(master, 'submit_stage', stage_id=stage.pk, comment='Готово', photo=self.pic())
+            self.assertEqual(buyer.get(self.url('detail')).context['next_action']['anchor'], f'stage-{stage.pk}')
+            self.post(buyer, 'accept_stage', stage_id=stage.pk, submission=1)
+            self.post(buyer, 'confirm_delivery', delivery_id=expired.pk, received_1='6', damaged_1='0')
+            self.assertEqual(receipt_balance(material), {'1': Decimal('0')})
+            self.assertEqual(receipt_balance(material, pending=False), {'1': Decimal('6')})
 
     def test_materials_works_partial_damage_replay_repair_and_dispute(self):
         material, work = self.accept('materials'), self.accept('works')
