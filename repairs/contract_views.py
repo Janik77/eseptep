@@ -20,6 +20,8 @@ DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.docu
 NEW = ('Демо договора', 'Шарт демосы')
 OPEN = ('Открыть договор', 'Шартты ашу')
 ERRORS = {
+    'offline_fixture_only': ('В офлайн-показе используйте комплектный ESEPTEP_original_DEMO-01.docx. Никакие данные не отправлены в OpenAI.',
+                             'Офлайн көрсетілімде жинақтағы ESEPTEP_original_DEMO-01.docx файлын пайдаланыңыз. OpenAI-ға дерек жіберілген жоқ.'),
     'scan': ('Не удалось извлечь читаемый текст. Загрузите DOCX или PDF с текстовым слоем. Вызова ИИ не было.',
              'Оқылатын мәтін алынбады. DOCX немесе мәтін қабаты бар PDF жүктеңіз. ЖИ шақырылған жоқ.'),
     'file_type': ('Допустимы только читаемые DOCX или PDF. Вызова ИИ не было.',
@@ -77,7 +79,7 @@ def form_display(request, project, kind='', *, error='', status_code=200):
         item['saved'] = bool(item['agreement'] and getattr(item['agreement'], 'demo_contract', None))
     ctx = {'project_id':project,'project_title':repair.project.title,'choices':choices,
            'kind':kind,'error':error_copy(error) if error else '', 'labels':ui_labels(),
-           'upload_error':error.startswith(('scan','file_'))}
+           'upload_error':error.startswith(('scan','file_', 'offline_fixture_only'))}
     if kind:
         agreement = get_agreement(repair, kind)
         contract = getattr(agreement, 'demo_contract', None)
@@ -229,8 +231,10 @@ def ui_labels():
         'changes':('Что изменилось','Не өзгерді'), 'source':('Оригинал','Түпнұсқа'),
         'source_help':('Выберите DOCX или PDF с текстовым слоем. Скан без текста не обрабатывается.',
                        'DOCX немесе мәтін қабаты бар PDF таңдаңыз. Мәтінсіз скан өңделмейді.'),
-        'send':('При нажатии на кнопку анализа выбранный текст передаётся в OpenAI. Используйте только обезличенный пример.',
-                'Талдау түймесін басқанда таңдалған мәтін OpenAI-ға жіберіледі. Тек дербестендірілмеген мысалды пайдаланыңыз.'),
+        'send':(('Это учебный ответ. Текст не отправляется в OpenAI.', 'Бұл оқу жауабы. Мәтін OpenAI-ға жіберілмейді.')
+                if getattr(settings, 'CONTRACT_OFFLINE_MOCK', False)
+                else ('При нажатии на кнопку анализа выбранный текст передаётся в OpenAI. Используйте только обезличенный пример.',
+                      'Талдау түймесін басқанда таңдалған мәтін OpenAI-ға жіберіледі. Тек дербестендірілмеген мысалды пайдаланыңыз.')),
         'check':('Сохранить и проверить исходник','Түпнұсқаны сақтау және тексеру'),
         'saved_sources':('Сохранённые оригиналы','Сақталған түпнұсқалар'),
         'save':('Сохранить без ИИ','ЖИ қолданбай сақтау'), 'manual':('Изменить вручную','Қолмен өзгерту'),

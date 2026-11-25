@@ -41,6 +41,7 @@ try {
   await page.locator('.auth-form button[type=submit]').click();
   await page.waitForURL(/dashboard/);
   await page.goto(base+'/projects/upload/');
+  assert.match(await page.locator('[data-offline-provider]').innerText(), /Реальных запросов в OpenAI нет/);
   await page.locator('#own-plan [name=file]').setInputFiles(file('ESEPTEP_plan_demo_40m2.pdf'));
   await shot('01-upload-40m2');
   await page.locator('#own-plan button[type=submit]').click();

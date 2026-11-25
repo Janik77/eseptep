@@ -160,3 +160,5 @@ LOCAL_AI_BUDGET_PATH = os.getenv("LOCAL_AI_BUDGET_PATH", "")
 CONTRACT_DEMO_ENABLED = not PRODUCTION and os.getenv('ESEPTEP_CONTRACT_DEMO_ENABLED', '0') == '1'
 CONTRACT_AI_ENABLED = CONTRACT_DEMO_ENABLED and os.getenv('ESEPTEP_CONTRACT_AI_ENABLED', '0') == '1'
 CONTRACT_BUDGET_VIEWERS = {name.strip() for name in os.getenv('ESEPTEP_CONTRACT_BUDGET_VIEWERS', '').split(',') if name.strip()}
+# Synthetic playback only; never expose an offline answer as a live response.
+CONTRACT_OFFLINE_MOCK = CONTRACT_AI_ENABLED and os.getenv('ESEPTEP_CONTRACT_OFFLINE_MOCK', '0') == '1'

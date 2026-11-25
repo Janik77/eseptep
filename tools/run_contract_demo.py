@@ -5,10 +5,11 @@ import os
 from pathlib import Path
 import socket
 import sys
+from tempfile import TemporaryDirectory
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-HOST, PORT = '127.0.0.1', 8250
+HOST, PORT, OFFLINE_PORT = '127.0.0.1', 8250, 8251
 OWNER = 'demo-client@example.test'
 TITLE = 'Договор DEMO-01 · 40 м²'
 
@@ -65,7 +66,7 @@ def configure(data, live=False, fixture=False):
         OPENAI_MAX_OUTPUT_TOKENS='1800', OPENAI_TIMEOUT_SECONDS='60',
         OPENAI_PILOT_MAX_RESERVED_CENTS='200',LOCAL_AI_BUDGET_PATH=str(ledger) if live or fixture else '',
         ESEPTEP_CONTRACT_DEMO_ENABLED='1',ESEPTEP_CONTRACT_AI_ENABLED='1' if live or fixture else '0',
-        ESEPTEP_CONTRACT_BUDGET_VIEWERS=OWNER)
+        ESEPTEP_CONTRACT_BUDGET_VIEWERS=OWNER, ESEPTEP_CONTRACT_OFFLINE_MOCK='1' if fixture else '0')
     if fixture or not live:
         os.environ['OPENAI_API_KEY'] = 'mock-only' if fixture else ''
     return ledger
@@ -73,29 +74,33 @@ def configure(data, live=False, fixture=False):
 
 def main(argv=None):
     cli = argparse.ArgumentParser()
-    cli.add_argument('--live',action='store_true',help='Enable existing shared pilot ledger; never initializes a new budget.')
+    mode = cli.add_mutually_exclusive_group()
+    mode.add_argument('--live',action='store_true',help='Enable existing shared pilot ledger; never initializes a new budget.')
+    mode.add_argument('--offline-demo',action='store_true',help='A repeatable simulated demo; no OpenAI requests or real ledger.')
+    mode.add_argument('--fixture-api',type=Path,help='QA only; temporary directory for entirely fake provider.')
     cli.add_argument('--prepare-only',action='store_true')
-    cli.add_argument('--fixture-api',type=Path,help='QA only; temporary directory for entirely fake provider.')
     args = cli.parse_args(argv)
-    if args.live and args.fixture_api:
-        raise SystemExit('The synthetic browser fixture cannot run with real provider calls.')
     if args.fixture_api and args.fixture_api.resolve().parent != Path(os.environ.get('TMPDIR', '/tmp')).resolve():
         raise SystemExit('Temporary QA fixture must be outside the project and directly under TMPDIR.')
+    if args.offline_demo:
+        # Each launch gets a new throwaway pilot, not a reset of any saved DB.
+        with TemporaryDirectory(prefix='eseptep-contract-offline-', ignore_cleanup_errors=True) as tmp:
+            return serve(Path(tmp), port=OFFLINE_PORT, live=False, fixture=True, prepare_only=args.prepare_only)
     data = args.fixture_api if args.fixture_api else ROOT/'meeting-demo-data'/'contract-demo'
+    return serve(data, port=PORT, live=args.live, fixture=bool(args.fixture_api), prepare_only=args.prepare_only)
+
+
+def serve(data, *, port, live, fixture, prepare_only):
     with socket.socket() as sock:
-        if not args.prepare_only and sock.connect_ex((HOST,PORT)) == 0:
-            raise SystemExit(f'ESEPTEP already uses {PORT}. Its process was not modified.')
-    ledger = configure(data, args.live, bool(args.fixture_api))
-    if args.fixture_api:
+        if not prepare_only and sock.connect_ex((HOST, port)) == 0:
+            raise SystemExit(f'ESEPTEP already uses {port}. Its process was not modified.')
+    ledger = configure(data, live, fixture)
+    if fixture:
         from contract_fixture_provider import mock_provider
         mock_provider(data)
-    else:
-        # Never enable any other real provider API in this dedicated demo.
-        if not args.live:
-            os.environ['OPENAI_API_KEY'] = ''
     import django
     django.setup()
-    if args.live:
+    if live:
         from core.local_ai_budget import status
         from core.openai_client import validate_configuration
         validate_configuration()
@@ -104,10 +109,12 @@ def main(argv=None):
     call_command('migrate',interactive=False,verbosity=0)
     project = seed()
     (data/'scenario.json').write_text(json.dumps({'project':project,'owner':OWNER,
-        'base':f'http://{HOST}:{PORT}','mode':'mock' if args.fixture_api else ('live' if args.live else 'manual')}),encoding='utf-8')
-    print(f'Private loopback demo: http://{HOST}:{PORT}/accounts/login/?next=/repair/{project}/',flush=True)
-    if not args.prepare_only:
-        call_command('runserver',f'{HOST}:{PORT}',use_reloader=False)
+        'base':f'http://{HOST}:{port}','mode':'mock' if fixture else ('live' if live else 'manual')}),encoding='utf-8')
+    if fixture:
+        print('OFFLINE DEMO · synthetic provider, synthetic ledger, zero real API calls',flush=True)
+    print(f'Private loopback demo: http://{HOST}:{port}/accounts/login/?next=/repair/{project}/',flush=True)
+    if not prepare_only:
+        call_command('runserver',f'{HOST}:{port}',use_reloader=False)
 
 
 if __name__ == '__main__':

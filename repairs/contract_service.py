@@ -104,6 +104,10 @@ def source_from_upload(user, project, kind, upload):
     contract_in_scope(user, project, kind)
     extension, raw, rows = read_source(upload)
     digest = hashlib.sha256(raw).hexdigest()
+    if getattr(settings, 'CONTRACT_OFFLINE_MOCK', False):
+        sample = settings.BASE_DIR / 'repairs/fixtures/ESEPTEP_original_DEMO-01.docx'
+        if digest != hashlib.sha256(sample.read_bytes()).hexdigest():
+            raise ContractError('offline_fixture_only')
     with transaction.atomic():
         contract = contract_in_scope(user, project, kind, lock=True)
         src, _ = ContractSource.objects.defer('original').get_or_create(

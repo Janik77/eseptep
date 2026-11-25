@@ -268,6 +268,10 @@ def scoped_analysis(upload, raw):
 
 def analyze(upload):
     raw = read_raw(upload)
+    if getattr(settings, 'CONTRACT_OFFLINE_MOCK', False):
+        sample = settings.BASE_DIR / 'repairs/fixtures/ESEPTEP_plan_demo_40m2.pdf'
+        if hashlib.sha256(raw).digest() != hashlib.sha256(sample.read_bytes()).digest():
+            raise PlanError('offline_fixture_only')
     owner = owner_scope(upload)
     identity = identity_for_upload(upload, raw)
     existing = scoped_analysis(upload, raw)
