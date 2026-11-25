@@ -1,0 +1,19 @@
+.contract-shell{max-width:900px}
+.contract-shell > *{margin-block:1rem}
+.contract-hero{display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;flex-wrap:wrap}
+.contract-hero h1{margin:.25rem 0}
+.contract-chip{display:inline-block;padding:.32rem .7rem;border:1px solid #bfd5ee;border-radius:6px;background:#f1f7ff;color:#244d7b;font-size:.87rem;font-weight:600}
+.contract-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.75rem}
+.contract-actions{display:flex;flex-wrap:wrap;gap:.6rem}
+.contract-comparison{border:1px solid #d9e3ee;padding:.85rem;border-radius:8px;overflow-wrap:anywhere}
+.contract-comparison.is-after{background:#f3f8ff;border-color:#b6d2f2}
+.contract-shell p,.contract-shell li{overflow-wrap:anywhere}
+.contract-shell details>summary{font-weight:600;cursor:pointer}
+.contract-shell details[open]>summary{margin-bottom:.75rem}
+.contract-shell h3{margin:1rem 0 .45rem}
+.contract-draft{padding:clamp(1rem,4vw,2.4rem)!important;line-height:1.55}
+.contract-draft h2{font-size:clamp(1.25rem,3vw,1.7rem)}
+.contract-draft p{margin:.32rem 0}
+.contract-shell input[type="file"]{max-width:100%}
+.contract-shell [id]{scroll-margin-top:6rem}
+@media(max-width:660px){.contract-grid{grid-template-columns:1fr}.contract-actions .btn{flex:1 0 auto}.contract-shell{width:auto}}

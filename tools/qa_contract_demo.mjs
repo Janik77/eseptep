@@ -1,0 +1,114 @@
+/** Browser QA: local server explicitly runs a synthetic OpenAI transport. */
+import { createRequire } from 'node:module';
+const {chromium} = createRequire(import.meta.url)(process.env.PLAYWRIGHT_PACKAGE || 'playwright');
+import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+
+const out = process.env.CONTRACT_QA_DIR;
+assert(out?.startsWith('/tmp/'), 'disposable fixture required');
+const meta = JSON.parse(await fs.readFile(path.join(out, 'scenario.json')));
+assert.equal(meta.mode, 'mock');
+const base = meta.base;
+assert.equal(base, 'http://127.0.0.1:8250');
+const project = `/repair/${meta.project}/`;
+const browser = await chromium.launch({executablePath: process.env.CHROMIUM_EXECUTABLE || '/usr/bin/chromium',args:['--no-sandbox']});
+const video = process.env.CONTRACT_RECORD_VIDEO === '1';
+const context = await browser.newContext({viewport:{width:390,height:844}, isMobile:true, hasTouch:true, acceptDownloads:true,
+  ...(video ? {recordVideo:{dir:out,size:{width:390,height:844}}} : {})});
+const page = await context.newPage();
+let next = 0;
+const frames = [];
+const consoleErrors = [];
+const movie = page.video();
+page.on('pageerror', e=>consoleErrors.push(e.message));
+await page.route('**/*', route => new URL(route.request().url()).origin === base ? route.continue() : route.abort());
+const form = name => page.locator(`form:has(input[name=action][value=${name}])`);
+const file = name => `repairs/fixtures/${name}`;
+const submit = n => form(n).locator('button[type=submit]').click();
+const shot = async (name, count=2) => {
+  await page.waitForLoadState('domcontentloaded');
+  assert(await page.evaluate(()=>document.documentElement.scrollWidth <= innerWidth + 1),name);
+  const key = `scene-${String(next++).padStart(2,'0')}-${name}.png`;
+  await page.screenshot({path:path.join(out,key),animations:'disabled'});
+  frames.push({file:key, seconds:count});
+  if (video) await new Promise(resolve=>setTimeout(resolve, count * 1000));
+};
+try {
+  await page.goto(base+'/accounts/login/');
+  await page.locator('[name=username]').fill(meta.owner);
+  await page.locator('[name=password]').fill('Demo-Meeting-2026!');
+  await page.locator('.auth-form button[type=submit]').click();
+  await page.waitForURL(/dashboard/);
+  await page.goto(base+'/projects/upload/');
+  assert.match(await page.locator('[data-offline-provider]').innerText(), /Реальных запросов в OpenAI нет/);
+  await page.locator('#own-plan [name=file]').setInputFiles(file('ESEPTEP_plan_demo_40m2.pdf'));
+  await shot('01-upload-40m2');
+  await page.locator('#own-plan button[type=submit]').click();
+  await page.waitForURL(/\/projects\/\d+\/whole\//);
+  // On a fresh exact fixture root, one classification call follows explicit consent.
+  if ((await page.locator('[data-whole-submit]').count()) > 0) await page.locator('[data-whole-submit]').click();
+  await page.locator('.whole-facts').waitFor();
+  assert.match(await page.locator('.whole-facts').innerText(),/4.*40\s*м²/);
+  await shot('02-plan-calculation',3);
+  await page.locator('.whole-actions a[href$="?next=save"]').click();
+  await page.locator('#whole-project').selectOption(String(meta.project));
+  await page.locator('form:has(#whole-project) button[type=submit]').click();
+  await page.waitForURL(/\/accounts\/whole\/\d+\//);
+  await page.goto(base+project);
+  const accept=page.locator('[data-repair-offer="materials"] form');
+  await accept.locator('[name=confirm]').check();
+  await accept.locator('button[type=submit]').click();
+  await page.locator('[data-repair-agreement="materials"]').waitFor();
+  await shot('03-accepted-shop',2);
+  await page.locator('[data-contract-entry]').click();
+  await page.locator('a[href$="/materials/"]').click();
+  await form('create').locator('button[value=source]').click();
+  await form('upload').locator('input[type=file]').setInputFiles(file('ESEPTEP_original_DEMO-01.docx'));
+  await submit('upload');
+  await form('shorten').waitFor();
+  await shot('04-original-and-charge',2);
+  await submit('shorten');
+  await page.locator('[data-contract-proposal]').waitFor();
+  assert.match(await page.locator('[data-contract-proposal]').innerText(),/3 против 5 рабочих дней/);
+  await shot('05-short-draft',3);
+  await submit('apply');
+  await page.locator('details:has(form input[name=action][value=manual]) > summary').click();
+  await form('manual').locator('[name=date]').fill('2026-11-30');
+  await form('manual').scrollIntoViewIfNeeded();
+  await shot('06-change-date-no-ai',2);
+  await submit('manual');
+  await page.locator('#suggest > summary').click();
+  await form('amend').locator('[name=section]').selectOption('delivery');
+  await form('amend').locator('[name=instruction]').fill('Раздели доставку поровну на 5 и 8 декабря, 10:00–13:00. Тариф и адрес оставь на уточнение.');
+  await submit('amend');
+  await page.locator('[data-contract-proposal]').waitFor();
+  assert.match(await page.locator('[data-contract-proposal]').innerText(),/Две партии по 6 упаковок/);
+  assert.match(await page.locator('#draft').innerText(),/Одна партия/);
+  await page.locator('[data-contract-proposal]').scrollIntoViewIfNeeded();
+  await shot('07-before-after',3);
+  await submit('apply');
+  assert.match(await page.locator('#draft').innerText(),/Две партии по 6 упаковок/);
+  assert.match(await page.locator('#draft').innerText(),/2026-11-30/);
+  for (const extension of ['docx','pdf']) {
+    const [d] = await Promise.all([page.waitForEvent('download'),page.locator(`#download a[href$=".${extension}"]`).click()]);
+    await d.saveAs(path.join(out,`result.${extension}`));
+  }
+  await shot('08-downloads',2);
+  await page.locator('[data-language-form] button[value=kk]').click();
+  await page.waitForFunction(()=>document.documentElement.lang==='kk');
+  assert.equal(await page.locator('#draft').getAttribute('lang'),'ru');
+  assert.match(await page.locator('h1').innerText(),/Шарт демосы/);
+  await page.locator('h1').scrollIntoViewIfNeeded();
+  await shot('09-kk-interface',2);
+  await page.setViewportSize({width:1440,height:900});
+  await shot('10-desktop',1);
+  assert.deepEqual(consoleErrors,[]);
+  const calls = JSON.parse(await fs.readFile(path.join(out,'fixture-provider.json')));
+  assert.deepEqual(calls,['classified_plan_rooms','contract_shorten','contract_amend']);
+  await fs.writeFile(path.join(out,'browser-evidence.json'), JSON.stringify({mode:'mock', frames, calls, paidProviderCalls:0},null,2));
+} finally {
+  await context.close();
+  if (movie && next >= 10) await movie.saveAs(path.join(out,'ESEPTEP-browser-mocked-demo.webm'));
+  await browser.close();
+}

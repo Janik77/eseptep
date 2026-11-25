@@ -59,10 +59,13 @@ def initialize(path, historical, evidence):
 def status(path):
     with connect(path) as c:
         used=c.execute('SELECT SUM(cents) FROM events').fetchone()[0]
+        reserves=c.execute("SELECT COUNT(*) FROM events WHERE kind='reserve'").fetchone()[0]
+        reconciles=c.execute("SELECT COUNT(*) FROM events WHERE kind='reconcile'").fetchone()[0]
         valid=c.execute("SELECT COUNT(*) FROM events WHERE kind='historic_cap' AND identity='original-pilot' AND cents=200").fetchone()[0]
         if not valid or used is None or not 200 <= used <= CEILING:
             raise BudgetError('budget_invalid')
-        return {'ceiling_cents':CEILING,'accounted_cents':used,'remaining_cents':CEILING-used,'next_hold_cents':HOLD,'next_call_available':used+HOLD<=CEILING}
+        return {'ceiling_cents':CEILING,'accounted_cents':used,'remaining_cents':CEILING-used,'next_hold_cents':HOLD,'next_call_available':used+HOLD<=CEILING,
+                'known_completed_calls':reconciles,'open_holds':reserves-reconciles}
 
 
 def reserve(path, payload, *, scope=None):

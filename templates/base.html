@@ -38,7 +38,8 @@
         </header>
 
 
-        {% if demo_mode %}<div class="demo-banner" role="note">{% translate 'Демонстрация: учебные данные и цены. Заявки не отправляются реальным людям.' %}</div>{% endif %}
+        {% if contract_offline_mock %}<div class="demo-banner" role="note" data-offline-provider>{% if LANGUAGE_CODE == 'kk' %}Офлайн көрсетілім: ЖИ жауабы оқу үлгісі. OpenAI-ға нақты сұрау жіберілмейді.{% else %}Офлайн-показ: учебные ответы вместо ИИ. Реальных запросов в OpenAI нет.{% endif %}</div>
+        {% elif demo_mode %}<div class="demo-banner" role="note">{% translate 'Демонстрация: учебные данные и цены. Заявки не отправляются реальным людям.' %}</div>{% endif %}
         {% if messages %}
         <div class="toast-stack" aria-live="polite">
             {% for message in messages %}

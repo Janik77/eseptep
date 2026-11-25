@@ -1,0 +1,198 @@
+{% extends 'base.html' %}{% load static %}
+{% block title %}{{ labels.demo }} — ESEPTEP{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/my-repair.css' %}"><link rel="stylesheet" href="{% static 'css/repair-contract.css' %}">{% endblock %}
+{% block content %}
+<section class="repair-shell contract-shell" data-contract-page>
+  <a href="{% url 'repairs:detail' project_id %}">{{ labels.repair }}</a>{% if kind %} <span aria-hidden="true">/</span> <a href="{% url 'repairs:contract_choose' project_id %}">{{ labels.back }}</a>{% endif %}
+  <header class="repair-hero contract-hero">
+    <div><p class="repair-eyebrow">{{ labels.private }}</p><h1>{{ labels.demo }}</h1><p class="repair-muted">{{ project_title }}</p></div>
+    {% if contract %}<div><span class="contract-chip" lang="{{ contract.language }}" data-contract-status>{{ contract_status }}</span><p class="repair-muted">{{ agreement.provider }} · #{{ version.revision }}</p></div>{% endif %}
+  </header>
+  {% if error %}<p class="repair-errors" role="alert">{{ error }}</p>{% endif %}
+
+  {% if not kind %}
+  <h2>{{ labels.select }}</h2>
+  <div class="contract-grid">
+    {% for c in choices %}
+    <article class="repair-card">
+      <h3>{{ c.label }}</h3>
+      {% if c.agreement %}
+      <p>{{ c.agreement.provider }}</p>
+      <a class="btn {% if c.saved %}btn--primary{% else %}btn--secondary{% endif %}" href="{% url 'repairs:contract_show' project_id c.key %}">{% if c.saved %}{{ labels.open }}{% else %}{{ c.label }}{% endif %}</a>
+      {% else %}<p class="repair-muted">{{ labels.none }}</p>{% endif %}
+    </article>
+    {% endfor %}
+  </div>
+  {% elif not contract %}
+  <section class="repair-card">
+    <h2>{{ agreement.provider }}</h2>
+    <form class="repair-form" action="{% url 'repairs:contract_action' project_id kind %}" method="post">
+      {% csrf_token %}<input type="hidden" name="action" value="create">
+      <label>{{ labels.doclang }}<select name="language"><option value="ru">Русский</option><option value="kk"{% if LANGUAGE_CODE == 'kk' %} selected{% endif %}>Қазақша</option></select></label>
+      <div class="contract-actions">
+        <button class="btn btn--primary" type="submit" name="style" value="template">{{ labels.template }}</button>
+        <button class="btn btn--secondary" type="submit" name="style" value="source">{{ labels.upload }}</button>
+      </div>
+    </form>
+  </section>
+  {% else %}
+  <div class="contract-actions">
+    <a class="btn btn--primary" href="{% url 'repairs:contract_show' project_id kind %}#draft">{{ labels.open }}</a>
+    {% if version.revision == contract.current_revision %}<a class="btn btn--secondary" href="#suggest">{{ labels.proposal }}</a>{% endif %}
+    <a class="btn btn--secondary" href="#download">{{ labels.download }}</a>
+  </div>
+
+  {% if source or request.GET.upload or upload_error %}
+  <section class="repair-card" id="source-panel" data-source-panel>
+    <h2>{{ labels.upload }}</h2>
+    {% if source %}
+    <p><a href="{% url 'repairs:contract_original' project_id kind source.pk %}">{{ labels.source }} #{{ source.pk }}</a> · {{ source.excerpts|length }} {{ labels.paragraph|lower }}</p>
+    <p>{{ labels.send }}</p>
+    {% if ai_enabled %}
+    <form class="repair-form" action="{% url 'repairs:contract_action' project_id kind %}" method="post">{% csrf_token %}
+      <input type="hidden" name="action" value="shorten"><input type="hidden" name="source" value="{{ source.pk }}"><input type="hidden" name="revision" value="{{ contract.current_revision }}">
+      <button class="btn btn--primary" type="submit">{{ labels.shorten }}</button>
+    </form>
+    {% endif %}
+    {% else %}
+    <p>{{ labels.source_help }}</p>
+    <form class="repair-form" action="{% url 'repairs:contract_action' project_id kind %}" method="post" enctype="multipart/form-data">{% csrf_token %}
+      <input type="hidden" name="action" value="upload"><label>{{ labels.source }}<input type="file" name="source" accept=".docx,.pdf" required></label>
+      <button class="btn btn--primary" type="submit">{{ labels.check }}</button>
+    </form>
+    {% endif %}
+  </section>
+  {% endif %}
+
+  {% if proposal and proposal.status == 'failed' and proposal.source_id %}
+  <p><a href="{% url 'repairs:contract_original' project_id kind proposal.source_id %}">{{ labels.source }} · {{ labels.download }}</a></p>
+  {% endif %}
+  {% if proposal and proposal.status == 'failed' and budget_viewer and proposal.result.usage.provider_status %}
+  <aside class="repair-card repair-meta" data-provider-diagnostics>{% if LANGUAGE_CODE == 'kk' %}Провайдер күйі{% else %}Статус провайдера{% endif %}: {{ proposal.result.usage.provider_status }}{% if proposal.result.usage.incomplete_reason %} · {{ proposal.result.usage.incomplete_reason }}{% endif %}</aside>
+  {% endif %}
+  {% if proposal and proposal.status != 'failed' %}
+  <section class="repair-card" data-contract-proposal>
+    {% if waiting_status %}<p role="status">{{ labels.pending }}</p>
+    {% elif proposal.status == 'ready' %}
+      {% if proposal.operation == 'amend' %}
+      <h2>{{ labels.proposal }}</h2>
+      <div class="contract-grid">
+        <div class="contract-comparison"><strong>{{ labels.before }}</strong><p>{{ proposal.result.before|linebreaksbr }}</p></div>
+        <div class="contract-comparison is-after"><strong>{{ labels.after }}</strong><p>{{ proposal.result.after|linebreaksbr }}</p></div>
+      </div>
+      <p>{{ proposal.result.explanation }}</p>
+      {% else %}
+      <h2>{{ labels.preview }}</h2>
+      <p>{{ labels.review }}</p>
+      {% for row in proposal.result.sections %}{% if row.text %}
+      <p lang="{{ contract.language }}">{{ row.text|linebreaksbr }}</p>
+      {% endif %}{% endfor %}
+      <details open><summary>{{ labels.changes }}</summary>
+        <ul>{% for row in proposal.result.changes %}<li>{{ row.text|default:labels.verify }} ·
+          {% for ref in row.refs %}<a href="#proposal-src-{{ ref }}">§ {{ ref }}</a>{% if not forloop.last %} · {% endif %}{% endfor %}</li>{% endfor %}</ul>
+      </details>
+      {% if proposal.source %}
+      <details><summary>{{ labels.source }}</summary><ol>
+        {% for row in proposal.source.excerpts %}<li id="proposal-src-{{ row.id }}" value="{{ row.id }}">{{ row.text }}</li>{% endfor %}
+      </ol></details>
+      {% endif %}
+      {% endif %}
+      {% if proposal.result.usage.bound_cents and budget_viewer %}<p class="repair-meta">{{ labels.estimate }}: {{ proposal.result.usage.bound_cents }}</p>{% endif %}
+      {% if pending_is_current %}
+      <form class="repair-form" action="{% url 'repairs:contract_action' project_id kind %}" method="post">{% csrf_token %}
+        <input type="hidden" name="action" value="apply"><input type="hidden" name="proposal" value="{{ proposal.pk }}">
+        <button class="btn btn--primary" type="submit">{{ labels.apply }}</button>
+      </form>
+      {% elif proposal.applied_revision %}<p>{{ labels.applied }}</p>{% else %}<p>{{ labels.obsolete }}</p>{% endif %}
+    {% endif %}
+  </section>
+  {% endif %}
+
+  <article class="repair-card contract-draft" id="draft" lang="{{ contract.language }}">
+    {% for style,text in rows %}
+      {% if style == 'title' %}<h2>{{ text }}</h2>{% elif style == 'heading' %}<h3>{{ text }}</h3>{% else %}<p>{{ text }}</p>{% endif %}
+    {% endfor %}
+  </article>
+
+  {% if changes or version.source %}
+  <section class="repair-card" id="source-compare">
+    {% if changes %}
+    <details><summary>{{ labels.changes }}</summary>
+      <ul>{% for row in changes %}<li><strong>{{ row.label }}</strong> · {{ row.text|default:labels.verify }}
+        {% for ref in row.refs %}<a href="#original-{{ ref }}">§ {{ ref }}</a>{% endfor %}</li>{% endfor %}</ul>
+    </details>
+    {% endif %}
+    {% if version.source %}
+    <details><summary>{{ labels.source }}</summary>
+      <p><a href="{% url 'repairs:contract_original' project_id kind version.source_id %}">{{ labels.download }} · {{ version.source.extension|upper }}</a></p>
+      <ol>{% for row in version.source.excerpts %}<li id="original-{{ row.id }}" value="{{ row.id }}">{{ row.text }}</li>{% endfor %}</ol>
+    </details>
+    {% endif %}
+  </section>
+  {% endif %}
+
+  {% if version.revision == contract.current_revision %}
+  <details class="repair-card"><summary>{{ labels.manual }}</summary>
+    <form class="repair-form" action="{% url 'repairs:contract_action' project_id kind %}" method="post">{% csrf_token %}
+      <input type="hidden" name="action" value="manual"><input type="hidden" name="revision" value="{{ version.revision }}">
+      <p>{{ labels.field_hints }}</p>
+      <div class="contract-grid">{% for f in manual_fields %}
+        <label lang="{{ contract.language }}">{{ f.label }}<input name="{{ f.key }}" type="{% if f.key == 'date' %}date{% else %}text{% endif %}" maxlength="200" value="{{ f.value }}" placeholder="{{ f.placeholder }}"></label>
+      {% endfor %}</div>
+      {% if qtys %}<div class="contract-grid">{% for row in qtys %}
+        <label>{{ row.name }} · {{ row.unit }}<input name="qty_{{ row.id }}" type="text" inputmode="decimal" value="{{ row.value }}" placeholder="{{ row.quantity }}"></label>
+      {% endfor %}</div>{% endif %}
+      <details><summary>{{ labels.clauses }}</summary>
+      {% for s in sections %}<label lang="{{ contract.language }}">{{ s.label }}<textarea name="clause_{{ s.key }}" maxlength="2400" rows="2" placeholder="{{ s.text }}">{{ s.value }}</textarea></label>{% endfor %}
+      </details>
+      <button class="btn btn--secondary" type="submit">{{ labels.save }}</button>
+    </form>
+  </details>
+
+  <details class="repair-card" id="suggest"><summary>{{ labels.proposal }}</summary>
+    {% if ai_enabled %}
+    <p>{{ labels.send }}</p>
+    <form class="repair-form" action="{% url 'repairs:contract_action' project_id kind %}" method="post">{% csrf_token %}
+      <input type="hidden" name="action" value="amend"><input type="hidden" name="revision" value="{{ version.revision }}">
+      <label>{{ labels.section }}<select name="section">{% for s in sections %}<option value="{{ s.key }}" lang="{{ contract.language }}">{{ s.label }}</option>{% endfor %}</select></label>
+      <label>{{ labels.instruction }}<textarea name="instruction" required maxlength="400" minlength="5" rows="3"></textarea></label>
+      <button class="btn btn--primary" type="submit">{{ labels.amend }}</button>
+    </form>
+    {% endif %}
+    <p><a href="?upload=1#source-panel">{{ labels.upload }}</a></p>
+    {% if sources %}
+    <h3>{{ labels.saved_sources }}</h3><ul>
+      {% for doc in sources %}<li><a href="?source={{ doc.pk }}#source-panel">{{ labels.source }} #{{ doc.pk }} · {{ doc.extension|upper }}</a></li>{% endfor %}
+    </ul>
+    {% endif %}
+  </details>
+  {% endif %}
+
+  <details class="repair-card" {% if compare %}open{% endif %}><summary>{{ labels.versions }}</summary>
+    <ul>{% for r in revisions %}
+      <li><a href="?version={{ r }}">#{{ r }}</a>{% if r != version.revision %} · <a href="?version={{ version.revision }}&amp;compare={{ r }}">{{ labels.compare }}</a>{% endif %}</li>
+    {% endfor %}</ul>
+    {% for d in differences %}<div class="contract-grid">
+        <div class="contract-comparison"><strong>{{ labels.before }}</strong>{% for x in d.before %}<p>{{ x }}</p>{% endfor %}</div>
+        <div class="contract-comparison is-after"><strong>{{ labels.after }}</strong>{% for x in d.after %}<p>{{ x }}</p>{% endfor %}</div>
+    </div>{% endfor %}
+  </details>
+
+  <section class="repair-card" id="download">
+    <h2>{{ labels.download }}</h2>
+    <div class="contract-actions">
+      <a class="btn btn--secondary" href="{% url 'repairs:contract_download' project_id kind version.revision 'docx' %}">DOCX</a>
+      <a class="btn btn--secondary" href="{% url 'repairs:contract_download' project_id kind version.revision 'pdf' %}">PDF</a>
+    </div>
+  </section>
+  {% if budget %}<aside class="repair-card"><p>{{ labels.budget }}</p>
+    <p>{{ budget.accounted_cents }}¢ / {{ budget.ceiling_cents }}¢ · {{ budget.remaining_cents }}¢</p>
+    <p>{% if LANGUAGE_CODE == 'kk' %}Расталған жауаптар: {{ budget.known_completed_calls }} · Ашық резервтер: {{ budget.open_holds }}{% else %}Подтверждённых ответов: {{ budget.known_completed_calls }} · Незакрытых резервов: {{ budget.open_holds }}{% endif %}</p>
+    {% if calls %}<details><summary>{{ labels.usage }}</summary>
+      <ul>{% for call in calls %}<li><a href="?proposal={{ call.pk }}">#{{ call.pk }}</a> · {{ call.get_operation_display }} · {{ call.status }}</li>{% endfor %}</ul>
+    </details>{% endif %}
+  </aside>{% endif %}
+  {% endif %}
+</section>
+<script>document.querySelectorAll('[data-contract-page] a[href^="#"]').forEach(a=>{a.addEventListener('click',()=>{const node=document.getElementById(a.hash.slice(1));const parent=node?.closest('details');if(parent)parent.open=true;});});</script>
+{% endblock %}

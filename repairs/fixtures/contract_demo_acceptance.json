@@ -1,0 +1,25 @@
+{
+  "fixture": "DEMO-01",
+  "status": "synthetic_nonbinding",
+  "original_pages": 8,
+  "editorial_reference_pages": 3,
+  "currency": "KZT",
+  "offer": {"line": "Ламинат учебной серии L", "quantity_packs": 12, "unit_price": 1000, "total": 12000, "transport_included": false},
+  "original_document_date": "2026-12-01",
+  "manual_document_date": "2026-11-30",
+  "payment": [
+    {"amount": 3600, "percent": 30, "latest_date": "2026-12-02"},
+    {"amount": 8400, "percent": 70, "latest_date": "2026-12-10", "condition": "full actual acceptance by deadline; otherwise new deadline to be confirmed"}
+  ],
+  "delivery": {
+    "timezone": "Asia/Almaty",
+    "payer": "buyer_pays_carrier_separately",
+    "carrier_tariff": null,
+    "address": null,
+    "original": [{"qty": 12, "date": "2026-12-08", "start": "10:00", "end": "13:00"}],
+    "suggestion": [{"qty": 6, "date": "2026-12-05", "start": "10:00", "end": "13:00"}, {"qty": 6, "date": "2026-12-08", "start": "10:00", "end": "13:00"}]
+  },
+  "unresolved_conflict": {"source": [["5.2", 3], ["7.2", 5]], "unit": "working_days", "trigger": "confirmation_of_defect", "chosen": null},
+  "appendices": ["1. Спецификация", "2. Форма приёмки"],
+  "excluded": ["укладка", "подготовка основания", "демонтаж", "подъём", "вынос упаковки", "монтаж плинтуса"]
+}
