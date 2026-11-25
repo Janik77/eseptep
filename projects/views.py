@@ -52,6 +52,9 @@ def project_download(request, pk):
 
 
 def project_upload(request):
+    from .demo_samples import typical_plans
+    hosted = getattr(settings, 'ESEPTEP_CLOSED_PILOT', False)
+    plans = typical_plans()
     upload = None
     estimate = None
     rate_config = rate_configuration()
@@ -94,7 +97,18 @@ def project_upload(request):
                     estimate = {**upload.estimate_snapshot, 'repair_level': upload.get_repair_level_display()}
                     messages.success(request, _('Предварительный расчёт готов.'))
     elif request.method == 'POST':
-        upload_form = ProjectUploadForm(request.POST, request.FILES, for_analysis=request.POST.get('action') == 'upload_calculate')
+        files = request.FILES
+        if hosted and request.POST.get('sample'):
+            from django.core.files.uploadedfile import SimpleUploadedFile
+            from django.utils.datastructures import MultiValueDict
+            from .demo_samples import SAMPLES
+            key = request.POST['sample']
+            if key not in {plan['key'] for plan in plans}:
+                raise Http404
+            name = SAMPLES[key]
+            raw = (settings.BASE_DIR / 'tests' / 'fixtures' / 'plans' / name).read_bytes()
+            files = MultiValueDict({'file': [SimpleUploadedFile(name, raw, 'application/pdf')]})
+        upload_form = ProjectUploadForm(request.POST, files, for_analysis=request.POST.get('action') == 'upload_calculate')
         if upload_form.is_valid():
             if not request.user.is_authenticated and not request.session.session_key:
                 request.session.create()
@@ -104,6 +118,8 @@ def project_upload(request):
                 source_sha256=upload_form.source_sha256,
                 file=upload_form.cleaned_data['file'], comment=upload_form.cleaned_data['comment'],
                 ai_status=AI_ANALYSIS_MODE, ai_summary=DEMO_AI_SUMMARY)
+            if hosted and (request.POST.get('action') == 'save_plan' or not settings.PLAN_AI_ENABLED):
+                return redirect('projects:whole_plan', pk=upload.pk)
             if request.POST.get('action') == 'upload_calculate':
                 from .plan_analysis import analyze, PlanError
                 from .whole_plan import initial_rooms, persist_estimate
@@ -120,9 +136,8 @@ def project_upload(request):
                     messages.warning(request, plan_message(str(exc)))
                 return redirect('projects:whole_plan', pk=upload.pk)
             messages.success(request, _('Файл сохранён. Теперь откройте план и подтвердите площадь.'))
-    from .demo_samples import typical_plans
     return render(request, 'projects/upload.html', {
-        'typical_plans': typical_plans(),
+        'typical_plans': plans, 'hosted': hosted,
         'analysis_available': bool(settings.PLAN_AI_ENABLED and getattr(settings, 'OPENAI_API_KEY', '')),
         'rate_config': rate_config,
         'upload': upload, 'estimate': estimate, 'upload_form': upload_form, 'estimate_form': estimate_form,
