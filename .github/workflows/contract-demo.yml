@@ -1,0 +1,60 @@
+name: ESEPTEP contract demo
+on:
+  pull_request:
+    paths:
+      - 'repairs/**'
+      - 'templates/repairs/**'
+      - 'static/css/repair-contract.css'
+      - 'tools/*contract*'
+      - 'config/settings.py'
+      - 'core/local_ai_budget.py'
+      - '.github/workflows/contract-demo.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      DJANGO_ENV: test
+      DJANGO_DEBUG: 'true'
+      OPENAI_API_KEY: ''
+      OPENAI_LIVE_CONFIRMED: '0'
+      PLAN_AI_ENABLED: '0'
+      ESTIMATE_AI_ENABLED: '0'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: pip install -r requirements.txt
+      - run: python manage.py test repairs.test_contract.DemoContractTests core.test_local_ai_budget --verbosity 2
+      - run: |
+          npm install --no-save --no-package-lock playwright@1.56.1
+          npx playwright install chromium
+      - name: Browser receipts and actual browser video (fake API)
+        run: |
+          set -euo pipefail
+          d="$(mktemp -d /tmp/esep-contract-ci.XXXXXX)"
+          export CONTRACT_QA_DIR="$d" CONTRACT_RECORD_VIDEO=1
+          export CHROMIUM_EXECUTABLE="$(node -p "require('playwright').chromium.executablePath()")"
+          python tools/run_contract_demo.py --fixture-api "$d" > "$d/server.log" 2>&1 &
+          pid=$!
+          trap 'kill "$pid" || true; tail -35 "$d/server.log" || true' EXIT
+          for i in $(seq 1 40); do
+            if curl --fail --silent http://127.0.0.1:8250/accounts/login/ -o /dev/null; then break; fi
+            sleep .25
+          done
+          node tools/qa_contract_demo.mjs
+          mkdir -p contract-evidence
+          cp "$d"/scene-*.png "$d"/browser-evidence.json "$d"/ESEPTEP-browser-mocked-demo.webm "$d"/result.{docx,pdf} contract-evidence/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: contract-demo-browser-offline
+          path: contract-evidence
+          if-no-files-found: error
+          retention-days: 10

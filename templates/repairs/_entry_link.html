@@ -3,3 +3,7 @@
 {% if repair_access %}
 <a class="btn btn--secondary" data-repair-entry href="{% url 'repairs:detail' repair_project_pk %}">{% if LANGUAGE_CODE == 'kk' %}Менің жөндеуім{% else %}Мой ремонт{% endif %}</a>
 {% endif %}
+{% contract_entry request.user repair_project_pk as demo_contract_entry %}
+{% if demo_contract_entry %}
+<a class="btn btn--secondary" data-contract-entry href="{% url 'repairs:contract_choose' repair_project_pk %}">{{ demo_contract_entry.label }}</a>
+{% endif %}

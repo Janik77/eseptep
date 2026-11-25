@@ -279,6 +279,15 @@ def analyze(upload):
     ]
     if PlanAnalysis.objects.filter(identity__in=previous).exists() or (upload.ai_summary or {}).get('claimed_plan_analysis'):
         raise PlanError('legacy_analysis')
+    if getattr(settings, 'CONTRACT_DEMO_ENABLED', False):
+        # This combined pilot must never use a legacy unreserved provider path.
+        # An enabled same-city repair project is the invitation for this account.
+        from repairs.models import Repair, city_key
+        if not settings.LOCAL_AI_BUDGET_PATH or not upload.user_id or not upload.user.is_active:
+            raise PlanError('pilot_only')
+        invitations = Repair.objects.filter(project__user_id=upload.user_id, city__enabled=True, enabled=True)
+        if not any(city_key(city) == key for city, key in invitations.values_list('project__city','city__key')):
+            raise PlanError('pilot_only')
     _, frames = pages(upload, raw, classification_only=True)
     key = getattr(settings, 'OPENAI_API_KEY', '')
     if not getattr(settings, 'PLAN_AI_ENABLED', False) or not key:

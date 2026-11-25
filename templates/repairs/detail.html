@@ -1,4 +1,4 @@
-{% extends 'base.html' %}{% load static i18n eseptep_i18n repairs_ui %}
+{% extends 'base.html' %}{% load static i18n eseptep_i18n repairs_ui repair_access %}
 {% block title %}{% if LANGUAGE_CODE == 'kk' %}Менің жөндеуім{% else %}Мой ремонт{% endif %} — ESEPTEP{% endblock %}
 {% block extra_css %}<link rel="stylesheet" href="{% static 'css/my-repair.css' %}">{% endblock %}
 {% block content %}
@@ -20,6 +20,10 @@
       <a class="btn btn--primary repair-hero__action" href="#repair-offers">{% if LANGUAGE_CODE == 'kk' %}Ұсыныстарды қарау{% else %}Посмотреть предложения{% endif %}</a>
     {% endif %}
   </div>
+  {% contract_entry request.user repair.project_id as demo_contract_entry %}
+  {% if demo_contract_entry %}
+  <p><a class="btn btn--secondary" data-contract-entry href="{% url 'repairs:contract_choose' repair.project_id %}">{{ demo_contract_entry.label }}</a></p>
+  {% endif %}
   {% if error %}<p class="repair-errors" role="alert">{{ error }}</p>{% endif %}
   {% if offers %}
   <section id="repair-offers" class="repair-section" aria-labelledby="repair-offer-heading">

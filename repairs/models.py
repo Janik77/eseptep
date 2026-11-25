@@ -148,3 +148,54 @@ class Photo(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     event = models.OneToOneField(Event, on_delete=models.PROTECT, related_name='photo')
     jpeg = models.BinaryField(editable=False)
+
+
+class DemoContract(models.Model):
+    """One current contract per accepted order/counterparty binding."""
+    agreement = models.OneToOneField(Agreement, on_delete=models.PROTECT, related_name='demo_contract')
+    language = models.CharField(max_length=2, choices=(('ru', 'Русский'), ('kk', 'Қазақша')))
+    confirmed_snapshot = models.JSONField()
+    current_revision = models.PositiveIntegerField(default=1)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
+class ContractSource(models.Model):
+    contract = models.ForeignKey(DemoContract, on_delete=models.PROTECT, related_name='sources')
+    digest = models.CharField(max_length=64)
+    extension = models.CharField(max_length=4)
+    original = models.BinaryField(editable=False)
+    excerpts = models.JSONField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=['contract', 'digest'], name='contract_source_once')]
+
+
+class ContractVersion(models.Model):
+    contract = models.ForeignKey(DemoContract, on_delete=models.PROTECT, related_name='versions')
+    revision = models.PositiveIntegerField()
+    origin = models.CharField(max_length=16, choices=(
+        ('template', 'Template'), ('source', 'Source'), ('manual', 'Manual'), ('suggestion', 'Suggestion')))
+    source = models.ForeignKey(ContractSource, null=True, on_delete=models.PROTECT)
+    details = models.JSONField(default=dict)
+    sections = models.JSONField(default=list)
+    changes = models.JSONField(default=list)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=['contract', 'revision'], name='contract_unique_revision')]
+
+
+class ContractAIRequest(models.Model):
+    contract = models.ForeignKey(DemoContract, on_delete=models.PROTECT, related_name='ai_requests')
+    identity = models.CharField(max_length=64)
+    operation = models.CharField(max_length=8, choices=(('shorten', 'Shorten'), ('amend', 'Amend')))
+    base_revision = models.PositiveIntegerField()
+    source = models.ForeignKey(ContractSource, null=True, on_delete=models.PROTECT)
+    status = models.CharField(max_length=10, default='pending')
+    result = models.JSONField(default=dict)
+    applied_revision = models.PositiveIntegerField(null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=['contract', 'identity'], name='contract_ai_identity_once')]

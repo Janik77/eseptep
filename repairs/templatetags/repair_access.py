@@ -12,3 +12,9 @@ def may_open_repair(user, project_id):
     except Http404:
         return False
     return True
+
+
+@register.simple_tag
+def contract_entry(user, project_id):
+    from repairs.contract_views import entry_for
+    return entry_for(user,project_id)
