@@ -162,6 +162,33 @@ class DemoContractTests(TestCase):
             self.assertEqual(self.owner.get(route).status_code,404)
         sdk.assert_not_called()
 
+    @patch('core.openai_client.OpenAI')
+    def test_incomplete_provider_reason_is_safe_persisted_and_does_not_retry_or_reconcile(self, sdk):
+        self.create()
+        self.upload()
+        src = ContractSource.objects.get()
+        provider = sdk.return_value.__enter__.return_value.responses.create
+        rsp = self.response({})
+        rsp.update(status='incomplete', incomplete_details={'reason':'max_output_tokens'}, output=[
+            {'type':'message','content':[{'type':'output_text','text':'private partial output not rendered'}]}])
+        provider.return_value = FakeResponse(rsp)
+        req = self.action('shorten', source=src.pk, revision=1)
+        record = ContractAIRequest.objects.get()
+        self.assertEqual(record.status,'failed')
+        self.assertEqual(record.result['error'],'provider_output_limit')
+        self.assertEqual(record.result['usage']['provider_status'],'incomplete')
+        self.assertEqual(record.result['usage']['incomplete_reason'],'max_output_tokens')
+        self.assertEqual(record.result['usage']['tokens']['output_tokens'],800)
+        self.assertNotIn('private partial',str(record.result))
+        self.assertContains(self.owner.get(req['Location']),'ИИ не успел закончить ответ')
+        self.assertEqual(self.action('shorten',source=src.pk,revision=1)['Location'],req['Location'])
+        self.assertEqual(provider.call_count,1)
+        self.assertEqual(status(self.ledger)['accounted_cents'],816)
+        self.assertEqual(status(self.ledger)['open_holds'],1)
+        self.assertEqual(DemoContract.objects.get().current_revision,1)
+        self.assertEqual(self.action('manual',revision=1,date='2026-11-30').status_code,302)
+        self.assertEqual(self.owner.get(self.path('contract_download',2,'pdf')).status_code,200)
+
     def test_works_from_price_stays_unknown_and_document_language_is_independent(self):
         self.accept('works')
         path=self.path('contract_action',kind='works')

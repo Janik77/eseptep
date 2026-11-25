@@ -64,7 +64,13 @@
   </section>
   {% endif %}
 
-  {% if proposal %}
+  {% if proposal and proposal.status == 'failed' and proposal.source_id %}
+  <p><a href="{% url 'repairs:contract_original' project_id kind proposal.source_id %}">{{ labels.source }} · {{ labels.download }}</a></p>
+  {% endif %}
+  {% if proposal and proposal.status == 'failed' and budget_viewer and proposal.result.usage.provider_status %}
+  <aside class="repair-card repair-meta" data-provider-diagnostics>{% if LANGUAGE_CODE == 'kk' %}Провайдер күйі{% else %}Статус провайдера{% endif %}: {{ proposal.result.usage.provider_status }}{% if proposal.result.usage.incomplete_reason %} · {{ proposal.result.usage.incomplete_reason }}{% endif %}</aside>
+  {% endif %}
+  {% if proposal and proposal.status != 'failed' %}
   <section class="repair-card" data-contract-proposal>
     {% if waiting_status %}<p role="status">{{ labels.pending }}</p>
     {% elif proposal.status == 'ready' %}

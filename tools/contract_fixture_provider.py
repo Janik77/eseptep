@@ -34,7 +34,7 @@ def mock_provider(directory):
                 result = {'document_kind':'floor_plan','floor_pages':[1],
                           'rooms':[dict(name=n, area=a, kind=k, source='stated',page=1,page_type='floor_plan',
                                         evidence=f'{n} {a:.2f} м²',schedule_evidence='',finish=None)
-                                   for n,a,k in [('Гостиная',20,'other'),('Холл',6,'other'),
+                                   for n,a,k in [('Гостиная',20,'other'),('Прихожая',6,'other'),
                                                   ('Спальня',10.08,'other'),('Санузел',3.92,'bathroom')]]}
             elif op == 'contract_shorten':
                 source=json.loads(payload['input'])['source']
