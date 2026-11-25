@@ -20,7 +20,7 @@
       {% if c.agreement %}
       <p>{{ c.agreement.provider }}</p>
       <a class="btn {% if c.saved %}btn--primary{% else %}btn--secondary{% endif %}" href="{% url 'repairs:contract_show' project_id c.key %}">{% if c.saved %}{{ labels.open }}{% else %}{{ c.label }}{% endif %}</a>
-      {% else %}<p class="repair-muted">{{ labels.none }}</p>{% endif %}
+      {% else %}<p class="repair-muted">{{ labels.none }}</p><a class="btn btn--secondary" href="{% url 'repairs:detail' project_id %}#offer-{{ c.key }}">{% if LANGUAGE_CODE == 'kk' %}Жобадағы ұсыныстар{% else %}Предложения в проекте{% endif %}</a>{% endif %}
     </article>
     {% endfor %}
   </div>
