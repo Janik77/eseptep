@@ -312,6 +312,51 @@ class DemoContractTests(TestCase):
         self.assertEqual(self.owner.get(self.path('contract_original',src.pk)).content,FIXTURE.read_bytes())
 
 
+
+    @patch('core.openai_client.OpenAI')
+    def test_completed_charged_but_bad_document_settles_only_verified_fake_usage(self, sdk):
+        contract = self.create()
+        self.assertEqual(self.upload().status_code, 302)
+        src = ContractSource.objects.get()
+        self.assertEqual(self.action('use_source', source=src.pk, revision=1).status_code, 302)
+        provider = sdk.return_value.__enter__.return_value.responses.create
+        provider.return_value = FakeResponse(self.response(['not-a-contract']))
+        reply = self.action('shorten', source=src.pk, revision=2)
+        self.assertEqual(self.action('shorten', source=src.pk, revision=2)['Location'], reply['Location'])
+        req = ContractAIRequest.objects.get()
+        self.assertEqual((req.status, req.result['error']), ('failed', 'bad_response'))
+        self.assertEqual(req.result['usage']['provider_status'], 'completed')
+        self.assertEqual(req.result['usage']['bound_cents'], 3)
+        self.assertEqual(status(self.ledger)['open_holds'], 0)
+        self.assertEqual(status(self.ledger)['accounted_cents'], 219)
+        contract.refresh_from_db()
+        self.assertEqual(contract.current_revision, 2)
+        self.assertEqual(self.owner.get(self.path('contract_original', src.pk)).content, FIXTURE.read_bytes())
+        self.assertEqual(provider.call_count, 1)
+
+
+
+    @patch('core.openai_client.OpenAI')
+    def test_eight_page_text_pdf_is_immutable_and_uses_local_basis(self, sdk):
+        from reportlab.pdfgen.canvas import Canvas
+        buffer = io.BytesIO()
+        output = Canvas(buffer)
+        for page in range(1, 9):
+            output.drawString(40, 730, f'{page}. Readable synthetic original contract clause with confirmed quantities.')
+            output.showPage()
+        output.save()
+        raw = buffer.getvalue()
+        self.create()
+        response = self.action('upload', source=SimpleUploadedFile('eight-page-original.pdf', raw))
+        self.assertEqual(response.status_code, 302)
+        source = ContractSource.objects.get()
+        self.assertEqual([row['page'] for row in source.excerpts], list(range(1, 9)))
+        self.assertEqual(self.action('use_source', source=source.pk, revision=1).status_code, 302)
+        self.assertContains(self.owner.get(self.path()), '8. Readable synthetic original contract clause')
+        self.assertEqual(self.owner.get(self.path('contract_original', source.pk)).content, raw)
+        sdk.assert_not_called()
+
+
 class FakeResponse:
     def __init__(self,data):
         self.data=data
