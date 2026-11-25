@@ -1,0 +1,23 @@
+[Unit]
+Description=ESEPTEP invite-only pilot (not the GRACE portal)
+After=network.target
+
+[Service]
+Type=simple
+User=eseptep-pilot
+Group=eseptep-pilot
+EnvironmentFile=/etc/eseptep-pilot/app.env
+Environment=PYTHONDONTWRITEBYTECODE=1
+WorkingDirectory=/opt/eseptep-pilot/current
+ExecStart=/opt/eseptep-pilot/current/.venv/bin/gunicorn config.wsgi:application --workers 1 --timeout 90 --bind 127.0.0.1:18420 --forwarded-allow-ips 127.0.0.1
+Restart=on-failure
+RestartSec=5
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/eseptep-pilot
+
+[Install]
+WantedBy=multi-user.target

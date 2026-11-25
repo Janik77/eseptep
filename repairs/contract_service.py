@@ -6,7 +6,7 @@ import json
 import re
 
 from django.conf import settings
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.http import Http404
 from django.utils import timezone
 
@@ -15,7 +15,7 @@ from core.openai_client import responses_create, safe_error_code, validate_confi
 from .contract_copy import CLAUSES, LANGUAGES, word
 from .contract_files import read_source, tidy
 import sqlite3
-from .models import ContractAIRequest, ContractSource, ContractVersion, DemoContract
+from .models import ContractAIRequest, ContractSource, ContractTemplateVersion, ContractVersion, DemoContract
 from .services import current_terms, json_digest, scoped_repair, number, MONEY_MAX, QUANTITY_MAX
 
 BODY_MAX = 2400
@@ -72,7 +72,7 @@ def template_sections():
     return [{'key': key, 'text': '', 'refs': []} for key in CLAUSES]
 
 
-def initialize_contract(user, project, kind, language):
+def initialize_contract(user, project, kind, language, style='template'):
     if language not in LANGUAGES:
         raise ContractError('invalid')
     with transaction.atomic():
@@ -82,9 +82,40 @@ def initialize_contract(user, project, kind, language):
         if current:
             return current
         snapshot = terms_snapshot(agreement, user)
-        contract = DemoContract.objects.create(agreement=agreement, language=language, confirmed_snapshot=snapshot)
-        ContractVersion.objects.create(contract=contract, revision=1, origin='template', sections=template_sections())
+        template = template_current(kind, language) if style == 'template' else None
+        contract = DemoContract.objects.create(agreement=agreement, language=language, confirmed_snapshot=snapshot,
+                                               template_version=template)
+        ContractVersion.objects.create(contract=contract, revision=1, origin='template',
+                                       sections=template.sections if template else template_sections())
         return contract
+
+
+def template_current(kind, language):
+    if kind not in ('materials', 'works') or language not in LANGUAGES:
+        raise Http404
+    return ContractTemplateVersion.objects.filter(kind=kind, language=language).order_by('-revision').first()
+
+
+def save_template(user, kind, language, data):
+    if not user.is_superuser or not settings.CONTRACT_DEMO_ENABLED:
+        raise Http404
+    try:
+        with transaction.atomic():
+            base = template_current(kind, language)
+            if not base or base.revision != parse_post_revision(data.get('revision')):
+                raise ContractError('stale')
+            sections = []
+            for key in CLAUSES:
+                value = tidy(data.get(key, ''))
+                if not value or len(value) > BODY_MAX:
+                    raise ContractError('invalid')
+                sections.append({'key': key, 'text': value, 'refs': []})
+            if sections == base.sections:
+                return base
+            return ContractTemplateVersion.objects.create(
+                kind=kind, language=language, revision=base.revision + 1, sections=sections, created_by=user)
+    except IntegrityError as exc:
+        raise ContractError('stale') from exc
 
 
 def latest(contract):
@@ -115,6 +146,51 @@ def source_from_upload(user, project, kind, upload):
     return src
 
 
+def use_source(user, project, kind, source_id, revision):
+    with transaction.atomic():
+        contract = contract_in_scope(user, project, kind, lock=True)
+        source = contract.sources.defer('original').filter(pk=source_id).first()
+        if not source:
+            raise Http404
+        base = latest(contract)
+        if base.source_id == source.pk and base.details.get('_source_basis'):
+            return base
+        compare_current(contract, revision)
+        details = {k: v for k, v in base.details.items()
+                   if not k.startswith('_source_') and not k.startswith('clause_')}
+        details['_source_basis'] = True
+        return write_version(contract, base, 'source', sections=template_sections(),
+                             details=details, source=source, changes=[])
+
+
+def source_selection(base, section):
+    if not base.source or not base.details.get('_source_basis'):
+        return None
+    if not re.fullmatch(r'p[1-9][0-9]{0,2}', section or ''):
+        return None
+    return next((r for r in base.source.excerpts if f"p{r['id']}" == section), None)
+
+
+def source_text(base, row):
+    return base.details.get('_source_edits', {}).get(str(row['id']), row['text'])
+
+
+def source_patch(user, project, kind, data):
+    with transaction.atomic():
+        contract = contract_in_scope(user, project, kind, lock=True)
+        compare_current(contract, data.get('revision'))
+        base = latest(contract)
+        row = source_selection(base, data.get('section'))
+        value = tidy(data.get('text', ''))
+        if not row or not value or len(value) > BODY_MAX:
+            raise ContractError('invalid')
+        if value == source_text(base, row):
+            return base
+        details = {**base.details, '_source_edits': {**base.details.get('_source_edits', {}),
+                                                    str(row['id']): value}}
+        return write_version(contract, base, 'manual', details=details)
+
+
 def parse_post_revision(revision):
     if not isinstance(revision, str) or not re.fullmatch(r'[1-9]\d{0,8}', revision):
         raise ContractError('invalid')
@@ -140,7 +216,7 @@ def write_version(contract, base, origin, *, sections=None, details=None, source
     return version
 
 
-MANUAL_FIELDS = ('date', 'customer', 'provider', 'total', 'identifiers')
+MANUAL_FIELDS = ('date', 'customer', 'provider', 'total', 'identifiers', 'delivery_cost')
 
 
 def manual_save(user, project, kind, data):
@@ -152,7 +228,7 @@ def manual_save(user, project, kind, data):
         try:
             if value and key == 'date':
                 value = date.fromisoformat(value).isoformat()
-            if value and key == 'total':
+            if value and key in ('total', 'delivery_cost'):
                 value = str(number(value, MONEY_MAX))
         except ValueError as exc:
             raise ContractError('invalid') from exc
@@ -168,6 +244,7 @@ def manual_save(user, project, kind, data):
         contract = contract_in_scope(user, project, kind, lock=True)
         compare_current(contract, data.get('revision'))
         base = latest(contract)
+        details.update({key: val for key, val in base.details.items() if key.startswith('_source_')})
         qtys = {}
         try:
             for line in contract.confirmed_snapshot['lines']:
@@ -355,6 +432,10 @@ def ai_identity(op, fingerprint):
 
 
 def create_ai_request(user, project, kind, op, data):
+    if getattr(settings, 'ESEPTEP_CLOSED_PILOT', False):
+        from core.closed_pilot import pilot_member
+        if not pilot_member(user, paid=True):
+            raise Http404
     with transaction.atomic():
         contract = contract_in_scope(user, project, kind, lock=True)
         base = latest(contract)
@@ -367,11 +448,16 @@ def create_ai_request(user, project, kind, op, data):
         elif op == 'amend':
             submitted_revision = parse_post_revision(data.get('revision'))
             code = data.get('section')
+            row = source_selection(base, code)
             target = next((s for s in base.sections if s['key'] == code), None)
-            if target:
+            if row:
+                target = {'key': code, 'text': source_text(base, row)}
+            elif target and not base.details.get('_source_basis'):
                 target = {**target, 'text':base.details.get(f'clause_{code}') or target['text']}
+            else:
+                target = None
             instruction = tidy(data.get('instruction', ''))
-            if code not in CLAUSES or not 5 <= len(instruction) <= 400:
+            if (code not in CLAUSES and not row) or not 5 <= len(instruction) <= 400:
                 raise ContractError('invalid')
             fingerprint = {'revision':submitted_revision,'section':code,'instruction':instruction,'language':contract.language}
             prior = contract.ai_requests.filter(identity=ai_identity(op, fingerprint)).first()
@@ -385,9 +471,13 @@ def create_ai_request(user, project, kind, op, data):
                 'delivery':('dates','price','acceptance'), 'acceptance':('delivery','defects'),
                 'defects':('acceptance','dates'), 'exclusions':('scope','appendices'), 'appendices':('scope',),
             }
-            related = [{**s,'text':base.details.get(f'clause_{s["key"]}') or s['text']}
-                       for s in base.sections if s['key'] in link_map[code]]
-            related = [s for s in related if s['text']]
+            if row:
+                related = [{'key': f"p{r['id']}", 'text': source_text(base, r)} for r in base.source.excerpts
+                           if abs(r['id'] - row['id']) == 1]
+            else:
+                related = [{**s,'text':base.details.get(f'clause_{s["key"]}') or s['text']}
+                           for s in base.sections if s['key'] in link_map[code]]
+                related = [s for s in related if s['text']]
             snapshot = contract.confirmed_snapshot
             if code == 'delivery':
                 related.append({'key':'confirmed_schedule','start':snapshot['starts_on'],'end':snapshot['ends_on'],
@@ -450,8 +540,14 @@ def apply_ai(user, project, kind, request_id):
             raise ContractError('stale')
         base = latest(contract)
         if record.operation == 'shorten':
-            v = write_version(contract, base, 'source', source=record.source,
+            details = {k: val for k, val in base.details.items()
+                       if not k.startswith('_source_') and not k.startswith('clause_')}
+            v = write_version(contract, base, 'source', source=record.source, details=details,
                               sections=record.result['sections'], changes=record.result['changes'])
+        elif (row := source_selection(base, record.result['section'])):
+            details = {**base.details, '_source_edits': {**base.details.get('_source_edits', {}),
+                                                        str(row['id']): record.result['after']}}
+            v = write_version(contract, base, 'suggestion', details=details)
         else:
             sections = [{**s, 'text':record.result['after']} if s['key'] == record.result['section'] else s for s in base.sections]
             details = {k:v for k,v in base.details.items() if k != f'clause_{record.result["section"]}'}

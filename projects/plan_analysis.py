@@ -301,7 +301,9 @@ def analyze(upload):
     except AIConfigurationError:
         raise PlanError('not_configured') from None
     if getattr(settings, 'PRODUCTION', False):
-        raise PlanError('pilot_only')
+        from core.closed_pilot import pilot_member
+        if not getattr(settings, 'ESEPTEP_CLOSED_PILOT', False) or not pilot_member(upload.user, paid=True):
+            raise PlanError('pilot_only')
     PlanAnalysisBudget.objects.get_or_create(pk=1)
     with transaction.atomic():
         # Acquire the shared writer/row lock before SELECT (SQLite deferred

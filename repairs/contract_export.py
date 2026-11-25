@@ -26,6 +26,7 @@ def headings(language):
         'ends_on':w('Окончание', 'Аяқталуы'),
         'identifiers':w('Реквизиты', 'Деректемелер'),
         'offer':w('Согласованное предложение', 'Келісілген ұсыныс'),
+        'delivery_cost':w('Стоимость доставки', 'Жеткізу құны'),
     }
 
 
@@ -45,6 +46,10 @@ def report(contract, rev):
             ('body', f'{status(lang)} · ESEPTEP.KZ · {word(lang, "Редакция", "Нұсқа")} {rev.revision}'),
             ('body', word(lang, 'Демонстрационный документ. Не подписан.', 'Сынақ құжаты. Қол қойылмаған.'))]
     labels = headings(lang)
+    if contract.template_version_id:
+        rows.append(('body', word(lang, 'Версия шаблона', 'Үлгі нұсқасы') + f': {contract.template_version.revision}'))
+    concise = bool(contract.template_version_id or details.get('_source_basis'))
+    missing_fields = []
     for key in ('offer', 'date', 'customer', 'provider', 'total', 'starts_on', 'ends_on', 'identifiers'):
         value = details.get(key) or snap.get(key)
         suffix = ''
@@ -55,7 +60,20 @@ def report(contract, rev):
                 suffix = ' · ' + word(lang,'предложено вручную, не согласовано','қолмен ұсынылған, келісілмеген')
                 if snap.get(key):
                     suffix += f' ({word(lang, "согласовано", "келісілген")}: {snap[key]} ₸)'
-        rows.append(('body', f'{labels[key]}: {value or q}{suffix}'))
+        if not value and concise:
+            missing_fields.append(labels[key].lower())
+        else:
+            rows.append(('body', f'{labels[key]}: {value or q}{suffix}'))
+    if concise and contract.agreement.kind == 'materials':
+        delivery_cost = details.get('delivery_cost')
+        if delivery_cost:
+            rows.append(('body', f'{labels["delivery_cost"]}: {delivery_cost} ₸ · ' +
+                         word(lang, 'предложено, не согласовано', 'ұсынылған, келісілмеген')))
+        else:
+            missing_fields.append(labels['delivery_cost'].lower())
+    if missing_fields:
+        rows.append(('heading', q))
+        rows.append(('body', '; '.join(missing_fields) + '.'))
     if snap['description'] or snap['lines']:
         rows.append(('heading', word(lang, 'Согласованный состав', 'Келісілген құрам')))
         if snap['description']:
@@ -73,6 +91,13 @@ def report(contract, rev):
             qty = '; '.join(f'{line["name"]}: {delivery["quantities"][line["id"]]} {line["unit"]}'
                             for line in snap['lines'] if line['id'] in delivery['quantities'])
             rows.append(('body', f'{delivery["start"]} — {delivery["end"]}' + (f' · {qty}' if qty else '')))
+    if details.get('_source_basis') and rev.source_id:
+        rows.append(('heading', word(lang, 'Текст загруженного договора', 'Жүктелген шарт мәтіні')))
+        rows.append(('body', word(lang, 'Текст извлечён без сохранения исходной вёрстки; оригинал можно скачать отдельно.',
+                                 'Мәтін бастапқы пішімсіз алынды; түпнұсқаны бөлек жүктеуге болады.')))
+        edits = details.get('_source_edits', {})
+        rows += [('body', edits.get(str(row['id']), row['text'])) for row in rev.source.excerpts]
+        return rows
     by_key = {section['key']: section['text'] for section in rev.sections}
     for key in CLAUSES:
         value = details.get(f'clause_{key}') or by_key.get(key)

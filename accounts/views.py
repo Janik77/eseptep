@@ -387,11 +387,19 @@ def calculation_detail(request, calculation_id):
 
 def _meeting_supplier():
     from django.conf import settings
-    if not getattr(settings, 'ESEPTEP_DEMO_MODE', False) or getattr(settings, 'PRODUCTION', False):
+    if getattr(settings, 'ESEPTEP_CLOSED_PILOT', False):
+        from core.closed_pilot import INVITED_GROUP
+        username = getattr(settings, 'ESEPTEP_PILOT_SUPPLIER_USERNAME', '')
+        if not username:
+            return None
+        access = {'user__groups__name': INVITED_GROUP}
+    elif getattr(settings, 'ESEPTEP_DEMO_MODE', False) and not getattr(settings, 'PRODUCTION', False):
+        username, access = 'demo-supplier@example.test', {}
+    else:
         return None
     return SupplierProfile.objects.filter(
-        user__username='demo-supplier@example.test', user__is_active=True,
-        user__profile__role=UserProfile.Role.SUPPLIER, is_active=True,
+        user__username=username, user__is_active=True,
+        user__profile__role=UserProfile.Role.SUPPLIER, is_active=True, **access,
     ).first()
 
 

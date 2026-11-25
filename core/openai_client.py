@@ -23,6 +23,8 @@ def responses_create(*, _local_scope=None, **payload):
         payload['service_tier'] = 'default'
     payload['max_output_tokens'] = min(int(payload.get('max_output_tokens', 1200)), settings.OPENAI_MAX_OUTPUT_TOKENS)
     ledger = getattr(settings, 'LOCAL_AI_BUDGET_PATH', '')
+    if getattr(settings, 'ESEPTEP_CLOSED_PILOT', False) and not ledger:
+        raise AIConfigurationError('budget_missing')
     ticket = None
     if ledger:
         from .local_ai_budget import reserve

@@ -20,7 +20,9 @@
       {% endfor %}
       <button type="submit" class="btn btn--primary">{% translate 'Войти' %}</button>
     </form>
+    {% if not closed_pilot_mode %}
     <p class="auth-alt">{% translate 'Нет аккаунта?' %} <a href="{% url 'accounts:register' %}">{% translate 'Зарегистрироваться' %}</a></p>
+    {% endif %}
   </div>
 </section>
 {% endblock %}

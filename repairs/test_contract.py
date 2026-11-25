@@ -203,6 +203,115 @@ class DemoContractTests(TestCase):
             self.assertNotContains(page,'80000')
 
 
+    @patch('core.openai_client.OpenAI')
+    def test_two_orders_are_versioned_and_export_without_ai(self, provider):
+        from accounts.models import ClientProject, ServiceRequest, WholeSupplierOffer
+        from django.contrib.auth import get_user_model
+        from django.utils import timezone
+        from .models import Agreement, ContractTemplateVersion, Repair, Terms
+        from .contract_copy import CLAUSES
+
+        existing = Agreement.objects.get()
+        buyer2 = self.stranger
+        buyer2.first_name = 'Айгуль'
+        buyer2.save(update_fields=['first_name'])
+        project2 = ClientProject.objects.create(user=buyer2, title='Независимый заказ', city='Шымкент', area_m2=40, rooms=2)
+        repair2 = Repair.objects.create(project=project2, city=self.city, enabled=True)
+        req = ServiceRequest.objects.create(client=buyer2, project=project2, target_supplier=self.supplier,
+                                           request_type='supplier', status='accepted')
+        offer = WholeSupplierOffer.objects.create(request=req, supplier=self.supplier, snapshot=self.supplier_offer.snapshot)
+        agreement2 = Agreement.objects.create(repair=repair2, request=req, supplier_offer=offer,
+                                             partner=self.shop, kind='materials', provider=existing.provider,
+                                             original_offer=existing.original_offer)
+        term = existing.versions.get()
+        Terms.objects.create(agreement=agreement2, revision=1, total=term.total, lines=term.lines,
+                             proposed_by=self.shop, accepted_by=buyer2, accepted_at=timezone.now())
+        buyer2_client = self.browser(buyer2)
+        p2 = lambda name='contract_show', *extra: reverse('repairs:'+name, args=[project2.pk, 'materials', *extra])
+        self.assertEqual(self.action('create',style='template',language='ru').status_code,302)
+        self.assertEqual(buyer2_client.post(p2('contract_action'),{'action':'create','style':'template','language':'ru'}).status_code,302)
+        d1 = DemoContract.objects.get(agreement=existing)
+        d2 = DemoContract.objects.get(agreement=agreement2)
+        self.assertEqual(d1.template_version_id,d2.template_version_id)
+        self.assertEqual(d1.template_version.revision,1)
+        self.assertContains(self.owner.get(self.path()), 'стоимость доставки.')
+        self.assertContains(self.owner.get(self.path()), '12 упак. × 1000.00 ₸')
+        changed = 'Две партии по 6 упаковок: 05.12.2026 и 08.12.2026.'
+        self.assertEqual(self.action('manual',revision=1,date='2026-11-30',clause_delivery=changed).status_code,302)
+        compare = self.owner.get(self.path()+'?version=2&compare=1')
+        self.assertContains(compare,'Было')
+        self.assertContains(compare,changed)
+        self.assertNotContains(buyer2_client.get(p2()),changed)
+        self.assertEqual(buyer2_client.get(self.path()).status_code,404)
+
+        def outputs(browser, url):
+            with ZipFile(io.BytesIO(browser.get(url('docx')).content)) as f:
+                doc = f.read('word/document.xml').decode()
+            pdf = PdfReader(io.BytesIO(browser.get(url('pdf')).content))
+            pdf_text = ' '.join(' '.join(page.extract_text().split()) for page in pdf.pages)
+            return doc,pdf_text
+        for value in outputs(self.owner,lambda ext:self.path('contract_download',2,ext)):
+            self.assertIn(changed,value)
+            self.assertIn('2026-11-30',value)
+        for value in outputs(buyer2_client,lambda ext:p2('contract_download',1,ext)):
+            self.assertNotIn(changed,value)
+            self.assertNotIn('2026-11-30',value)
+            self.assertIn('Айгуль',value)
+        library = reverse('repairs:contract_library')
+        self.assertEqual(self.owner.get(library).status_code,404)
+        operator = get_user_model().objects.create_superuser(username='template-owner')
+        staff = self.browser(operator)
+        sections = {row['key']:row['text'] for row in d1.template_version.sections}
+        self.assertEqual(set(sections),set(CLAUSES))
+        new_scope = 'Новая редакция общего шаблона только для будущих заказов.'
+        self.assertEqual(staff.post(library,{'action':'save','revision':1,**sections,'scope':new_scope}).status_code,302)
+        self.assertContains(staff.get(library),new_scope)
+        self.assertEqual(ContractTemplateVersion.objects.filter(kind='materials',language='ru').count(),2)
+        self.assertNotContains(self.owner.get(self.path()),new_scope)
+        self.assertNotContains(buyer2_client.get(p2()),new_scope)
+        self.assertEqual(ContractTemplateVersion.objects.filter(revision=1).count(),4)
+        self.assertEqual(ContractAIRequest.objects.count(),0)
+        provider.assert_not_called()
+
+
+    @patch('core.openai_client.OpenAI')
+    def test_uploaded_full_basis_edit_compare_and_download_retains_original(self, sdk):
+        contract = self.create()
+        self.assertEqual(self.upload().status_code,302)
+        src = ContractSource.objects.get()
+        basis = self.action('use_source',source=src.pk,revision=1)
+        self.assertEqual(basis.status_code,302)
+        self.assertEqual(self.action('use_source',source=src.pk,revision=1).status_code,302)
+        self.assertContains(self.owner.get(basis['Location']),src.excerpts[-1]['text'][:60])
+        before = src.excerpts[0]['text']
+        changed = 'Синтетическая правка первого пункта, остальные условия сохранены.'
+        self.assertContains(self.owner.get(self.path()+'?source_edit=p1'),before)
+        self.assertEqual(self.action('source_patch',revision=2,section='p1',text=changed).status_code,302)
+        current = self.owner.get(self.path()+'?version=3&compare=2')
+        self.assertContains(current,'Было')
+        self.assertContains(current,changed)
+        self.assertContains(current,before)
+        self.assertEqual(self.owner.get(self.path('contract_original',src.pk)).content,FIXTURE.read_bytes())
+        self.assertContains(self.owner.get(self.path()+'?version=2'),before)
+        with ZipFile(io.BytesIO(self.owner.get(self.path('contract_download',3,'docx')).content)) as f:
+            self.assertIn(changed,f.read('word/document.xml').decode())
+        pdf = PdfReader(io.BytesIO(self.owner.get(self.path('contract_download',3,'pdf')).content))
+        self.assertIn(changed,' '.join(' '.join(page.extract_text().split()) for page in pdf.pages))
+        # A failed shorten can't replace either the original or manual edit.
+        response = self.response({})
+        response.update(status='incomplete',incomplete_details={'reason':'max_output_tokens'})
+        provider = sdk.return_value.__enter__.return_value.responses.create
+        provider.return_value = FakeResponse(response)
+        attempt = self.action('shorten',source=src.pk,revision=3)
+        self.assertEqual(self.action('shorten',source=src.pk,revision=3)['Location'],attempt['Location'])
+        self.assertEqual(provider.call_count,1)
+        contract.refresh_from_db()
+        self.assertEqual(contract.current_revision,3)
+        self.assertContains(self.owner.get(self.path()),changed)
+        self.assertEqual(ContractAIRequest.objects.get().result['error'],'provider_output_limit')
+        self.assertEqual(self.owner.get(self.path('contract_original',src.pk)).content,FIXTURE.read_bytes())
+
+
 class FakeResponse:
     def __init__(self,data):
         self.data=data

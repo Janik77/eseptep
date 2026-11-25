@@ -150,11 +150,26 @@ class Photo(models.Model):
     jpeg = models.BinaryField(editable=False)
 
 
+class ContractTemplateVersion(models.Model):
+    """Staff-created condition text; every saved version remains protected by use."""
+    kind = models.CharField(max_length=9, choices=(('materials', 'Materials'), ('works', 'Works')))
+    language = models.CharField(max_length=2, choices=(('ru', 'Русский'), ('kk', 'Қазақша')))
+    revision = models.PositiveIntegerField()
+    sections = models.JSONField(default=list)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.PROTECT, related_name='+')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=['kind', 'language', 'revision'],
+                                               name='contract_template_unique_version')]
+
+
 class DemoContract(models.Model):
     """One current contract per accepted order/counterparty binding."""
     agreement = models.OneToOneField(Agreement, on_delete=models.PROTECT, related_name='demo_contract')
     language = models.CharField(max_length=2, choices=(('ru', 'Русский'), ('kk', 'Қазақша')))
     confirmed_snapshot = models.JSONField()
+    template_version = models.ForeignKey(ContractTemplateVersion, null=True, on_delete=models.PROTECT, editable=False)
     current_revision = models.PositiveIntegerField(default=1)
     created_at = models.DateTimeField(auto_now_add=True)
 

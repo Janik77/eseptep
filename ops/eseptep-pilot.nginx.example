@@ -1,0 +1,24 @@
+# Verify an unused dedicated loopback port, issued certificate, and exact hostname first.
+server {
+    listen 443 ssl;
+    server_name PILOT_HOSTNAME_REPLACE_ME;
+    ssl_certificate     /etc/letsencrypt/live/PILOT_HOSTNAME_REPLACE_ME/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/PILOT_HOSTNAME_REPLACE_ME/privkey.pem;
+    client_max_body_size 12m;
+    access_log off;
+    location /static/ {
+        alias /opt/eseptep-pilot/current/staticfiles/;
+        autoindex off;
+    }
+    # Only Django's authenticated download endpoints may serve private files.
+    location ^~ /media/ { return 404; }
+    location / {
+        proxy_pass http://127.0.0.1:18420;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_set_header X-Forwarded-For $remote_addr;
+        proxy_set_header X-Forwarded-Host "";
+        proxy_set_header Forwarded "";
+        proxy_read_timeout 95s;
+    }
+}
