@@ -3,7 +3,7 @@ import re
 from django.conf import settings
 from django.http import Http404, HttpResponse
 from django.shortcuts import redirect, render
-from django.views.decorators.http import require_GET, require_POST
+from django.views.decorators.http import require_GET, require_POST, require_http_methods
 
 from accounts.whole_views import tr
 from .contract_copy import CLAUSES, clause_label, kind_label, missing, status
@@ -11,9 +11,10 @@ from .contract_export import as_docx, as_pdf, change_label, headings, report
 from .contract_service import (
     allowed, apply_ai, contract_in_scope, create_ai_request, get_agreement,
     initialize_contract, latest, manual_save, safe_budget, source_from_upload,
+    save_template, source_patch, source_selection, source_text, template_current, use_source,
 )
 from .contract_service import ContractError
-from .contract_files import ContractFileError
+from .contract_files import ContractFileError, read_source
 from .views import secure
 
 DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
@@ -79,6 +80,7 @@ def form_display(request, project, kind='', *, error='', status_code=200):
         item['saved'] = bool(item['agreement'] and getattr(item['agreement'], 'demo_contract', None))
     ctx = {'project_id':project,'project_title':repair.project.title,'choices':choices,
            'kind':kind,'error':error_copy(error) if error else '', 'labels':ui_labels(),
+           'can_manage_templates':request.user.is_superuser,
            'upload_error':error.startswith(('scan','file_', 'offline_fixture_only'))}
     if kind:
         agreement = get_agreement(repair, kind)
@@ -113,10 +115,23 @@ def form_display(request, project, kind='', *, error='', status_code=200):
         fields = headings(lang)
         curr_values = [{ 'key':key, 'label':fields[key], 'value':version.details.get(key,''),
                         'placeholder': contract.confirmed_snapshot.get(key, '') or missing(lang)}
-                       for key in ('date','customer','provider','total','identifiers')]
+                       for key in ('date','customer','provider','total','identifiers', 'delivery_cost')
+                       if key != 'delivery_cost' or kind == 'materials']
         qtys = [{**l,'value':version.details.get('quantities', {}).get(l['id'],'')} for l in contract.confirmed_snapshot['lines']]
         sections = [{**section, 'label':clause_label(lang, section['key']),
                      'value':version.details.get(f'clause_{section["key"]}','')} for section in version.sections]
+        source_basis = bool(version.details.get('_source_basis') and version.source_id)
+        source_points = []
+        source_selected = None
+        if source_basis:
+            source_points = [{'key':f"p{r['id']}", 'label':str(r['id']), 'text':source_text(version, r)}
+                             for r in version.source.excerpts]
+            selection = request.GET.get('source_edit')
+            if selection:
+                pointed = source_selection(version, selection)
+                if not pointed:
+                    raise Http404
+                source_selected = {'key':selection, 'label':pointed['id'], 'text':source_text(version, pointed)}
         changes = [{**row, 'label':change_label(lang,row['kind'])} for row in version.changes]
         current_pages = report(contract, version)
         diff_before = report(contract,compare) if compare else []
@@ -130,7 +145,8 @@ def form_display(request, project, kind='', *, error='', status_code=200):
         ctx.update(contract=contract,version=version,contract_status=status(lang),source=source,proposal=prop,
                    sources=displayed_sources,calls=latest_calls,manual_fields=curr_values,qtys=qtys,
                    sections=sections,changes=changes,rows=current_pages,compare=compare,differences=differences,
-                   ai_enabled=settings.CONTRACT_AI_ENABLED,
+                   source_basis=source_basis, source_points=source_points, source_selected=source_selected,
+                   ai_enabled=contract_ai_visible(request.user),
                    revisions=contract.versions.order_by('-revision').values_list('revision',flat=True)[:40],
                    waiting_status=prop and prop.status == 'pending',
                    pending_is_current=bool(prop and prop.status=='ready' and not prop.applied_revision
@@ -147,8 +163,24 @@ def positive(value):
     return int(value)
 
 
+def contract_ai_visible(user):
+    if not settings.CONTRACT_AI_ENABLED:
+        return False
+    if not getattr(settings, 'ESEPTEP_CLOSED_PILOT', False):
+        return True
+    from core.closed_pilot import pilot_member
+    return pilot_member(user, paid=True)
+
+
 @require_GET
 def choose(request, pk):
+    repair = allowed(request.user, pk)
+    # A single accepted order can reach the two actions without a chooser.
+    # The historical offline walkthrough retains its original navigation.
+    if not getattr(settings, 'CONTRACT_OFFLINE_MOCK', False):
+        kinds = list(repair.agreements.values_list('kind', flat=True)[:2])
+        if len(kinds) == 1 and not has_contract(repair):
+            return secure(redirect('repairs:contract_show', pk=pk, kind=kinds[0]))
     return form_display(request,pk)
 
 
@@ -166,11 +198,17 @@ def operate(request, pk, kind):
         if action == 'create':
             if request.POST.get('style') not in ('source','template'):
                 raise ContractError('invalid')
-            initialize_contract(request.user,pk,kind,request.POST.get('language'))
+            initialize_contract(request.user,pk,kind,request.POST.get('language'), request.POST.get('style'))
             query={'upload':'1'} if request.POST.get('style')=='source' else {}
         elif action == 'upload':
             source = source_from_upload(request.user,pk,kind,request.FILES.get('source'))
             query={'source':source.pk}
+        elif action == 'use_source':
+            use_source(request.user, pk, kind, positive(request.POST.get('source')), request.POST.get('revision'))
+            query={}
+        elif action == 'source_patch':
+            source_patch(request.user, pk, kind, request.POST)
+            query={}
         elif action == 'manual':
             manual_save(request.user,pk,kind,request.POST)
             query={}
@@ -215,6 +253,43 @@ def original(request, pk, kind, source):
           'Content-Disposition': f'attachment; filename="ESEPTEP-source-{doc.pk}.{doc.extension}"'}))
 
 
+@require_http_methods(['GET', 'POST'])
+def library(request):
+    if not request.user.is_superuser or not settings.CONTRACT_DEMO_ENABLED:
+        raise Http404
+    kind = request.GET.get('kind', 'materials')
+    lang = request.GET.get('lang', 'ru')
+    latest_version = template_current(kind, lang)
+    if not latest_version:
+        raise Http404
+    error, source, code = '', [], 200
+    if request.method == 'POST':
+        try:
+            operation = request.POST.get('action')
+            if operation == 'save':
+                save_template(request.user, kind, lang, request.POST)
+                return secure(redirect(request.get_full_path()))
+            if operation != 'sample':
+                raise Http404
+            if getattr(settings, 'CONTRACT_OFFLINE_MOCK', False):
+                raise ContractError('offline_fixture_only')
+            _, _, source = read_source(request.FILES.get('sample'))
+        except (ContractError, ContractFileError) as exc:
+            error, code = error_copy(str(exc)), (409 if str(exc) == 'stale' else 400)
+    rev = request.GET.get('version')
+    shown = latest_version if not rev else type(latest_version).objects.filter(
+        kind=kind, language=lang, revision=positive(rev)).first()
+    if not shown:
+        raise Http404
+    rows = [{**row, 'label':clause_label(lang, row['key'])} for row in shown.sections]
+    return secure(render(request, 'repairs/contract_library.html', {
+        'kind':kind, 'lang':lang, 'title':kind_label(lang,kind), 'latest':latest_version,
+        'shown':shown, 'rows':rows, 'source':source, 'error':error,
+        'versions':type(shown).objects.filter(kind=kind, language=lang).order_by('-revision')[:30],
+        'is_current':shown.pk == latest_version.pk,
+    }, status=code))
+
+
 def ui_labels():
     return {key:tr(*value) for key,value in {
         'demo':NEW,'open':OPEN,
@@ -223,8 +298,11 @@ def ui_labels():
         'select':('Выберите тип договора','Шарт түрін таңдаңыз'),
         'none':('Сначала подтвердите предложение в проекте. Смета калькулятора не станет ценой договора.',
                 'Алдымен жобадағы ұсынысты растаңыз. Калькулятор сметасы шарт бағасына айналмайды.'),
-        'template':('Из шаблона','Үлгіден'), 'upload':('Из моего договора','Менің шартымнан'),
+        'template':('Создать по шаблону','Үлгі бойынша жасау'), 'upload':('Загрузить свой договор','Өз шартыңызды жүктеу'),
         'doclang':('Язык договора','Шарт тілі'), 'back':('К договорам проекта','Жоба шарттарына қайту'),
+        'use_source':('Использовать как основу','Негіз ретінде пайдалану'),
+        'edit_source':('Изменить этот пункт','Осы тармақты өзгерту'),
+        'library':('Библиотека шаблонов','Үлгілер кітапханасы'),
         'proposal':('Предложить правку','Түзету ұсыну'), 'download':('Скачать','Жүктеу'),
         'amend':('Предложить через ИИ','ЖИ көмегімен ұсыну'),
         'shorten':('Подготовить краткую редакцию','Қысқа нұсқасын дайындау'),

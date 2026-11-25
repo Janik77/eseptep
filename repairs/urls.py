@@ -12,6 +12,7 @@ urlpatterns = [
 from . import contract_views
 
 urlpatterns += [
+    path('contracts/templates/', contract_views.library, name='contract_library'),
     path('<int:pk>/contracts/', contract_views.choose, name='contract_choose'),
     path('<int:pk>/contracts/<slug:kind>/', contract_views.show, name='contract_show'),
     path('<int:pk>/contracts/<slug:kind>/action/', contract_views.operate, name='contract_action'),

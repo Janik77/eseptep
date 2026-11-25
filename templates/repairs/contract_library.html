@@ -1,0 +1,44 @@
+{% extends 'base.html' %}{% load static %}
+{% block title %}{% if LANGUAGE_CODE == 'kk' %}Үлгілер кітапханасы{% else %}Библиотека шаблонов{% endif %} — ESEPTEP{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/my-repair.css' %}"><link rel="stylesheet" href="{% static 'css/repair-contract.css' %}">{% endblock %}
+{% block content %}
+<section class="repair-shell contract-shell">
+<header class="repair-hero contract-hero"><div>
+  <h1>{% if LANGUAGE_CODE == 'kk' %}Үлгілер кітапханасы{% else %}Библиотека шаблонов{% endif %}</h1>
+  <p>{% if LANGUAGE_CODE == 'kk' %}Сынақ жобасы. Қол қойылмаған. Жаңа нұсқа бұрын жасалған шарттарға әсер етпейді.{% else %}Демонстрационный черновик. Не подписан. Новая версия не меняет уже созданные договоры.{% endif %}</p>
+</div></header>
+{% if error %}<p class="repair-errors" role="alert">{{ error }}</p>{% endif %}
+<nav class="contract-actions">
+  <a class="btn btn--secondary" href="?kind=materials&amp;lang=ru">Материалы · RU</a>
+  <a class="btn btn--secondary" href="?kind=materials&amp;lang=kk">Материал · KZ</a>
+  <a class="btn btn--secondary" href="?kind=works&amp;lang=ru">Работы · RU</a>
+  <a class="btn btn--secondary" href="?kind=works&amp;lang=kk">Жұмыстар · KZ</a>
+</nav>
+<section class="repair-card" lang="{{ lang }}">
+  <h2>{{ title }} · #{{ shown.revision }}</h2>
+  {% if is_current %}
+  <form class="repair-form" method="post" enctype="multipart/form-data">{% csrf_token %}
+    <input type="hidden" name="action" value="sample">
+    <label>{% if LANGUAGE_CODE == 'kk' %}Жеке үлгі (DOCX немесе PDF){% else %}Свой образец (DOCX или PDF){% endif %}<input type="file" name="sample" accept=".docx,.pdf" required></label>
+    <button class="btn btn--secondary">{% if LANGUAGE_CODE == 'kk' %}Мәтінді қарау{% else %}Посмотреть извлечённый текст{% endif %}</button>
+  </form>
+  {% if source %}
+  <details open><summary>{% if LANGUAGE_CODE == 'kk' %}Үлгі мәтіні{% else %}Текст образца{% endif %}</summary>
+    <p>{% if LANGUAGE_CODE == 'kk' %}Ортақ үлгіге тек жалпы талаптарды көшіріңіз.{% else %}Перенесите в общий шаблон только нужные условия, без имён, реквизитов и сумм конкретного заказа. Образец не сохраняется и не отправляется в ИИ.{% endif %}</p>
+    <ol>{% for row in source %}<li>{{ row.text }}</li>{% endfor %}</ol>
+  </details>
+  {% endif %}
+  <form class="repair-form" method="post">{% csrf_token %}
+    <input type="hidden" name="action" value="save"><input type="hidden" name="revision" value="{{ shown.revision }}">
+    {% for row in rows %}<label>{{ row.label }}<textarea name="{{ row.key }}" rows="3" maxlength="2400" required>{{ row.text }}</textarea></label>{% endfor %}
+    <button class="btn btn--primary">{% if LANGUAGE_CODE == 'kk' %}Жаңа нұсқаны сақтау{% else %}Сохранить новую версию{% endif %}</button>
+  </form>
+  {% else %}
+    {% for row in rows %}<h3>{{ row.label }}</h3><p>{{ row.text }}</p>{% endfor %}
+  {% endif %}
+</section>
+<section class="repair-card"><h2>{% if LANGUAGE_CODE == 'kk' %}Нұсқалар{% else %}История версий{% endif %}</h2>
+  <ul>{% for v in versions %}<li><a href="?kind={{ kind }}&amp;lang={{ lang }}&amp;version={{ v.revision }}">#{{ v.revision }}</a></li>{% endfor %}</ul>
+</section>
+</section>
+{% endblock %}

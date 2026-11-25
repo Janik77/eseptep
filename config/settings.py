@@ -156,9 +156,45 @@ OPENAI_PILOT_MAX_RESERVED_CENTS = _bounded_ai_int("OPENAI_PILOT_MAX_RESERVED_CEN
 
 LOCAL_AI_BUDGET_PATH = os.getenv("LOCAL_AI_BUDGET_PATH", "")
 
-# Private contract demo. Never active in the production settings profile.
-CONTRACT_DEMO_ENABLED = not PRODUCTION and os.getenv('ESEPTEP_CONTRACT_DEMO_ENABLED', '0') == '1'
+# Explicit opt-in for a separate, invitation-only hosted installation. Public
+# production and the Windows offline replay retain their previous behavior.
+ESEPTEP_CLOSED_PILOT = os.getenv('ESEPTEP_CLOSED_PILOT', '0') == '1'
+ESEPTEP_PILOT_SUPPLIER_USERNAME = os.getenv('ESEPTEP_PILOT_SUPPLIER_USERNAME', '').strip()
+CONTRACT_DEMO_ENABLED = (not PRODUCTION or ESEPTEP_CLOSED_PILOT) and os.getenv('ESEPTEP_CONTRACT_DEMO_ENABLED', '0') == '1'
 CONTRACT_AI_ENABLED = CONTRACT_DEMO_ENABLED and os.getenv('ESEPTEP_CONTRACT_AI_ENABLED', '0') == '1'
 CONTRACT_BUDGET_VIEWERS = {name.strip() for name in os.getenv('ESEPTEP_CONTRACT_BUDGET_VIEWERS', '').split(',') if name.strip()}
 # Synthetic playback only; never expose an offline answer as a live response.
 CONTRACT_OFFLINE_MOCK = CONTRACT_AI_ENABLED and os.getenv('ESEPTEP_CONTRACT_OFFLINE_MOCK', '0') == '1'
+
+
+if ESEPTEP_CLOSED_PILOT:
+    if not PRODUCTION or not SECURE_SSL_REDIRECT or not SESSION_COOKIE_SECURE:
+        raise ImproperlyConfigured('Hosted pilot requires production HTTPS settings.')
+    if len(ALLOWED_HOSTS) != 1 or ALLOWED_HOSTS[0].startswith('.') or CSRF_TRUSTED_ORIGINS != [
+            'https://' + ALLOWED_HOSTS[0]]:
+        raise ImproperlyConfigured('Hosted pilot requires one exact HTTPS host and matching origin.')
+    if CONTRACT_OFFLINE_MOCK or os.getenv('ESEPTEP_CONTRACT_OFFLINE_MOCK', '0') == '1':
+        raise ImproperlyConfigured('Synthetic responses cannot be served by the hosted pilot.')
+
+    def _outside_checkout(value):
+        return bool(value and Path(value).is_absolute() and
+                    not Path(value).resolve().is_relative_to(BASE_DIR.resolve()))
+
+    if not _outside_checkout(os.getenv('DJANGO_DB_PATH')) or not _outside_checkout(os.getenv('DJANGO_PRIVATE_MEDIA_ROOT')):
+        raise ImproperlyConfigured('Hosted pilot requires explicit private database and media paths outside the checkout.')
+    if not CONTRACT_DEMO_ENABLED:
+        raise ImproperlyConfigured('Hosted pilot requires its contract workflow.')
+    if ESTIMATE_AI_ENABLED:
+        raise ImproperlyConfigured('Only plan and contract actions may use the shared hosted pilot budget.')
+    if PLAN_AI_ENABLED or CONTRACT_AI_ENABLED:
+        if not _outside_checkout(LOCAL_AI_BUDGET_PATH) or Path(LOCAL_AI_BUDGET_PATH).resolve() == Path(DATABASES['default']['NAME']).resolve():
+            raise ImproperlyConfigured('Hosted AI requires the existing separate pilot ledger.')
+        if not OPENAI_LIVE_CONFIRMED or not OPENAI_API_KEY.strip() or OPENAI_MODEL != 'gpt-6.1-sol' or OPENAI_MAX_OUTPUT_TOKENS != 1800:
+            raise ImproperlyConfigured('Hosted paid actions require confirmed model and shared ledger configuration.')
+        from core.local_ai_budget import status as _pilot_budget_status
+        try:
+            _pilot_budget_status(LOCAL_AI_BUDGET_PATH)
+        except Exception as exc:
+            raise ImproperlyConfigured('Hosted pilot ledger is missing or invalid.') from exc
+    MIDDLEWARE.insert(MIDDLEWARE.index('django.contrib.auth.middleware.AuthenticationMiddleware') + 1,
+                      'core.closed_pilot.ClosedPilotAccess')

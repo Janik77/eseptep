@@ -9,6 +9,7 @@
     {% if contract %}<div><span class="contract-chip" lang="{{ contract.language }}" data-contract-status>{{ contract_status }}</span><p class="repair-muted">{{ agreement.provider }} · #{{ version.revision }}</p></div>{% endif %}
   </header>
   {% if error %}<p class="repair-errors" role="alert">{{ error }}</p>{% endif %}
+  {% if can_manage_templates %}<p><a href="{% url 'repairs:contract_library' %}">{{ labels.library }}</a></p>{% endif %}
 
   {% if not kind %}
   <h2>{{ labels.select }}</h2>
@@ -48,6 +49,12 @@
     {% if source %}
     <p><a href="{% url 'repairs:contract_original' project_id kind source.pk %}">{{ labels.source }} #{{ source.pk }}</a> · {{ source.excerpts|length }} {{ labels.paragraph|lower }}</p>
     <p>{{ labels.send }}</p>
+    {% if version.revision == contract.current_revision %}
+    <form class="repair-form" action="{% url 'repairs:contract_action' project_id kind %}" method="post">{% csrf_token %}
+      <input type="hidden" name="action" value="use_source"><input type="hidden" name="source" value="{{ source.pk }}"><input type="hidden" name="revision" value="{{ contract.current_revision }}">
+      <button class="btn btn--secondary" type="submit">{{ labels.use_source }}</button>
+    </form>
+    {% endif %}
     {% if ai_enabled %}
     <form class="repair-form" action="{% url 'repairs:contract_action' project_id kind %}" method="post">{% csrf_token %}
       <input type="hidden" name="action" value="shorten"><input type="hidden" name="source" value="{{ source.pk }}"><input type="hidden" name="revision" value="{{ contract.current_revision }}">
@@ -132,6 +139,18 @@
   {% endif %}
 
   {% if version.revision == contract.current_revision %}
+  {% if source_basis %}
+  <details class="repair-card" id="source-edit" {% if source_selected %}open{% endif %}><summary>{{ labels.edit_source }}</summary>
+    {% if source_selected %}
+    <form class="repair-form" action="{% url 'repairs:contract_action' project_id kind %}" method="post">{% csrf_token %}
+      <input type="hidden" name="action" value="source_patch"><input type="hidden" name="revision" value="{{ version.revision }}"><input type="hidden" name="section" value="{{ source_selected.key }}">
+      <label>§ {{ source_selected.label }}<textarea name="text" maxlength="2400" rows="5" required>{{ source_selected.text }}</textarea></label>
+      <button class="btn btn--primary" type="submit">{{ labels.save }}</button>
+    </form>
+    {% endif %}
+    <ol>{% for p in source_points %}<li><a href="?source_edit={{ p.key }}#source-edit">{{ p.text|truncatechars:110 }}</a></li>{% endfor %}</ol>
+  </details>
+  {% endif %}
   <details class="repair-card"><summary>{{ labels.manual }}</summary>
     <form class="repair-form" action="{% url 'repairs:contract_action' project_id kind %}" method="post">{% csrf_token %}
       <input type="hidden" name="action" value="manual"><input type="hidden" name="revision" value="{{ version.revision }}">
@@ -142,9 +161,9 @@
       {% if qtys %}<div class="contract-grid">{% for row in qtys %}
         <label>{{ row.name }} · {{ row.unit }}<input name="qty_{{ row.id }}" type="text" inputmode="decimal" value="{{ row.value }}" placeholder="{{ row.quantity }}"></label>
       {% endfor %}</div>{% endif %}
-      <details><summary>{{ labels.clauses }}</summary>
+      {% if not source_basis %}<details><summary>{{ labels.clauses }}</summary>
       {% for s in sections %}<label lang="{{ contract.language }}">{{ s.label }}<textarea name="clause_{{ s.key }}" maxlength="2400" rows="2" placeholder="{{ s.text }}">{{ s.value }}</textarea></label>{% endfor %}
-      </details>
+      </details>{% endif %}
       <button class="btn btn--secondary" type="submit">{{ labels.save }}</button>
     </form>
   </details>
@@ -154,7 +173,7 @@
     <p>{{ labels.send }}</p>
     <form class="repair-form" action="{% url 'repairs:contract_action' project_id kind %}" method="post">{% csrf_token %}
       <input type="hidden" name="action" value="amend"><input type="hidden" name="revision" value="{{ version.revision }}">
-      <label>{{ labels.section }}<select name="section">{% for s in sections %}<option value="{{ s.key }}" lang="{{ contract.language }}">{{ s.label }}</option>{% endfor %}</select></label>
+      <label>{{ labels.section }}<select name="section">{% if source_basis %}{% for p in source_points %}<option value="{{ p.key }}">§ {{ p.label }} · {{ p.text|truncatechars:90 }}</option>{% endfor %}{% else %}{% for s in sections %}<option value="{{ s.key }}" lang="{{ contract.language }}">{{ s.label }}</option>{% endfor %}{% endif %}</select></label>
       <label>{{ labels.instruction }}<textarea name="instruction" required maxlength="400" minlength="5" rows="3"></textarea></label>
       <button class="btn btn--primary" type="submit">{{ labels.amend }}</button>
     </form>

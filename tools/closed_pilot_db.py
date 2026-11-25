@@ -1,6 +1,7 @@
 """Provenance guard for the offline PyCharm demonstration database only."""
 import json
 import sqlite3
+from contextlib import closing
 
 DEMO_NAMES = ('demo-client@example.test', 'demo-supplier@example.test', 'demo-master@example.test')
 APPLICATION_ID = 0x45535141  # ESQA; private isolated review database marker.
@@ -12,7 +13,7 @@ def inspect_db(path):
         raise SystemExit('Refusing symlink DB.')
     if not path.exists():
         return False
-    with sqlite3.connect(path.resolve().as_uri()+'?mode=ro',uri=True) as con:
+    with closing(sqlite3.connect(path.resolve().as_uri()+'?mode=ro',uri=True)) as con:
         identifier = con.execute('PRAGMA application_id').fetchone()[0]
         if identifier == APPLICATION_ID:
             return True
@@ -30,7 +31,7 @@ def inspect_db(path):
 
 
 def mark_prepared(path):
-    with sqlite3.connect(path.resolve().as_uri()+'?mode=rw',uri=True) as con:
+    with closing(sqlite3.connect(path.resolve().as_uri()+'?mode=rw',uri=True)) as con, con:
         con.execute(f'PRAGMA application_id={APPLICATION_ID}')
 
 def read_two_room_fixture(root):
