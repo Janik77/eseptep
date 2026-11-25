@@ -27,7 +27,9 @@ const form = name => page.locator(`form:has(input[name=action][value=${name}])`)
 const file = name => `repairs/fixtures/${name}`;
 const submit = n => form(n).locator('button[type=submit]').click();
 const shot = async (name, count=2) => {
-  await page.waitForLoadState('domcontentloaded');
+  // Downloads may not dispatch DOMContentLoaded in Chromium even though
+  // the existing app document is still displayed; wait on that document.
+  await page.locator('body').waitFor({state:'visible'});
   assert(await page.evaluate(()=>document.documentElement.scrollWidth <= innerWidth + 1),name);
   const key = `scene-${String(next++).padStart(2,'0')}-${name}.png`;
   await page.screenshot({path:path.join(out,key),animations:'disabled'});
@@ -94,6 +96,7 @@ try {
     const [d] = await Promise.all([page.waitForEvent('download'),page.locator(`#download a[href$=".${extension}"]`).click()]);
     await d.saveAs(path.join(out,`result.${extension}`));
   }
+  assert.match(await page.locator('#draft').innerText(),/Две партии по 6 упаковок/);
   await shot('08-downloads',2);
   await page.locator('[data-language-form] button[value=kk]').click();
   await page.waitForFunction(()=>document.documentElement.lang==='kk');
