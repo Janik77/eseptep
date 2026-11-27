@@ -1,0 +1,106 @@
+{% extends 'admin/base_site.html' %}
+{% load i18n l10n eseptep_i18n %}
+{% block breadcrumbs %}
+<div class="breadcrumbs"><a href="{% url 'admin:index' %}">{% translate "Home" %}</a> ›
+<a href="{% url 'admin:calculators_recipecalculator_changelist' %}">{% translate 'Калькуляторы' %}</a> ›
+<a href="{{ return_url }}">{{ title }}</a>{% if target %} › {{ target }}{% endif %}</div>
+{% endblock %}
+{% block extrastyle %}{{ block.super }}
+<style>
+.recipe-panel{max-width:1050px;margin:1rem 0 2rem}.recipe-key{font-size:1.1rem;font-weight:600}
+.recipe-muted{color:var(--body-quiet-color)}.recipe-inline{display:flex;flex-wrap:wrap;gap:12px;align-items:end}
+.recipe-field{display:grid;gap:6px;margin:0 0 1rem}.recipe-field input:not([type=checkbox]),.recipe-field select{max-width:min(100%,440px)}
+.recipe-scroll{overflow-x:auto}.recipe-scroll table{width:100%}.recipe-section{margin-top:1rem}
+.recipe-section summary{cursor:pointer;padding:.75rem 0;font-weight:600}.recipe-action{margin-top:1rem}
+.recipe-stage{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center}.recipe-stage span{background:var(--darkened-bg);padding:.4rem .6rem;border-radius:5px}
+</style>{% endblock %}
+{% block content %}
+<div class="recipe-panel">
+<p class="recipe-stage"><span>1. {% translate 'Сохранить черновик' %}</span><span>2. {% translate 'Проверить расчёт' %}</span><span>3. {% translate 'Опубликовать' %}</span></p>
+<p class="recipe-muted">{% translate 'Изменения действуют только здесь, для выбранного комплекта и условий. Уже сохранённые сметы не меняются.' %}</p>
+{% if error %}<p class="errornote" role="alert">{{ error }}</p>{% endif %}
+{% if form %}
+<section class="recipe-section">
+<h2>{% if adding %}{% translate 'Добавить материал' %}{% else %}{% translate 'Изменить материал' %}{% endif %}: {{ target }}</h2>
+{% if variant %}<p>{% translate 'Комплект' %}: {% for v,label in catalog_variants %}{% if v == variant %}{{ label }}{% endif %}{% endfor %}</p>{% endif %}
+<p>{% translate 'Опубликованное правило' %}: <strong>{{ active_rule }}</strong>{% if pack_mass %} · {% translate 'Масса упаковки, кг' %}: <strong>{{ pack_mass }}</strong>{% endif %}</p>
+{% if is_primer and not entry.current_id %}<p>{% translate 'Исходная формула грунтовки: одна упаковка на 2 м². Это справочное значение, не норма производителя.' %}</p>{% endif %}
+{% if reference %}<p>{% translate 'По исходной формуле' %}: <strong>{{ reference.quantity }} {{ reference.unit|system_text }}</strong> × <strong>{{ reference.reference_price|money }} ₸</strong></p>{% endif %}
+{% if configured_example %}<p>{% translate 'Опубликовано' %}: <strong>{{ configured_example.quantity }} {{ configured_example.unit|system_text }}</strong> × <strong>{{ configured_example.reference_price|money }} ₸</strong></p>{% endif %}
+<form method="post">{% csrf_token %}
+<input type="hidden" name="material" value="{{ material }}"><input type="hidden" name="variant" value="{{ variant }}">
+<input type="hidden" name="revision" value="{{ entry.draft_revision|unlocalize }}">
+{{ form.non_field_errors }}
+{% for field in form %}<div class="recipe-field">{{ field.label_tag }}{{ field }}{{ field.errors }}{% if field.help_text %}<div class="help">{{ field.help_text }}</div>{% endif %}{% if field.name == 'rate' and material != 'mat_0034' %}<div class="help">{% translate 'Расход на площадь: единицы материала/м²; на слой: единицы материала/(м²·см); масса смеси: кг/(м²·см); длина рулона: м; фиксированное количество: единицы материала/объект; коэффициент: без единиц.' %}</div>{% endif %}</div>{% endfor %}
+<div class="recipe-inline">
+<button class="button default" name="action" value="save" type="submit">{% translate 'Сохранить черновик' %}</button>
+<button class="button" name="action" value="reset" type="submit" formnovalidate>{% translate 'Вернуть исходное правило в черновике' %}</button>
+<a href="{{ return_url }}">{% translate 'Назад к материалам' %}</a>
+</div>
+</form>
+</section>
+{% else %}
+<section class="recipe-section">
+<h2>{% translate 'Материалы' %}</h2>
+{% if entry.current_id %}<p>{% translate 'Публикация' %} #{{ entry.current_id|unlocalize }} · {{ entry.current.published_at|date:"d.m.Y H:i" }} · {{ entry.current.author_label }}</p>{% endif %}
+{% if entry.draft_updated_at %}<p class="recipe-muted">{% translate 'Черновик' %} · {{ entry.draft_updated_at|date:"d.m.Y H:i" }} · {{ entry.draft_author }}</p>{% endif %}
+{% for group in groups %}
+<details class="recipe-section" {% if groups|length == 1 or group.variant == 'comfort' or group.variant == 'optimal' %}open{% endif %}>
+<summary>{{ group.label }}</summary>
+<div class="recipe-scroll"><table>
+<thead><tr><th>{% translate 'Материал' %}</th><th>{% translate 'Черновик / источник' %}</th><th>{% translate 'Действие' %}</th></tr></thead>
+<tbody>{% for row in group.rows %}<tr>
+<th scope="row"><a href="{{ row.url }}">{{ row.label }}</a></th><td>{% if row.draft %}{% if row.draft.disabled %}{% translate 'Отключено' %} · {% endif %}{{ row.draft.source }}{% else %}{% translate 'Исходная формула' %}{% endif %}</td>
+<td><a href="{{ row.url }}">{% translate 'Изменить' %}</a></td>
+</tr>{% endfor %}</tbody></table></div>
+</details>
+{% endfor %}
+<details class="recipe-section">
+<summary>{% translate 'Добавить материал' %}</summary>
+<form method="get" class="recipe-inline">
+<label>{% translate 'Материал' %}<select name="material" required>{% for key,label in catalog_options %}<option value="{{ key }}">{{ label }}</option>{% endfor %}</select></label>
+<label>{% translate 'Комплект' %}<select name="variant">{% for key,label in catalog_variants %}<option value="{{ key }}">{{ label }}</option>{% endfor %}</select></label>
+<button class="button" type="submit">{% translate 'Продолжить' %}</button>
+</form>
+</details>
+</section>
+<section class="recipe-section">
+<h2>{% translate 'Проверить расчёт' %}</h2>
+<p class="recipe-muted">{% translate 'Предпросмотр сравнивает справочные количества и цены. Опубликованный прайс магазина ведётся отдельно.' %}</p>
+<form method="post">{% csrf_token %}
+<div class="recipe-inline">
+{% for field in inputs %}<label class="recipe-field">{{ field.label }}
+{% if field.options %}<select name="input_{{ field.name }}">{% for val,label in field.options %}<option value="{{ val }}"{% if field.value == val %} selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+{% else %}<input name="input_{{ field.name }}" inputmode="decimal" value="{{ field.value }}" required>{% endif %}
+</label>{% endfor %}
+</div>
+<p><label>{% translate 'Что проверить' %} <select name="rollback">
+<option value="">{% translate 'Текущий черновик' %}</option>
+{% if entry.current_id %}<option value="0">{% translate 'Вернуть исходные настройки' %}</option>{% endif %}
+{% for edition in history %}<option value="{{ edition.pk|unlocalize }}" {% if request.POST.rollback == edition.pk|stringformat:"d" %}selected{% endif %}>#{% firstof edition.pk %} · {{ edition.published_at|date:"d.m.Y H:i" }} · {{ edition.author_label }}</option>{% endfor %}
+</select></label></p>
+<button class="button default" type="submit" name="action" value="preview">{% translate 'Проверить расчёт' %}</button>
+</form>
+{% if preview %}
+<h3>{% translate 'Было / Стало' %}</h3>
+{% for variant in preview %}
+<div class="recipe-scroll"><table>
+<caption>{{ variant.title }}</caption>
+<thead><tr><th>{% translate 'Материал' %}</th><th>{% translate 'Было: количество × цена = сумма' %}</th><th>{% translate 'Стало: количество × цена = сумма' %}</th></tr></thead>
+<tbody>{% for row in variant.lines %}
+<tr><th scope="row">{{ row.title|system_text }}</th>
+<td>{% if row.before %}{{ row.before.quantity }} {{ row.unit|system_text }} × {{ row.before.reference_price|money }} ₸ = {{ row.before.reference_total|money }} ₸{% else %}—{% endif %}</td>
+<td>{% if row.after %}{{ row.after.quantity }} {{ row.unit|system_text }} × {{ row.after.reference_price|money }} ₸ = {{ row.after.reference_total|money }} ₸{% else %}—{% endif %}</td></tr>
+{% empty %}<tr><td colspan="3">{% translate 'При этих параметрах строки не изменились.' %}</td></tr>{% endfor %}
+</tbody>
+<tfoot><tr><th>{% translate 'Общий итог' %}</th><td>{{ variant.before|money }} ₸</td><td>{{ variant.after|money }} ₸</td></tr></tfoot>
+</table></div>
+{% endfor %}
+<form method="post" class="recipe-action">{% csrf_token %}
+<input type="hidden" name="revision" value="{{ entry.draft_revision|unlocalize }}"><input type="hidden" name="token" value="{{ token }}">
+<button class="button default" type="submit" name="action" value="publish">{% translate 'Опубликовать' %}</button>
+</form>
+{% endif %}
+</section>
+{% endif %}
+</div>{% endblock %}

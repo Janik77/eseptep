@@ -22,8 +22,17 @@ def to_float(value, default):
         return default
 
 
-def calculate_materials(calculator, form_data):
+def calculate_materials(calculator, form_data, *, recipe=None):
     """Calculate material quantities on the server."""
+    result = calculate_base(calculator, form_data)
+    from .material_recipes import active_rules, apply
+    slug = calculator['slug']
+    version, rules = active_rules(slug) if recipe is None else recipe
+    return apply(slug, calculator, result, version, rules)
+
+
+def calculate_base(calculator, form_data):
+    """Unpublished reference kit, used by the editor and catalog validation."""
     form_data = validate_calculator_input(calculator, form_data)
     calculators = {
         'demontazh': _calculate_demontazh,
@@ -59,6 +68,8 @@ def _persist_calculation(user, slug, result, project_id):
     validate_snapshot(slug, result)
     from .demolition_parameters import validate_snapshot as validate_film_snapshot
     validate_film_snapshot(slug, result)
+    from .material_recipes import validate_snapshot as validate_recipe_snapshot
+    validate_recipe_snapshot(slug, result)
     project_id = parse_positive_id(project_id)
     if project_id is None:
         raise ValidationError('Выберите проект для сохранения расчёта.')
@@ -83,6 +94,7 @@ def _persist_calculation(user, slug, result, project_id):
             'admin_quote': result.get('admin_quote'),
             'plan_source': result.get('plan_source', {}),
             'parameter_snapshot': result.get('parameter_snapshot'),
+            'recipe_snapshot': result.get('recipe_snapshot'),
             'materials': result['materials'],
             'variants': result.get('variants'),
             'selected_variant': result.get('selected_variant'),
@@ -1651,10 +1663,16 @@ def _build_result(calculator, materials, form_data, area, rooms, thickness, segm
     reference_total = 0
     result_materials = []
     for material in materials:
-        reference_price = round(material['reference_price'] * segment['material'])
-        reference_row_total = round(material['quantity'] * reference_price)
+        if 'material_key' in material:
+            reference_price = material['reference_price']
+            reference_row_total = material['reference_total']
+        else:
+            reference_price = round(material['reference_price'] * segment['material'])
+            reference_row_total = round(material['quantity'] * reference_price)
         reference_total += reference_row_total
         result_materials.append({
+            **({'material_key': material['material_key'], 'configured_rule': material['configured_rule']}
+               if 'material_key' in material else {}),
             'title': material['title'],
             'quantity': material['quantity'],
             'unit': material['unit'],

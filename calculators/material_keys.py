@@ -15,8 +15,8 @@ def material_choices():
 
 def variant_keys(calculator_slug):
     from .definitions import CALCULATORS_BY_SLUG
-    from .services import calculate_materials
+    from .services import calculate_base
     definition = CALCULATORS_BY_SLUG[calculator_slug]
     data = {field['name']: str(field.get('default', '')) for field in definition.get('fields', [])}
-    result = calculate_materials(definition, data)
+    result = calculate_base(definition, data)
     return {row['key'] for row in result.get('variants', [])} or {''}

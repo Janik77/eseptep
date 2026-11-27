@@ -23,8 +23,39 @@ class CalculatorTemplateAdmin(admin.ModelAdmin):
 from django.db import transaction
 from django.core.exceptions import PermissionDenied
 from django.utils import timezone
-from .models import PriceBook, MaterialPrice
+from .models import PriceBook, MaterialPrice, RecipeCalculator
 from .pricing import lock_price_configuration
+
+
+@admin.register(RecipeCalculator)
+class RecipeCalculatorAdmin(admin.ModelAdmin):
+    list_display = ('translated_title', 'current', 'draft_updated_at')
+    list_select_related = ('current',)
+    search_fields = ('title', 'slug')
+
+    @admin.display(description=_('Название'), ordering='title')
+    def translated_title(self, obj):
+        from django.utils.translation import gettext
+        return gettext(obj.title)
+
+    def get_search_results(self, request, queryset, search_term):
+        from django.utils.translation import gettext, get_language
+        base, duplicates = super().get_search_results(request, queryset, search_term)
+        if search_term and get_language() == 'kk':
+            matches = [c['slug'] for c in CALCULATORS if search_term.casefold() in gettext(c['title']).casefold()]
+            base |= queryset.filter(pk__in=matches)
+        return base, duplicates
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def change_view(self, request, object_id, form_url='', extra_context=None):
+        from django.shortcuts import get_object_or_404
+        from .admin_recipes import editor
+        return editor(request, self, get_object_or_404(self.get_queryset(request), pk=object_id))
 
 
 from django import forms

@@ -1,4 +1,5 @@
 from decimal import Decimal
+from django.conf import settings
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
@@ -116,6 +117,41 @@ class MaterialPrice(models.Model):
 class PriceConfigurationLock(models.Model):
     """Singleton serialization row for publication and estimate persistence."""
     revision = models.PositiveIntegerField(default=0)
+
+
+class RecipeCalculator(models.Model):
+    """Stable admin entry for a calculator defined by the application."""
+    slug = models.SlugField(primary_key=True, max_length=80)
+    title = models.CharField(_('Название'), max_length=140)
+    draft = models.JSONField(default=dict, editable=False)
+    draft_revision = models.PositiveIntegerField(default=0, editable=False)
+    draft_author = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL, editable=False)
+    draft_updated_at = models.DateTimeField(null=True, editable=False)
+    current = models.ForeignKey('RecipeEdition', related_name='+', null=True, on_delete=models.PROTECT, editable=False)
+
+    class Meta:
+        verbose_name = _('Калькулятор')
+        verbose_name_plural = _('Калькуляторы')
+        ordering = ['title']
+
+    def __str__(self):
+        return self.title
+
+
+class RecipeEdition(models.Model):
+    """An immutable publication, not a rewrite of old estimates."""
+    calculator = models.ForeignKey(RecipeCalculator, related_name='editions', on_delete=models.PROTECT)
+    rules = models.JSONField(default=dict, editable=False)
+    author = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL, editable=False)
+    author_label = models.CharField(max_length=150, editable=False)
+    published_at = models.DateTimeField(auto_now_add=True)
+    restored_from = models.ForeignKey('self', null=True, on_delete=models.PROTECT, editable=False)
+
+    class Meta:
+        ordering = ['-pk']
+
+    def __str__(self):
+        return f'#{self.pk}'
 
 
 class RenovationRateEdition(models.Model):

@@ -43,7 +43,7 @@
         <p>{% translate 'Материалы:' %} {{ calc.materials_total|money }} {% translate '₸ · Работы:' %} {{ calc.works_total|money }} ₸</p>
         <strong>{% translate 'Итог:' %} {{ calc.grand_total|money }} ₸</strong>
       </article>
-      {% empty %}<div class="empty-state">{% translate 'Смет пока нет.' %}</div>{% endfor %}
+      {% empty %}{% if not whole_estimates %}<div class="empty-state">{% translate 'Смет пока нет.' %}</div>{% endif %}{% endfor %}
     </div>
   </div>
 

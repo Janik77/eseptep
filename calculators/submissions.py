@@ -43,7 +43,7 @@ def submit_result(user, slug, data, post, result, save):
     if action not in {'save_estimate', 'request_master', 'request_supplier'}:
         raise ValidationError(_(ERROR))
     fingerprint = _digest({key: post.get(key, '') for key in (
-        'project_id', 'selected_variant', 'parameter_version', 'price_book_version')})
+        'project_id', 'selected_variant', 'parameter_version', 'price_book_version', 'recipe_version')})
     return _persist_submission(user, slug, post, result, save, nonce, action, fingerprint)
 
 
@@ -69,6 +69,8 @@ def _persist_submission(user, slug, post, result, save, nonce, action, fingerpri
         raise ValidationError(_(message))
     if post.get('price_book_version', '') != (result.get('admin_quote') or {}).get('version', ''):
         raise ValidationError(_('Прайс изменился. Проверьте новый расчёт и сохраните снова.'))
+    if post.get('recipe_version', '') != (result.get('recipe_snapshot') or {}).get('version', ''):
+        raise ValidationError(_('Настройки материалов изменились. Выполните расчёт заново.'))
     project, calculation = save(user, slug, result, post.get('project_id'))
     if action != 'save_estimate':
         ServiceRequest.objects.create(

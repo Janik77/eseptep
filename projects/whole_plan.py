@@ -34,6 +34,7 @@ def initial_rooms(analysis):
 def calculate_snapshot(rooms, analysis_id):
     book = PriceBook.objects.filter(is_active=True, published_at__isnull=False).first()
     output, grouped, procurement = [], {}, []
+    recipe_versions = {}
     for original in rooms:
         row = {k: original.get(k) for k in ('index','name','area','source','page','evidence','visual_evidence','finish','finish_proposed','finish_evidence','finish_source')}
         if original.get('schedule_floor_page'):
@@ -56,6 +57,8 @@ def calculate_snapshot(rooms, analysis_id):
         else:
             inputs['covering_type'] = finish
         result = calculate_materials(definition, inputs)
+        if result.get('recipe_snapshot'):
+            recipe_versions[slug] = result['recipe_snapshot']['version']
         # Sum canonical requirements before applying any pack ceiling. Other
         # finish/spec groups deliberately remain distinct, even for equal labels.
         requirements = {}
@@ -114,6 +117,7 @@ def calculate_snapshot(rooms, analysis_id):
     complete = bool(procurement) and all(r['unit_price'] is not None for r in procurement)
     unknown = sum(not r['known'] for r in output)
     return {'version': PARSER_VERSION, 'analysis_id': analysis_id, 'rooms': output, 'procurement': procurement,
+            **({'recipe_versions': recipe_versions} if recipe_versions else {}),
             'known_area': decimal_text(sum(Decimal(r['area']) for r in output if r['known'])),
             'unknown_rooms': unknown, 'calculated_rooms': len(output) - unknown,
             'priced_positions': sum(r['line_total'] is not None for r in procurement),
