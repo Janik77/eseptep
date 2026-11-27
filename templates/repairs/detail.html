@@ -28,8 +28,8 @@
   {% if offers %}
   <section id="repair-offers" class="repair-section" aria-labelledby="repair-offer-heading">
     <h2 id="repair-offer-heading">{% if LANGUAGE_CODE == 'kk' %}Ұсыныстар{% else %}Предложения{% endif %}</h2>
-    {% for offer in offers %}
-    <article class="repair-card" data-repair-offer="{{ offer.kind }}">
+    {% for offer in offers %}{% ifchanged offer.kind %}<span id="offer-{{ offer.kind }}"></span>{% endifchanged %}
+    <article id="offer-{{ offer.kind }}-{{ offer.id }}" class="repair-card" data-repair-offer="{{ offer.kind }}">
       <header>
         <p class="repair-eyebrow">{% if offer.kind == 'materials' %}{% if LANGUAGE_CODE == 'kk' %}Материалдар{% else %}Материалы{% endif %}{% else %}{% if LANGUAGE_CODE == 'kk' %}Жұмыстар{% else %}Работы{% endif %}{% endif %}</p>
         <h3>{{ offer.provider }}</h3>
